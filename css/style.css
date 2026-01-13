@@ -173,3 +173,301 @@ html, body {
 ::-webkit-scrollbar-thumb:hover {
     background: #ffc107;
 }
+
+
+/* ==================== TARIFF PANEL STYLES ==================== */
+
+.tariff-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 500px;
+    max-height: 85vh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 3px solid #e94560;
+    border-radius: 15px;
+    box-shadow: 0 0 30px rgba(233, 69, 96, 0.5), 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 2000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.tariff-panel .panel-header {
+    background: linear-gradient(90deg, #e94560, #ff6b6b);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tariff-panel .panel-header h2 {
+    margin: 0;
+    color: white;
+    font-size: 1.3em;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.tariff-panel .close-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    font-size: 1.5em;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tariff-panel .close-btn:hover {
+    background: rgba(255,255,255,0.4);
+    transform: scale(1.1);
+}
+
+.tariff-panel .panel-content {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.global-tariff {
+    background: rgba(233, 69, 96, 0.2);
+    border: 2px solid #e94560;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.global-tariff label {
+    display: block;
+    color: #ff6b6b;
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 10px;
+}
+
+.tariff-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.tariff-slider-row input[type="range"] {
+    flex: 1;
+}
+
+.tariff-slider-row span {
+    min-width: 50px;
+    text-align: right;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.tariff-hint {
+    color: #888;
+    font-size: 0.85em;
+    margin-top: 8px;
+    margin-bottom: 0;
+}
+
+.tariff-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #e94560, transparent);
+    margin: 20px 0;
+}
+
+.tariff-panel h3 {
+    color: #e94560;
+    margin: 0 0 15px 0;
+    font-size: 1.1em;
+}
+
+.tariff-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tariff-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.05);
+    padding: 10px 15px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.tariff-item:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.cargo-icon {
+    font-size: 1.5em;
+    width: 35px;
+    text-align: center;
+}
+
+.cargo-name {
+    flex: 1;
+    color: #ddd;
+    font-size: 0.95em;
+}
+
+.tariff-slider {
+    width: 100px;
+    cursor: pointer;
+}
+
+.tariff-value {
+    min-width: 45px;
+    text-align: right;
+    font-weight: bold;
+    font-size: 1em;
+}
+
+.tariff-low { color: #4ade80; }
+.tariff-medium { color: #fbbf24; }
+.tariff-high { color: #f97316; }
+.tariff-extreme { color: #ef4444; }
+
+/* Custom range slider styling */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #e94560;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #e94560;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+/* Trade stats */
+.trade-stats {
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-row span:first-child {
+    color: #aaa;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #4ade80;
+}
+
+.text-danger { color: #ef4444 !important; }
+.text-warning { color: #fbbf24 !important; }
+.text-success { color: #4ade80 !important; }
+
+/* Tariff action buttons */
+.tariff-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.tariff-btn {
+    flex: 1;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tariff-btn.danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+.tariff-btn.danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+
+.tariff-btn.success {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: white;
+}
+
+.tariff-btn.success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4);
+}
+
+/* Tariff button in toolbar */
+.toolbar-btn.tariff-btn-toolbar {
+    background: linear-gradient(135deg, #e94560, #ff6b6b);
+}
+
+.toolbar-btn.tariff-btn-toolbar:hover {
+    background: linear-gradient(135deg, #ff6b6b, #e94560);
+}
+
+/* Mobile responsive */
+@media (max-width: 500px) {
+    .tariff-panel {
+        width: 95%;
+        max-height: 90vh;
+    }
+
+    .tariff-item {
+        flex-wrap: wrap;
+    }
+
+    .cargo-name {
+        width: calc(100% - 50px);
+    }
+
+    .tariff-slider {
+        width: calc(100% - 60px);
+        margin-left: 45px;
+    }
+
+    .tariff-actions {
+        flex-direction: column;
+    }
+}

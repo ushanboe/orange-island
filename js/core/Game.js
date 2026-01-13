@@ -6,6 +6,8 @@ import { GameCanvas } from '../ui/GameCanvas.js';
 import { Toolbar } from '../ui/Toolbar.js';
 import { ToolManager } from '../buildings/ToolManager.js';
 import { BUILDINGS } from '../buildings/Buildings.js';
+import { TariffSystem } from '../economy/TariffSystem.js';
+import { TariffUI } from '../ui/TariffUI.js';
 
 export class Game {
     constructor() {
@@ -37,6 +39,10 @@ export class Game {
         this.toolbar = null;
         this.toolManager = null;
 
+        // Tariff system
+        this.tariffSystem = null;
+        this.tariffUI = null;
+
         // Timing
         this.lastUpdate = 0;
         this.tickInterval = 2000;  // 2 seconds per game tick
@@ -67,6 +73,13 @@ export class Game {
         // Resize canvas now that toolbar exists
         this.canvas.resize();
         this.canvas.centerMap();
+
+        // Initialize tariff system
+        this.tariffSystem = new TariffSystem(this);
+        this.tariffUI = new TariffUI(this);
+
+        // Add tariff button to toolbar
+        this.addTariffButton();
 
         // Create tweet display
         this.createTweetDisplay();
@@ -262,8 +275,19 @@ export class Game {
             this.lastTick = now;
         }
 
+        // Update tariff system (boats, etc.)
+        if (this.tariffSystem) {
+            this.tariffSystem.update();
+        }
+
         // Render
         this.canvas.render();
+
+        // Render boats on top
+        if (this.tariffSystem && this.canvas) {
+            const ctx = this.canvas.ctx;
+            this.tariffSystem.render(ctx, this.canvas.offsetX, this.canvas.offsetY, this.canvas.tileSize);
+        }
 
         requestAnimationFrame(() => this.gameLoop());
     }
@@ -322,8 +346,11 @@ export class Game {
         // Commercial income
         const commercialIncome = commercialCount * 5;
 
-        // Tariff income from ports
-        const tariffIncome = portCount * this.tariffRate;
+        // Tariff income from ports (now handled by TariffSystem)
+        // Base port income + tariff system monthly revenue
+        const baseTariffIncome = portCount * 10;
+        const tariffSystemRevenue = this.tariffSystem ? Math.floor(this.tariffSystem.stats.monthlyRevenue / 12) : 0;
+        const tariffIncome = baseTariffIncome + tariffSystemRevenue;
 
         // Monument income (tourism)
         const statueCount = this.tileMap.countBuildings('statue');
@@ -469,5 +496,44 @@ export class Game {
             console.error('Load failed:', e);
             return false;
         }
+    }
+    // Alias for tariff system compatibility
+    showKingTweet(message) {
+        this.kingTweet(message);
+    }
+
+    // Add tariff button to toolbar
+    addTariffButton() {
+        const toolbar = document.querySelector('.toolbar');
+        if (!toolbar) return;
+
+        // Create tariff button
+        const tariffBtn = document.createElement('button');
+        tariffBtn.className = 'toolbar-btn tariff-btn-toolbar';
+        tariffBtn.innerHTML = '🚢<br><small>Tariffs</small>';
+        tariffBtn.title = 'Manage Tariffs (T)';
+        tariffBtn.addEventListener('click', () => this.tariffUI.toggle());
+
+        // Insert before the last buttons
+        const categoryBtns = toolbar.querySelector('.category-buttons');
+        if (categoryBtns) {
+            categoryBtns.appendChild(tariffBtn);
+        } else {
+            toolbar.appendChild(tariffBtn);
+        }
+
+        // Add keyboard shortcut
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 't' || e.key === 'T') {
+                if (!e.ctrlKey && !e.metaKey) {
+                    this.tariffUI.toggle();
+                }
+            }
+        });
+    }
+
+    // Get map reference for tariff system
+    get map() {
+        return this.tileMap;
     }
 }

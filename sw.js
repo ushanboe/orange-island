@@ -1,5 +1,5 @@
 // Service Worker for Island Kingdom PWA
-const CACHE_NAME = 'island-kingdom-v5';
+const CACHE_NAME = 'island-kingdom-v6';
 
 const ASSETS_TO_CACHE = [
     './',
@@ -10,10 +10,13 @@ const ASSETS_TO_CACHE = [
     './js/core/EventEmitter.js',
     './js/ui/GameCanvas.js',
     './js/ui/Toolbar.js',
+    './js/ui/TariffUI.js',
     './js/map/TileMap.js',
     './js/map/IslandGenerator.js',
     './js/buildings/Buildings.js',
     './js/buildings/ToolManager.js',
+    './js/economy/Boat.js',
+    './js/economy/TariffSystem.js',
     './js/utils/Random.js',
     './assets/icon-192.png',
     './assets/icon-512.png',
@@ -22,7 +25,7 @@ const ASSETS_TO_CACHE = [
 
 // Install event - cache assets
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing service worker...');
+    console.log('[SW] Installing service worker v6...');
     // Force the new service worker to activate immediately
     self.skipWaiting();
 
@@ -32,7 +35,7 @@ self.addEventListener('install', (event) => {
                 console.log('[SW] Caching assets...');
                 // Cache files one by one to avoid failures
                 return Promise.allSettled(
-                    ASSETS_TO_CACHE.map(url => 
+                    ASSETS_TO_CACHE.map(url =>
                         cache.add(url).catch(err => console.warn('[SW] Failed to cache:', url, err))
                     )
                 );
@@ -50,44 +53,34 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
     console.log('[SW] Activating service worker...');
     event.waitUntil(
-        caches.keys()
-            .then((cacheNames) => {
-                return Promise.all(
-                    cacheNames.map((cacheName) => {
-                        if (cacheName !== CACHE_NAME) {
-                            console.log('[SW] Deleting old cache:', cacheName);
-                            return caches.delete(cacheName);
-                        }
-                    })
-                );
-            })
-            .then(() => {
-                console.log('[SW] Service worker activated');
-                // Take control of all pages immediately
-                return self.clients.claim();
-            })
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    if (cacheName !== CACHE_NAME) {
+                        console.log('[SW] Deleting old cache:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => {
+            // Take control of all clients immediately
+            return self.clients.claim();
+        })
     );
+    console.log('[SW] Service worker activated');
 });
 
-// Fetch event - network first, then cache
+// Fetch event - network first, fallback to cache
 self.addEventListener('fetch', (event) => {
-    // Skip non-GET requests
-    if (event.request.method !== 'GET') return;
-
-    // Skip chrome-extension and other non-http requests
-    if (!event.request.url.startsWith('http')) return;
-
     event.respondWith(
-        // Try network first for fresh content
         fetch(event.request)
             .then((response) => {
-                // Clone and cache successful responses
+                // Clone the response and cache it
                 if (response && response.status === 200) {
-                    const responseToCache = response.clone();
-                    caches.open(CACHE_NAME)
-                        .then((cache) => {
-                            cache.put(event.request, responseToCache);
-                        });
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseClone);
+                    });
                 }
                 return response;
             })
