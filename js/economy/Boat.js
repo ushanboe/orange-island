@@ -19,6 +19,7 @@ export class Boat {
         // Visual
         this.frame = 0;
         this.direction = 'left'; // left, right, up, down
+        this.spawnDirection = null; // Will be set based on spawn position
         this.flagColor = null;
     }
 
@@ -102,12 +103,29 @@ export class Boat {
     }
 
     moveAway() {
-        // Move towards left edge of map
-        this.x -= this.speed * 1.5;
+        // Move back towards the edge we came from
+        const speed = this.speed * 1.5;
+        const mapWidth = this.game.map?.width || 64;
+        const mapHeight = this.game.map?.height || 64;
 
-        // Remove when off screen
-        if (this.x < -3) {
-            this.remove = true;
+        switch(this.spawnDirection) {
+            case 'right':
+                this.x += speed;
+                if (this.x > mapWidth + 3) this.remove = true;
+                break;
+            case 'top':
+                this.y -= speed;
+                if (this.y < -3) this.remove = true;
+                break;
+            case 'bottom':
+                this.y += speed;
+                if (this.y > mapHeight + 3) this.remove = true;
+                break;
+            case 'left':
+            default:
+                this.x -= speed;
+                if (this.x < -3) this.remove = true;
+                break;
         }
     }
 

@@ -143,10 +143,53 @@ export class TariffSystem {
             return;
         }
 
-        // Spawn boat from left edge
-        const startX = -1;
-        const startY = port.y + (Math.random() - 0.5) * 4;
+        // Determine which edge to spawn from based on port location
+        const mapWidth = this.game.map.width;
+        const mapHeight = this.game.map.height;
+
+        // Calculate distances from port to each edge
+        const distToLeft = port.x;
+        const distToRight = mapWidth - port.x;
+        const distToTop = port.y;
+        const distToBottom = mapHeight - port.y;
+
+        // Find the nearest edge - boats come from the sea!
+        const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+
+        let startX, startY;
+        const variance = (Math.random() - 0.5) * 4; // Small random offset
+
+        if (minDist === distToLeft) {
+            // Spawn from left edge
+            startX = -2;
+            startY = port.y + variance;
+        } else if (minDist === distToRight) {
+            // Spawn from right edge
+            startX = mapWidth + 2;
+            startY = port.y + variance;
+        } else if (minDist === distToTop) {
+            // Spawn from top edge
+            startX = port.x + variance;
+            startY = -2;
+        } else {
+            // Spawn from bottom edge
+            startX = port.x + variance;
+            startY = mapHeight + 2;
+        }
+
         const boat = new Boat(this.game, startX, startY, port);
+
+        // Set spawn direction so boat knows which way to leave
+        if (minDist === distToLeft) {
+            boat.spawnDirection = 'left';
+        } else if (minDist === distToRight) {
+            boat.spawnDirection = 'right';
+        } else if (minDist === distToTop) {
+            boat.spawnDirection = 'top';
+        } else {
+            boat.spawnDirection = 'bottom';
+        }
+
         this.boats.push(boat);
     }
 
