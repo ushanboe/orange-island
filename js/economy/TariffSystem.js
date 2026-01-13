@@ -87,14 +87,21 @@ export class TariffSystem {
     }
 
     countPorts() {
-        let count = 0;
         const map = this.game.map;
-        if (!map) return 0;
-
+        if (!map) {
+            console.warn('TariffSystem: map not available');
+            return 0;
+        }
+        // Use TileMap's countBuildings which handles mainTile correctly
+        if (typeof map.countBuildings === 'function') {
+            return map.countBuildings('port');
+        }
+        // Fallback manual count
+        let count = 0;
         for (let y = 0; y < map.height; y++) {
             for (let x = 0; x < map.width; x++) {
                 const tile = map.getTile(x, y);
-                if (tile && tile.building && tile.building.type === 'port') {
+                if (tile && tile.building && tile.building.type === 'port' && tile.building.mainTile !== false) {
                     count++;
                 }
             }
