@@ -120,8 +120,8 @@ export class Boat {
     }
 
     render(ctx, offsetX, offsetY, tileSize) {
-        const screenX = (this.x * tileSize) - offsetX;
-        const screenY = (this.y * tileSize) - offsetY;
+        const screenX = (this.x * tileSize) + offsetX;
+        const screenY = (this.y * tileSize) + offsetY;
 
         // Don't render if off screen
         if (screenX < -tileSize * 2 || screenX > ctx.canvas.width + tileSize * 2 ||
