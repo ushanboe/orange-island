@@ -58,8 +58,6 @@ html, body {
     position: fixed;
     top: 50px;
     left: 0;
-    right: 0;
-    bottom: 0;
     background: #1a5276;
     cursor: crosshair;
 }

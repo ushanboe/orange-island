@@ -38,10 +38,20 @@ export class GameCanvas {
     }
 
     resize() {
-        // Account for toolbar at bottom
-        const toolbarHeight = 150;
+        // Get header height (50px default, 45px on mobile)
+        const header = document.getElementById('game-header');
+        const headerHeight = header ? header.offsetHeight : 50;
+
+        // Get toolbar height if it exists
+        const toolbar = document.getElementById('toolbar');
+        const toolbarHeight = toolbar ? toolbar.offsetHeight : 150;
+
+        // Set canvas size
         this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight - toolbarHeight;
+        this.canvas.height = window.innerHeight - headerHeight - toolbarHeight;
+
+        // Position canvas below header
+        this.canvas.style.top = headerHeight + 'px';
     }
 
     centerMap() {
