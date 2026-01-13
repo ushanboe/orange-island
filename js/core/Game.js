@@ -64,6 +64,10 @@ export class Game {
         // Initialize toolbar
         this.toolbar = new Toolbar(this);
 
+        // Resize canvas now that toolbar exists
+        this.canvas.resize();
+        this.canvas.centerMap();
+
         // Create tweet display
         this.createTweetDisplay();
 

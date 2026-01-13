@@ -42,16 +42,19 @@ export class GameCanvas {
         const header = document.getElementById('game-header');
         const headerHeight = header ? header.offsetHeight : 50;
 
-        // Get toolbar height if it exists
+        // Get toolbar height if it exists, otherwise assume 0 for now
+        // (will be resized again after toolbar is created)
         const toolbar = document.getElementById('toolbar');
-        const toolbarHeight = toolbar ? toolbar.offsetHeight : 150;
+        const toolbarHeight = toolbar ? toolbar.offsetHeight : 0;
 
-        // Set canvas size
+        // Set canvas size to fill available space
         this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight - headerHeight - toolbarHeight;
+        this.canvas.height = Math.max(100, window.innerHeight - headerHeight - toolbarHeight);
 
         // Position canvas below header
         this.canvas.style.top = headerHeight + 'px';
+
+        console.log(`Canvas resized: ${this.canvas.width}x${this.canvas.height}, header: ${headerHeight}, toolbar: ${toolbarHeight}`);
     }
 
     centerMap() {
