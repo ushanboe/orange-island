@@ -7,10 +7,10 @@ export class Boat {
         this.x = startX;
         this.y = startY;
         this.targetPort = targetPort;
-        this.speed = 0.02; // tiles per frame
+        this.speed = 0.08; // tiles per frame - INCREASED for visibility
         this.state = 'arriving'; // arriving, docked, leaving
         this.dockedTime = 0;
-        this.maxDockedTime = 300; // frames to stay docked
+        this.maxDockedTime = 180; // frames to stay docked (3 seconds at 60fps)
 
         // Cargo - what the boat is carrying
         this.cargo = this.generateCargo();
@@ -19,6 +19,7 @@ export class Boat {
         // Visual
         this.frame = 0;
         this.direction = 'left'; // left, right, up, down
+        this.flagColor = null;
     }
 
     generateCargo() {
@@ -80,7 +81,7 @@ export class Boat {
         const dy = this.targetPort.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist < 1) {
+        if (dist < 0.5) {
             this.state = 'docked';
             this.x = this.targetPort.x;
             this.y = this.targetPort.y;
@@ -101,11 +102,11 @@ export class Boat {
     }
 
     moveAway() {
-        // Move towards edge of map
-        this.x -= this.speed * 2;
+        // Move towards left edge of map
+        this.x -= this.speed * 1.5;
 
         // Remove when off screen
-        if (this.x < -2) {
+        if (this.x < -3) {
             this.remove = true;
         }
     }
@@ -123,8 +124,8 @@ export class Boat {
         const screenY = (this.y * tileSize) - offsetY;
 
         // Don't render if off screen
-        if (screenX < -tileSize * 2 || screenX > ctx.canvas.width + tileSize ||
-            screenY < -tileSize * 2 || screenY > ctx.canvas.height + tileSize) {
+        if (screenX < -tileSize * 2 || screenX > ctx.canvas.width + tileSize * 2 ||
+            screenY < -tileSize * 2 || screenY > ctx.canvas.height + tileSize * 2) {
             return;
         }
 
@@ -133,57 +134,81 @@ export class Boat {
         ctx.translate(screenX + tileSize / 2, screenY + tileSize / 2);
 
         // Bobbing animation
-        const bob = Math.sin(this.frame * 0.05) * 2;
+        const bob = Math.sin(this.frame * 0.1) * 3;
         ctx.translate(0, bob);
 
-        // Boat body
-        ctx.fillStyle = '#8B4513'; // Brown hull
+        // Scale boat to be more visible
+        const scale = 1.2;
+        ctx.scale(scale, scale);
+
+        // Boat hull (brown)
+        ctx.fillStyle = '#8B4513';
         ctx.beginPath();
-        ctx.moveTo(-tileSize * 0.6, 0);
-        ctx.lineTo(-tileSize * 0.4, tileSize * 0.3);
-        ctx.lineTo(tileSize * 0.4, tileSize * 0.3);
-        ctx.lineTo(tileSize * 0.6, 0);
-        ctx.lineTo(tileSize * 0.4, -tileSize * 0.1);
-        ctx.lineTo(-tileSize * 0.4, -tileSize * 0.1);
+        ctx.moveTo(-tileSize * 0.5, 0);
+        ctx.lineTo(-tileSize * 0.35, tileSize * 0.25);
+        ctx.lineTo(tileSize * 0.35, tileSize * 0.25);
+        ctx.lineTo(tileSize * 0.5, 0);
+        ctx.lineTo(tileSize * 0.35, -tileSize * 0.1);
+        ctx.lineTo(-tileSize * 0.35, -tileSize * 0.1);
         ctx.closePath();
         ctx.fill();
         ctx.strokeStyle = '#5D3A1A';
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Sail
-        ctx.fillStyle = '#FFFFFF';
+        // Deck
+        ctx.fillStyle = '#A0522D';
+        ctx.fillRect(-tileSize * 0.3, -tileSize * 0.1, tileSize * 0.6, tileSize * 0.15);
+
+        // Mast
+        ctx.strokeStyle = '#4A3728';
+        ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(0, -tileSize * 0.1);
         ctx.lineTo(0, -tileSize * 0.7);
-        ctx.lineTo(tileSize * 0.3, -tileSize * 0.3);
+        ctx.stroke();
+
+        // Sail (white with slight curve)
+        ctx.fillStyle = '#FFFEF0';
+        ctx.beginPath();
+        ctx.moveTo(0, -tileSize * 0.65);
+        ctx.quadraticCurveTo(tileSize * 0.35, -tileSize * 0.4, tileSize * 0.25, -tileSize * 0.15);
+        ctx.lineTo(0, -tileSize * 0.15);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = '#CCCCCC';
+        ctx.strokeStyle = '#DDDDDD';
+        ctx.lineWidth = 1;
         ctx.stroke();
 
-        // Mast
-        ctx.strokeStyle = '#5D3A1A';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(0, -tileSize * 0.1);
-        ctx.lineTo(0, -tileSize * 0.75);
-        ctx.stroke();
-
-        // Flag on top (country of origin - random color)
+        // Flag on top
         if (!this.flagColor) {
-            const colors = ['#FF0000', '#0000FF', '#00FF00', '#FFFF00', '#FF00FF', '#00FFFF'];
+            const colors = ['#FF4444', '#4444FF', '#44AA44', '#FFAA00', '#FF44FF', '#44FFFF', '#FF8800'];
             this.flagColor = colors[Math.floor(Math.random() * colors.length)];
         }
         ctx.fillStyle = this.flagColor;
-        ctx.fillRect(-2, -tileSize * 0.75, 10, 6);
+        ctx.fillRect(2, -tileSize * 0.72, 12, 8);
 
         ctx.restore();
 
-        // Draw cargo indicator when docked
-        if (this.state === 'docked') {
-            ctx.font = '16px Arial';
-            ctx.fillText(this.cargo[0]?.icon || '📦', screenX + tileSize * 0.7, screenY);
+        // Draw cargo icon when docked or arriving close
+        if (this.state === 'docked' || (this.state === 'arriving' && this.getDistanceToPort() < 5)) {
+            ctx.font = 'bold 20px Arial';
+            ctx.fillText(this.cargo[0]?.icon || '📦', screenX + tileSize * 0.8, screenY - 5);
         }
+
+        // Draw state indicator for debugging
+        if (this.state === 'docked') {
+            ctx.fillStyle = '#00FF00';
+            ctx.beginPath();
+            ctx.arc(screenX + tileSize/2, screenY - tileSize * 0.5, 5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    getDistanceToPort() {
+        if (!this.targetPort) return Infinity;
+        const dx = this.targetPort.x - this.x;
+        const dy = this.targetPort.y - this.y;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 }

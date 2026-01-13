@@ -36,7 +36,7 @@ export class TariffSystem {
         this.tradeRelations = 100; // 0-100, high tariffs reduce this
 
         // Boat spawn settings
-        this.baseBoatFrequency = 500; // frames between boats
+        this.baseBoatFrequency = 300; // frames between boats
         this.boatSpawnTimer = 0;
 
         // Active boats
