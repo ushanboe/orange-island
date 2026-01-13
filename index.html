@@ -2,43 +2,76 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1a1a2e">
-    <title>Island Kingdom - The Mad King's Realm</title>
+
+    <title>Island Kingdom - The Mad King</title>
+
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="assets/icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
+
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="game-container">
-        <canvas id="game-canvas"></canvas>
-        <div id="ui-overlay">
-            <div id="top-bar">
-                <div id="funds">💰 $10,000</div>
-                <div id="population">👥 0</div>
-                <div id="king-mood">👑 😊</div>
-                <div id="date">Year 1, Month 1</div>
-            </div>
-            <div id="tweet-popup" class="hidden">
-                <div class="tweet-content"></div>
-            </div>
+    <!-- Header Stats Bar -->
+    <header id="game-header">
+        <div class="stat">
+            <span class="stat-icon">💰</span>
+            <span class="stat-value" id="treasury">$10,000</span>
         </div>
-        <div id="loading-screen">
-            <h1>🏝️ Island Kingdom</h1>
-            <p>The Mad King's Realm</p>
-            <div class="loading-bar"><div class="loading-progress"></div></div>
-            <p id="loading-status">Loading...</p>
+        <div class="stat">
+            <span class="stat-icon">👥</span>
+            <span class="stat-value" id="population">0</span>
+        </div>
+        <div class="stat">
+            <span class="stat-icon">👑</span>
+            <span class="stat-value" id="king-mood">😊</span>
+        </div>
+        <div class="stat">
+            <span class="stat-icon">📅</span>
+            <span class="stat-value" id="date">Year 1, Month 1</span>
+        </div>
+    </header>
+
+    <!-- Game Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <h1>👑 Island Kingdom</h1>
+            <h2>The Mad King</h2>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+            <p>Building your tremendous kingdom...</p>
         </div>
     </div>
-    
-    <!-- Core Scripts -->
-    <script src="js/utils/Random.js"></script>
-    <script src="js/core/EventEmitter.js"></script>
-    <script src="js/map/TileMap.js"></script>
-    <script src="js/map/IslandGenerator.js"></script>
-    <script src="js/ui/GameCanvas.js"></script>
-    <script src="js/core/Game.js"></script>
-    <script src="js/main.js"></script>
+
+    <!-- Main Script -->
+    <script type="module" src="js/main.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('SW registered:', reg.scope))
+                .catch(err => console.log('SW registration failed:', err));
+        }
+
+        // Hide loading screen when game is ready
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loading = document.getElementById('loading-screen');
+                if (loading) {
+                    loading.style.opacity = '0';
+                    setTimeout(() => loading.style.display = 'none', 500);
+                }
+            }, 1000);
+        });
+    </script>
 </body>
 </html>

@@ -1,314 +1,437 @@
-/**
- * GameCanvas - Handles rendering and user input
- */
-class GameCanvas {
-    constructor(canvasId) {
+// GameCanvas - Handles rendering and input for the game
+import { TERRAIN_COLORS } from '../map/TileMap.js';
+import { BUILDINGS } from '../buildings/Buildings.js';
+
+export class GameCanvas {
+    constructor(game, canvasId) {
+        this.game = game;
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
-        
-        // Tile size in pixels
-        this.tileSize = 16;
-        
-        // Camera position (top-left corner in world coords)
-        this.cameraX = 0;
-        this.cameraY = 0;
-        
-        // Zoom level
-        this.zoom = 2;
-        this.minZoom = 0.5;
-        this.maxZoom = 4;
-        
-        // Input state
+
+        // View settings
+        this.tileSize = 20;
+        this.minTileSize = 8;
+        this.maxTileSize = 50;
+        this.offsetX = 0;
+        this.offsetY = 0;
+
+        // Interaction state
         this.isDragging = false;
-        this.lastMouseX = 0;
-        this.lastMouseY = 0;
-        
-        // Touch state
-        this.touches = [];
+        this.isPanning = false;
+        this.lastPointerX = 0;
+        this.lastPointerY = 0;
+        this.pointerStartX = 0;
+        this.pointerStartY = 0;
+
+        // Touch handling
+        this.touches = {};
         this.lastPinchDist = 0;
-        
-        // Reference to tile map
-        this.tileMap = null;
-        
+
+        // Hover tile for preview
+        this.hoverTileX = -1;
+        this.hoverTileY = -1;
+
         // Setup
         this.resize();
         this.setupEventListeners();
+        this.centerMap();
     }
 
-    // Set the tile map to render
-    setTileMap(tileMap) {
-        this.tileMap = tileMap;
-        // Center camera on map
-        this.centerCamera();
-    }
-
-    // Center camera on the map
-    centerCamera() {
-        if (!this.tileMap) return;
-        
-        const worldWidth = this.tileMap.width * this.tileSize;
-        const worldHeight = this.tileMap.height * this.tileSize;
-        const screenWidth = this.canvas.width / this.zoom;
-        const screenHeight = this.canvas.height / this.zoom;
-        
-        this.cameraX = (worldWidth - screenWidth) / 2;
-        this.cameraY = (worldHeight - screenHeight) / 2;
-    }
-
-    // Resize canvas to fill container
     resize() {
-        const container = this.canvas.parentElement;
-        this.canvas.width = container.clientWidth;
-        this.canvas.height = container.clientHeight;
+        // Account for toolbar at bottom
+        const toolbarHeight = 150;
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight - toolbarHeight;
     }
 
-    // Setup input event listeners
+    centerMap() {
+        if (!this.game.tileMap) return;
+        const mapWidth = this.game.tileMap.width * this.tileSize;
+        const mapHeight = this.game.tileMap.height * this.tileSize;
+        this.offsetX = (this.canvas.width - mapWidth) / 2;
+        this.offsetY = (this.canvas.height - mapHeight) / 2;
+    }
+
     setupEventListeners() {
-        // Resize handler
-        window.addEventListener('resize', () => this.resize());
-        
+        // Window resize
+        window.addEventListener('resize', () => {
+            this.resize();
+        });
+
         // Mouse events
-        this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
-        this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
-        this.canvas.addEventListener('mouseup', (e) => this.onMouseUp(e));
-        this.canvas.addEventListener('mouseleave', (e) => this.onMouseUp(e));
+        this.canvas.addEventListener('mousedown', (e) => this.onPointerDown(e));
+        this.canvas.addEventListener('mousemove', (e) => this.onPointerMove(e));
+        this.canvas.addEventListener('mouseup', (e) => this.onPointerUp(e));
+        this.canvas.addEventListener('mouseleave', (e) => this.onPointerUp(e));
         this.canvas.addEventListener('wheel', (e) => this.onWheel(e));
-        
+
         // Touch events
         this.canvas.addEventListener('touchstart', (e) => this.onTouchStart(e));
         this.canvas.addEventListener('touchmove', (e) => this.onTouchMove(e));
         this.canvas.addEventListener('touchend', (e) => this.onTouchEnd(e));
-        
-        // Prevent context menu
+        this.canvas.addEventListener('touchcancel', (e) => this.onTouchEnd(e));
+
+        // Prevent context menu on long press
         this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     }
 
-    // Mouse down
-    onMouseDown(e) {
-        this.isDragging = true;
-        this.lastMouseX = e.clientX;
-        this.lastMouseY = e.clientY;
-        this.canvas.style.cursor = 'grabbing';
-    }
-
-    // Mouse move
-    onMouseMove(e) {
-        if (!this.isDragging) return;
-        
-        const dx = e.clientX - this.lastMouseX;
-        const dy = e.clientY - this.lastMouseY;
-        
-        this.cameraX -= dx / this.zoom;
-        this.cameraY -= dy / this.zoom;
-        
-        this.lastMouseX = e.clientX;
-        this.lastMouseY = e.clientY;
-        
-        this.clampCamera();
-    }
-
-    // Mouse up
-    onMouseUp(e) {
-        this.isDragging = false;
-        this.canvas.style.cursor = 'grab';
-    }
-
-    // Mouse wheel (zoom)
-    onWheel(e) {
-        e.preventDefault();
-        
-        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom * zoomFactor));
-        
-        // Zoom toward mouse position
-        const rect = this.canvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        
-        // World position under mouse before zoom
-        const worldX = this.cameraX + mouseX / this.zoom;
-        const worldY = this.cameraY + mouseY / this.zoom;
-        
-        this.zoom = newZoom;
-        
-        // Adjust camera to keep world position under mouse
-        this.cameraX = worldX - mouseX / this.zoom;
-        this.cameraY = worldY - mouseY / this.zoom;
-        
-        this.clampCamera();
-    }
-
-    // Touch start
-    onTouchStart(e) {
-        e.preventDefault();
-        this.touches = Array.from(e.touches);
-        
-        if (this.touches.length === 1) {
-            this.isDragging = true;
-            this.lastMouseX = this.touches[0].clientX;
-            this.lastMouseY = this.touches[0].clientY;
-        } else if (this.touches.length === 2) {
-            this.lastPinchDist = this.getPinchDistance();
-        }
-    }
-
-    // Touch move
-    onTouchMove(e) {
-        e.preventDefault();
-        this.touches = Array.from(e.touches);
-        
-        if (this.touches.length === 1 && this.isDragging) {
-            // Pan
-            const dx = this.touches[0].clientX - this.lastMouseX;
-            const dy = this.touches[0].clientY - this.lastMouseY;
-            
-            this.cameraX -= dx / this.zoom;
-            this.cameraY -= dy / this.zoom;
-            
-            this.lastMouseX = this.touches[0].clientX;
-            this.lastMouseY = this.touches[0].clientY;
-            
-            this.clampCamera();
-        } else if (this.touches.length === 2) {
-            // Pinch zoom
-            const dist = this.getPinchDistance();
-            const scale = dist / this.lastPinchDist;
-            
-            const newZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom * scale));
-            
-            // Zoom toward pinch center
-            const centerX = (this.touches[0].clientX + this.touches[1].clientX) / 2;
-            const centerY = (this.touches[0].clientY + this.touches[1].clientY) / 2;
-            
-            const rect = this.canvas.getBoundingClientRect();
-            const worldX = this.cameraX + (centerX - rect.left) / this.zoom;
-            const worldY = this.cameraY + (centerY - rect.top) / this.zoom;
-            
-            this.zoom = newZoom;
-            
-            this.cameraX = worldX - (centerX - rect.left) / this.zoom;
-            this.cameraY = worldY - (centerY - rect.top) / this.zoom;
-            
-            this.lastPinchDist = dist;
-            this.clampCamera();
-        }
-    }
-
-    // Touch end
-    onTouchEnd(e) {
-        this.touches = Array.from(e.touches);
-        if (this.touches.length === 0) {
-            this.isDragging = false;
-        }
-    }
-
-    // Get distance between two touch points
-    getPinchDistance() {
-        if (this.touches.length < 2) return 0;
-        const dx = this.touches[0].clientX - this.touches[1].clientX;
-        const dy = this.touches[0].clientY - this.touches[1].clientY;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    // Clamp camera to map bounds
-    clampCamera() {
-        if (!this.tileMap) return;
-        
-        const worldWidth = this.tileMap.width * this.tileSize;
-        const worldHeight = this.tileMap.height * this.tileSize;
-        const screenWidth = this.canvas.width / this.zoom;
-        const screenHeight = this.canvas.height / this.zoom;
-        
-        // Allow some padding
-        const padding = 50;
-        
-        this.cameraX = Math.max(-padding, Math.min(worldWidth - screenWidth + padding, this.cameraX));
-        this.cameraY = Math.max(-padding, Math.min(worldHeight - screenHeight + padding, this.cameraY));
-    }
-
-    // Convert screen coords to tile coords
+    // Convert screen coordinates to tile coordinates
     screenToTile(screenX, screenY) {
-        const rect = this.canvas.getBoundingClientRect();
-        const worldX = this.cameraX + (screenX - rect.left) / this.zoom;
-        const worldY = this.cameraY + (screenY - rect.top) / this.zoom;
-        
+        const tileX = Math.floor((screenX - this.offsetX) / this.tileSize);
+        const tileY = Math.floor((screenY - this.offsetY) / this.tileSize);
+        return { tileX, tileY };
+    }
+
+    // Convert tile coordinates to screen coordinates
+    tileToScreen(tileX, tileY) {
         return {
-            x: Math.floor(worldX / this.tileSize),
-            y: Math.floor(worldY / this.tileSize)
+            x: tileX * this.tileSize + this.offsetX,
+            y: tileY * this.tileSize + this.offsetY
         };
     }
 
-    // Main render method
+    // Mouse/Pointer handlers
+    onPointerDown(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        this.pointerStartX = x;
+        this.pointerStartY = y;
+        this.lastPointerX = x;
+        this.lastPointerY = y;
+
+        const { tileX, tileY } = this.screenToTile(x, y);
+
+        // Check if a tool is selected
+        if (this.game.toolManager && this.game.toolManager.selectedTool) {
+            this.isDragging = true;
+            this.game.toolManager.onPointerDown(tileX, tileY);
+        } else {
+            // Start panning
+            this.isPanning = true;
+        }
+    }
+
+    onPointerMove(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const { tileX, tileY } = this.screenToTile(x, y);
+
+        // Update hover position
+        this.hoverTileX = tileX;
+        this.hoverTileY = tileY;
+
+        if (this.isPanning) {
+            // Pan the view
+            const dx = x - this.lastPointerX;
+            const dy = y - this.lastPointerY;
+            this.offsetX += dx;
+            this.offsetY += dy;
+        } else if (this.isDragging && this.game.toolManager) {
+            // Drag building placement
+            this.game.toolManager.onPointerMove(tileX, tileY);
+        }
+
+        this.lastPointerX = x;
+        this.lastPointerY = y;
+    }
+
+    onPointerUp(e) {
+        if (this.game.toolManager) {
+            this.game.toolManager.onPointerUp();
+        }
+        this.isDragging = false;
+        this.isPanning = false;
+    }
+
+    onWheel(e) {
+        e.preventDefault();
+
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        // Zoom towards mouse position
+        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+        const newTileSize = Math.max(this.minTileSize, 
+            Math.min(this.maxTileSize, this.tileSize * zoomFactor));
+
+        if (newTileSize !== this.tileSize) {
+            // Adjust offset to zoom towards mouse
+            const scale = newTileSize / this.tileSize;
+            this.offsetX = mouseX - (mouseX - this.offsetX) * scale;
+            this.offsetY = mouseY - (mouseY - this.offsetY) * scale;
+            this.tileSize = newTileSize;
+        }
+    }
+
+    // Touch handlers
+    onTouchStart(e) {
+        e.preventDefault();
+
+        for (const touch of e.changedTouches) {
+            this.touches[touch.identifier] = {
+                x: touch.clientX,
+                y: touch.clientY
+            };
+        }
+
+        const touchCount = Object.keys(this.touches).length;
+
+        if (touchCount === 1) {
+            // Single touch - either place or start pan
+            const touch = e.touches[0];
+            const rect = this.canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+
+            this.pointerStartX = x;
+            this.pointerStartY = y;
+            this.lastPointerX = x;
+            this.lastPointerY = y;
+
+            const { tileX, tileY } = this.screenToTile(x, y);
+
+            if (this.game.toolManager && this.game.toolManager.selectedTool) {
+                this.isDragging = true;
+                this.game.toolManager.onPointerDown(tileX, tileY);
+            } else {
+                this.isPanning = true;
+            }
+        } else if (touchCount === 2) {
+            // Two fingers - pinch zoom
+            this.isPanning = false;
+            this.isDragging = false;
+            if (this.game.toolManager) {
+                this.game.toolManager.onPointerUp();
+            }
+
+            const touchList = Object.values(this.touches);
+            this.lastPinchDist = this.getPinchDistance(touchList[0], touchList[1]);
+        }
+    }
+
+    onTouchMove(e) {
+        e.preventDefault();
+
+        for (const touch of e.changedTouches) {
+            if (this.touches[touch.identifier]) {
+                this.touches[touch.identifier] = {
+                    x: touch.clientX,
+                    y: touch.clientY
+                };
+            }
+        }
+
+        const touchCount = Object.keys(this.touches).length;
+
+        if (touchCount === 1 && e.touches.length === 1) {
+            const touch = e.touches[0];
+            const rect = this.canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+
+            const { tileX, tileY } = this.screenToTile(x, y);
+            this.hoverTileX = tileX;
+            this.hoverTileY = tileY;
+
+            if (this.isPanning) {
+                const dx = x - this.lastPointerX;
+                const dy = y - this.lastPointerY;
+                this.offsetX += dx;
+                this.offsetY += dy;
+            } else if (this.isDragging && this.game.toolManager) {
+                this.game.toolManager.onPointerMove(tileX, tileY);
+            }
+
+            this.lastPointerX = x;
+            this.lastPointerY = y;
+        } else if (touchCount === 2) {
+            // Pinch zoom
+            const touchList = Object.values(this.touches);
+            const pinchDist = this.getPinchDistance(touchList[0], touchList[1]);
+
+            if (this.lastPinchDist > 0) {
+                const scale = pinchDist / this.lastPinchDist;
+                const centerX = (touchList[0].x + touchList[1].x) / 2;
+                const centerY = (touchList[0].y + touchList[1].y) / 2;
+
+                const rect = this.canvas.getBoundingClientRect();
+                const cx = centerX - rect.left;
+                const cy = centerY - rect.top;
+
+                const newTileSize = Math.max(this.minTileSize,
+                    Math.min(this.maxTileSize, this.tileSize * scale));
+
+                if (newTileSize !== this.tileSize) {
+                    const s = newTileSize / this.tileSize;
+                    this.offsetX = cx - (cx - this.offsetX) * s;
+                    this.offsetY = cy - (cy - this.offsetY) * s;
+                    this.tileSize = newTileSize;
+                }
+            }
+
+            this.lastPinchDist = pinchDist;
+        }
+    }
+
+    onTouchEnd(e) {
+        for (const touch of e.changedTouches) {
+            delete this.touches[touch.identifier];
+        }
+
+        if (Object.keys(this.touches).length === 0) {
+            if (this.game.toolManager) {
+                this.game.toolManager.onPointerUp();
+            }
+            this.isDragging = false;
+            this.isPanning = false;
+            this.lastPinchDist = 0;
+        }
+    }
+
+    getPinchDistance(t1, t2) {
+        const dx = t1.x - t2.x;
+        const dy = t1.y - t2.y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // Rendering
     render() {
         const ctx = this.ctx;
-        const width = this.canvas.width;
-        const height = this.canvas.height;
-        
+        const tileMap = this.game.tileMap;
+
+        if (!tileMap) return;
+
         // Clear canvas
-        ctx.fillStyle = '#001a33';
-        ctx.fillRect(0, 0, width, height);
-        
-        if (!this.tileMap) return;
-        
+        ctx.fillStyle = '#1a5276';  // Deep water background
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
         // Calculate visible tile range
-        const startX = Math.floor(this.cameraX / this.tileSize);
-        const startY = Math.floor(this.cameraY / this.tileSize);
-        const endX = Math.ceil((this.cameraX + width / this.zoom) / this.tileSize);
-        const endY = Math.ceil((this.cameraY + height / this.zoom) / this.tileSize);
-        
-        // Apply camera transform
-        ctx.save();
-        ctx.scale(this.zoom, this.zoom);
-        ctx.translate(-this.cameraX, -this.cameraY);
-        
-        // Render tiles
-        for (let y = startY; y <= endY; y++) {
-            for (let x = startX; x <= endX; x++) {
-                if (!this.tileMap.inBounds(x, y)) continue;
-                
-                const tile = this.tileMap.getTile(x, y);
-                const color = this.tileMap.getTileColor(x, y);
-                
-                const px = x * this.tileSize;
-                const py = y * this.tileSize;
-                
-                // Draw tile
-                ctx.fillStyle = color;
-                ctx.fillRect(px, py, this.tileSize, this.tileSize);
-                
-                // Draw special markers
-                if (tile === TILES.PALACE) {
-                    ctx.fillStyle = '#fff';
-                    ctx.font = `${this.tileSize * 0.8}px Arial`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('👑', px + this.tileSize/2, py + this.tileSize/2);
+        const startTileX = Math.max(0, Math.floor(-this.offsetX / this.tileSize));
+        const startTileY = Math.max(0, Math.floor(-this.offsetY / this.tileSize));
+        const endTileX = Math.min(tileMap.width, 
+            Math.ceil((this.canvas.width - this.offsetX) / this.tileSize));
+        const endTileY = Math.min(tileMap.height,
+            Math.ceil((this.canvas.height - this.offsetY) / this.tileSize));
+
+        // Draw terrain
+        for (let y = startTileY; y < endTileY; y++) {
+            for (let x = startTileX; x < endTileX; x++) {
+                const tile = tileMap.getTile(x, y);
+                if (!tile) continue;
+
+                const screenX = x * this.tileSize + this.offsetX;
+                const screenY = y * this.tileSize + this.offsetY;
+
+                // Draw terrain
+                ctx.fillStyle = TERRAIN_COLORS[tile.terrain] || '#000';
+                ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+
+                // Draw building if present
+                if (tile.building) {
+                    this.drawBuilding(ctx, tile.building, screenX, screenY);
                 }
             }
         }
-        
-        // Draw grid lines at high zoom
-        if (this.zoom >= 2) {
-            ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-            ctx.lineWidth = 0.5;
-            
-            for (let y = startY; y <= endY; y++) {
+
+        // Draw grid lines if zoomed in enough
+        if (this.tileSize >= 15) {
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.lineWidth = 1;
+
+            for (let y = startTileY; y <= endTileY; y++) {
+                const screenY = y * this.tileSize + this.offsetY;
                 ctx.beginPath();
-                ctx.moveTo(startX * this.tileSize, y * this.tileSize);
-                ctx.lineTo(endX * this.tileSize, y * this.tileSize);
+                ctx.moveTo(startTileX * this.tileSize + this.offsetX, screenY);
+                ctx.lineTo(endTileX * this.tileSize + this.offsetX, screenY);
                 ctx.stroke();
             }
-            
-            for (let x = startX; x <= endX; x++) {
+
+            for (let x = startTileX; x <= endTileX; x++) {
+                const screenX = x * this.tileSize + this.offsetX;
                 ctx.beginPath();
-                ctx.moveTo(x * this.tileSize, startY * this.tileSize);
-                ctx.lineTo(x * this.tileSize, endY * this.tileSize);
+                ctx.moveTo(screenX, startTileY * this.tileSize + this.offsetY);
+                ctx.lineTo(screenX, endTileY * this.tileSize + this.offsetY);
                 ctx.stroke();
             }
         }
-        
-        ctx.restore();
+
+        // Draw placement preview
+        this.drawPlacementPreview(ctx);
+    }
+
+    drawBuilding(ctx, building, screenX, screenY) {
+        const buildingDef = BUILDINGS[building.type];
+        if (!buildingDef) return;
+
+        // Only draw on main tile for multi-tile buildings
+        if (building.mainTile === false) {
+            // Draw a continuation color
+            ctx.fillStyle = buildingDef.color;
+            ctx.fillRect(screenX + 1, screenY + 1, this.tileSize - 2, this.tileSize - 2);
+            return;
+        }
+
+        const size = this.tileSize;
+
+        // Draw building background
+        ctx.fillStyle = buildingDef.color;
+        ctx.fillRect(screenX + 1, screenY + 1, size - 2, size - 2);
+
+        // Draw icon if tile is big enough
+        if (this.tileSize >= 16) {
+            ctx.font = `${Math.floor(size * 0.6)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(buildingDef.icon, screenX + size/2, screenY + size/2);
+        }
+
+        // Draw border
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(screenX + 1, screenY + 1, size - 2, size - 2);
+    }
+
+    drawPlacementPreview(ctx) {
+        if (!this.game.toolManager || !this.game.toolManager.selectedTool) return;
+        if (this.hoverTileX < 0 || this.hoverTileY < 0) return;
+
+        const tileMap = this.game.tileMap;
+        if (!tileMap.isInBounds(this.hoverTileX, this.hoverTileY)) return;
+
+        const check = this.game.toolManager.canPlaceAt(this.hoverTileX, this.hoverTileY);
+        const building = this.game.toolManager.getSelectedTool();
+
+        const screenX = this.hoverTileX * this.tileSize + this.offsetX;
+        const screenY = this.hoverTileY * this.tileSize + this.offsetY;
+        const size = this.tileSize * (building ? building.size : 1);
+
+        // Draw preview rectangle
+        if (check.valid) {
+            ctx.fillStyle = 'rgba(76, 175, 80, 0.4)';  // Green
+            ctx.strokeStyle = '#4CAF50';
+        } else {
+            ctx.fillStyle = 'rgba(244, 67, 54, 0.4)';  // Red
+            ctx.strokeStyle = '#F44336';
+        }
+
+        ctx.fillRect(screenX, screenY, size, size);
+        ctx.lineWidth = 2;
+        ctx.strokeRect(screenX, screenY, size, size);
+
+        // Draw icon preview
+        if (building && this.tileSize >= 16) {
+            ctx.font = `${Math.floor(this.tileSize * 0.6)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.globalAlpha = 0.7;
+            ctx.fillStyle = '#fff';
+            ctx.fillText(building.icon, screenX + this.tileSize/2, screenY + this.tileSize/2);
+            ctx.globalAlpha = 1;
+        }
     }
 }
-
-window.GameCanvas = GameCanvas;

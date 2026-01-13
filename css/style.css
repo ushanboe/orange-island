@@ -1,9 +1,10 @@
-/* Island Kingdom - Main Styles */
+/* Island Kingdom - The Mad King - Styles */
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 html, body {
@@ -12,176 +13,165 @@ html, body {
     overflow: hidden;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #1a1a2e;
+    color: #fff;
     touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
 }
 
-#game-container {
-    width: 100%;
-    height: 100%;
-    position: relative;
-}
-
-#game-canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-    background: #0077be;
-}
-
-/* UI Overlay */
-#ui-overlay {
-    position: absolute;
+/* Header Stats Bar */
+#game-header {
+    position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-}
-
-#ui-overlay > * {
-    pointer-events: auto;
-}
-
-/* Top Bar */
-#top-bar {
+    right: 0;
+    height: 50px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
     display: flex;
     justify-content: space-around;
     align-items: center;
-    background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);
-    padding: 10px 15px;
-    color: white;
-    font-size: 14px;
-    gap: 10px;
-}
-
-#top-bar > div {
-    background: rgba(255,255,255,0.1);
-    padding: 5px 12px;
-    border-radius: 15px;
-    white-space: nowrap;
-}
-
-#funds { color: #ffd700; }
-#population { color: #90EE90; }
-#king-mood { color: #FFA500; }
-#date { color: #87CEEB; }
-
-/* Tweet Popup */
-#tweet-popup {
-    position: absolute;
-    top: 70px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: white;
-    border-radius: 15px;
-    padding: 15px 20px;
-    max-width: 350px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    animation: slideDown 0.3s ease-out;
+    padding: 0 10px;
     z-index: 100;
+    border-bottom: 2px solid #FFD700;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
-#tweet-popup::before {
-    content: '👑 The King tweets:';
-    display: block;
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+}
+
+.stat-icon {
+    font-size: 18px;
+}
+
+.stat-value {
+    font-size: 14px;
     font-weight: bold;
-    color: #1DA1F2;
-    margin-bottom: 8px;
-    font-size: 12px;
+    color: #FFD700;
 }
 
-#tweet-popup .tweet-content {
-    color: #333;
-    font-size: 16px;
-    line-height: 1.4;
-}
-
-#tweet-popup.hidden {
-    display: none;
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
+/* Game Canvas */
+#game-canvas {
+    position: fixed;
+    top: 50px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #1a5276;
+    cursor: crosshair;
 }
 
 /* Loading Screen */
 #loading-screen {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    color: white;
-    z-index: 1000;
-    transition: opacity 0.5s ease-out;
+    z-index: 9999;
+    transition: opacity 0.5s;
 }
 
-#loading-screen.hidden {
-    opacity: 0;
-    pointer-events: none;
+.loading-content {
+    text-align: center;
 }
 
-#loading-screen h1 {
-    font-size: 2.5em;
+.loading-content h1 {
+    font-size: 48px;
+    color: #FFD700;
+    text-shadow: 0 0 20px rgba(255,215,0,0.5);
     margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
-#loading-screen p {
-    font-size: 1.2em;
-    color: #888;
+.loading-content h2 {
+    font-size: 24px;
+    color: #e94560;
     margin-bottom: 30px;
 }
 
 .loading-bar {
-    width: 200px;
-    height: 6px;
+    width: 250px;
+    height: 8px;
     background: rgba(255,255,255,0.2);
-    border-radius: 3px;
+    border-radius: 4px;
+    margin: 0 auto 20px;
     overflow: hidden;
-    margin-bottom: 15px;
 }
 
 .loading-progress {
     width: 0%;
     height: 100%;
-    background: linear-gradient(90deg, #ffd700, #FFA500);
-    border-radius: 3px;
-    transition: width 0.3s ease-out;
+    background: linear-gradient(90deg, #FFD700, #e94560);
+    border-radius: 4px;
+    animation: loadingAnim 1.5s ease-in-out infinite;
 }
 
-#loading-status {
-    font-size: 0.9em !important;
-    color: #666 !important;
+@keyframes loadingAnim {
+    0% { width: 0%; margin-left: 0; }
+    50% { width: 100%; margin-left: 0; }
+    100% { width: 0%; margin-left: 100%; }
 }
 
-/* Responsive */
+.loading-content p {
+    color: #888;
+    font-style: italic;
+}
+
+/* Mobile Adjustments */
 @media (max-width: 600px) {
-    #top-bar {
-        font-size: 12px;
-        padding: 8px 10px;
+    #game-header {
+        height: 45px;
+        padding: 0 5px;
     }
-    
-    #top-bar > div {
-        padding: 4px 8px;
+
+    .stat {
+        padding: 3px 6px;
+        gap: 4px;
     }
-    
-    #tweet-popup {
-        max-width: 90%;
+
+    .stat-icon {
         font-size: 14px;
     }
+
+    .stat-value {
+        font-size: 11px;
+    }
+
+    #game-canvas {
+        top: 45px;
+    }
+
+    .loading-content h1 {
+        font-size: 32px;
+    }
+
+    .loading-content h2 {
+        font-size: 18px;
+    }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a2e;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #FFD700;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #ffc107;
 }

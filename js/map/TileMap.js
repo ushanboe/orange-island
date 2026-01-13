@@ -1,201 +1,219 @@
-/**
- * TileMap - Manages the game world grid
- */
+// TileMap - Manages the game world grid with terrain and buildings
 
-// Tile types
-const TILES = {
-    WATER_DEEP: 0,
-    WATER_SHALLOW: 1,
+export const TERRAIN = {
+    DEEP_WATER: 0,
+    WATER: 1,
     SAND: 2,
-    GRASS: 3,
-    FOREST: 4,
-    ROCK: 5,
-    MOUNTAIN: 6,
-    
-    // Zones (buildable)
-    RESIDENTIAL: 10,
-    COMMERCIAL: 11,
-    INDUSTRIAL: 12,
-    
-    // Infrastructure
-    ROAD: 20,
-    HARBOR: 21,
-    WALL: 22,
-    GATE: 23,
-    
-    // Special buildings
-    PALACE: 30,
-    MONUMENT_SMALL: 31,
-    MONUMENT_LARGE: 32,
-    STATUE: 33,
-    GOLF_COURSE: 34,
-    
-    // Services
-    POLICE: 40,
-    FIRE: 41,
-    HOSPITAL: 42,
-    SCHOOL: 43,
-    
-    // Power
-    POWER_PLANT: 50,
-    POWER_LINE: 51,
+    BEACH: 3,
+    GRASS: 4,
+    DIRT: 5,
+    FOREST: 6,
+    ROCK: 7,
+    MOUNTAIN: 8
 };
 
-// Tile colors for rendering
-const TILE_COLORS = {
-    [TILES.WATER_DEEP]: '#0055aa',
-    [TILES.WATER_SHALLOW]: '#0077cc',
-    [TILES.SAND]: '#f4d03f',
-    [TILES.GRASS]: '#27ae60',
-    [TILES.FOREST]: '#1e8449',
-    [TILES.ROCK]: '#7f8c8d',
-    [TILES.MOUNTAIN]: '#5d6d7e',
-    
-    [TILES.RESIDENTIAL]: '#3498db',
-    [TILES.COMMERCIAL]: '#9b59b6',
-    [TILES.INDUSTRIAL]: '#f39c12',
-    
-    [TILES.ROAD]: '#34495e',
-    [TILES.HARBOR]: '#8b4513',
-    [TILES.WALL]: '#c0392b',
-    [TILES.GATE]: '#e74c3c',
-    
-    [TILES.PALACE]: '#ffd700',
-    [TILES.MONUMENT_SMALL]: '#f1c40f',
-    [TILES.MONUMENT_LARGE]: '#d4ac0d',
-    [TILES.STATUE]: '#b7950b',
-    [TILES.GOLF_COURSE]: '#2ecc71',
-    
-    [TILES.POLICE]: '#2980b9',
-    [TILES.FIRE]: '#e74c3c',
-    [TILES.HOSPITAL]: '#ecf0f1',
-    [TILES.SCHOOL]: '#8e44ad',
-    
-    [TILES.POWER_PLANT]: '#f39c12',
-    [TILES.POWER_LINE]: '#95a5a6',
+export const TERRAIN_COLORS = {
+    [TERRAIN.DEEP_WATER]: '#1a5276',
+    [TERRAIN.WATER]: '#2980b9',
+    [TERRAIN.SAND]: '#f4d03f',
+    [TERRAIN.BEACH]: '#f9e79f',
+    [TERRAIN.GRASS]: '#27ae60',
+    [TERRAIN.DIRT]: '#8b7355',
+    [TERRAIN.FOREST]: '#1e8449',
+    [TERRAIN.ROCK]: '#7f8c8d',
+    [TERRAIN.MOUNTAIN]: '#5d6d7e'
 };
 
-class TileMap {
+export const TERRAIN_NAMES = {
+    [TERRAIN.DEEP_WATER]: 'deepwater',
+    [TERRAIN.WATER]: 'water',
+    [TERRAIN.SAND]: 'sand',
+    [TERRAIN.BEACH]: 'beach',
+    [TERRAIN.GRASS]: 'grass',
+    [TERRAIN.DIRT]: 'dirt',
+    [TERRAIN.FOREST]: 'forest',
+    [TERRAIN.ROCK]: 'rock',
+    [TERRAIN.MOUNTAIN]: 'mountain'
+};
+
+export class TileMap {
     constructor(width, height) {
         this.width = width;
         this.height = height;
-        
-        // Main tile data
-        this.tiles = new Uint8Array(width * height);
-        
-        // Zone density (0-4 for development level)
-        this.density = new Uint8Array(width * height);
-        
-        // Power grid (0 = no power, 1 = powered)
-        this.power = new Uint8Array(width * height);
-        
-        // Land value (0-255)
-        this.landValue = new Uint8Array(width * height);
-        
-        // Pollution level (0-255)
-        this.pollution = new Uint8Array(width * height);
-        
-        // Crime level (0-255)
-        this.crime = new Uint8Array(width * height);
-        
-        // Initialize all as deep water
-        this.tiles.fill(TILES.WATER_DEEP);
+        this.tiles = [];
+
+        // Initialize empty map
+        for (let y = 0; y < height; y++) {
+            this.tiles[y] = [];
+            for (let x = 0; x < width; x++) {
+                this.tiles[y][x] = {
+                    terrain: TERRAIN.WATER,
+                    building: null,
+                    population: 0,
+                    jobs: 0,
+                    pollution: 0,
+                    landValue: 0,
+                    powered: false,
+                    connected: false  // Connected to road network
+                };
+            }
+        }
     }
 
-    // Get index from coordinates
-    index(x, y) {
-        return y * this.width + x;
-    }
-
-    // Check if coordinates are valid
-    inBounds(x, y) {
+    // Check if coordinates are in bounds
+    isInBounds(x, y) {
         return x >= 0 && x < this.width && y >= 0 && y < this.height;
     }
 
     // Get tile at position
     getTile(x, y) {
-        if (!this.inBounds(x, y)) return TILES.WATER_DEEP;
-        return this.tiles[this.index(x, y)];
+        if (!this.isInBounds(x, y)) return null;
+        return this.tiles[y][x];
     }
 
-    // Set tile at position
-    setTile(x, y, tile) {
-        if (!this.inBounds(x, y)) return false;
-        this.tiles[this.index(x, y)] = tile;
-        return true;
+    // Set terrain at position
+    setTerrain(x, y, terrain) {
+        if (!this.isInBounds(x, y)) return;
+        this.tiles[y][x].terrain = terrain;
     }
 
-    // Get density at position
-    getDensity(x, y) {
-        if (!this.inBounds(x, y)) return 0;
-        return this.density[this.index(x, y)];
+    // Get terrain type name
+    getTileType(terrainValue) {
+        return TERRAIN_NAMES[terrainValue] || 'unknown';
     }
 
-    // Set density at position
-    setDensity(x, y, value) {
-        if (!this.inBounds(x, y)) return;
-        this.density[this.index(x, y)] = Math.max(0, Math.min(4, value));
+    // Get terrain color
+    getTerrainColor(terrain) {
+        return TERRAIN_COLORS[terrain] || '#000000';
     }
 
-    // Check if tile is water
-    isWater(x, y) {
+    // Set building at position
+    setBuilding(x, y, building) {
+        if (!this.isInBounds(x, y)) return;
+        this.tiles[y][x].building = building;
+    }
+
+    // Get building at position
+    getBuilding(x, y) {
+        if (!this.isInBounds(x, y)) return null;
+        return this.tiles[y][x].building;
+    }
+
+    // Check if tile has a building
+    hasBuilding(x, y) {
         const tile = this.getTile(x, y);
-        return tile === TILES.WATER_DEEP || tile === TILES.WATER_SHALLOW;
+        return tile && tile.building !== null;
     }
 
-    // Check if tile is land (buildable terrain)
-    isLand(x, y) {
-        const tile = this.getTile(x, y);
-        return tile >= TILES.SAND && tile <= TILES.ROCK;
-    }
-
-    // Check if tile is buildable
+    // Check if tile is buildable (land, not water)
     isBuildable(x, y) {
         const tile = this.getTile(x, y);
-        return tile === TILES.GRASS || tile === TILES.SAND;
+        if (!tile) return false;
+        // Can't build on deep water or regular water
+        return tile.terrain !== TERRAIN.DEEP_WATER && 
+               tile.terrain !== TERRAIN.WATER;
     }
 
-    // Check if tile is coastal (land next to water)
-    isCoastal(x, y) {
-        if (!this.isLand(x, y)) return false;
-        
-        const neighbors = [
-            [x-1, y], [x+1, y], [x, y-1], [x, y+1]
-        ];
-        
-        return neighbors.some(([nx, ny]) => this.isWater(nx, ny));
-    }
-
-    // Get all neighbors of a tile
-    getNeighbors(x, y, includeDiagonal = false) {
-        const neighbors = [
-            [x-1, y], [x+1, y], [x, y-1], [x, y+1]
-        ];
-        
-        if (includeDiagonal) {
-            neighbors.push(
-                [x-1, y-1], [x+1, y-1], [x-1, y+1], [x+1, y+1]
-            );
+    // Count buildings of a specific type
+    countBuildings(buildingType) {
+        let count = 0;
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                const building = this.tiles[y][x].building;
+                if (building && building.type === buildingType) {
+                    // Only count main tiles for multi-tile buildings
+                    if (building.mainTile !== false) {
+                        count++;
+                    }
+                }
+            }
         }
-        
-        return neighbors.filter(([nx, ny]) => this.inBounds(nx, ny));
+        return count;
     }
 
-    // Count neighbors of a specific type
-    countNeighbors(x, y, tileType, includeDiagonal = false) {
-        return this.getNeighbors(x, y, includeDiagonal)
-            .filter(([nx, ny]) => this.getTile(nx, ny) === tileType)
-            .length;
+    // Get all buildings of a type
+    getBuildingsOfType(buildingType) {
+        const buildings = [];
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                const building = this.tiles[y][x].building;
+                if (building && building.type === buildingType && building.mainTile !== false) {
+                    buildings.push({ x, y, building });
+                }
+            }
+        }
+        return buildings;
     }
 
-    // Get color for a tile
-    getTileColor(x, y) {
-        const tile = this.getTile(x, y);
-        return TILE_COLORS[tile] || '#ff00ff'; // Magenta for unknown
+    // Get all tiles with buildings
+    getAllBuildings() {
+        const buildings = [];
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                const building = this.tiles[y][x].building;
+                if (building && building.mainTile !== false) {
+                    buildings.push({ x, y, building });
+                }
+            }
+        }
+        return buildings;
+    }
+
+    // Calculate total wall coverage (for immigration effects)
+    getWallCoverage() {
+        const wallCount = this.countBuildings('wall');
+        // Estimate perimeter based on map size
+        const estimatedPerimeter = (this.width + this.height) * 2;
+        return Math.min(1, wallCount / estimatedPerimeter);
+    }
+
+    // Find coastal tiles (for port placement)
+    getCoastalTiles() {
+        const coastal = [];
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                const tile = this.tiles[y][x];
+                if (tile.terrain === TERRAIN.BEACH || tile.terrain === TERRAIN.SAND) {
+                    // Check if adjacent to water
+                    const neighbors = this.getNeighbors(x, y);
+                    const nearWater = neighbors.some(n => 
+                        n.terrain === TERRAIN.WATER || n.terrain === TERRAIN.DEEP_WATER
+                    );
+                    if (nearWater) {
+                        coastal.push({ x, y, tile });
+                    }
+                }
+            }
+        }
+        return coastal;
+    }
+
+    // Get neighboring tiles
+    getNeighbors(x, y) {
+        const neighbors = [];
+        const dirs = [[-1,0], [1,0], [0,-1], [0,1]];
+        for (const [dx, dy] of dirs) {
+            const tile = this.getTile(x + dx, y + dy);
+            if (tile) {
+                neighbors.push(tile);
+            }
+        }
+        return neighbors;
+    }
+
+    // Serialize map for saving
+    serialize() {
+        return {
+            width: this.width,
+            height: this.height,
+            tiles: this.tiles
+        };
+    }
+
+    // Load map from saved data
+    static deserialize(data) {
+        const map = new TileMap(data.width, data.height);
+        map.tiles = data.tiles;
+        return map;
     }
 }
-
-// Export to global scope
-window.TILES = TILES;
-window.TILE_COLORS = TILE_COLORS;
-window.TileMap = TileMap;
