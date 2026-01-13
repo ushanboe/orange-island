@@ -1,12 +1,21 @@
 import { Random } from '../utils/Random.js';
+import { TileMap } from './TileMap.js';
 
 /**
  * IslandGenerator - Creates procedural island terrain
  */
 export class IslandGenerator {
-    constructor(tileMap, random) {
-        this.map = tileMap;
-        this.random = random || new Random();
+    constructor(widthOrTileMap, heightOrRandom, random) {
+        // Support both: (width, height, random) and (tileMap, random)
+        if (typeof widthOrTileMap === 'number') {
+            // Called with (width, height, random)
+            this.map = new TileMap(widthOrTileMap, heightOrRandom);
+            this.random = random || new Random();
+        } else {
+            // Called with (tileMap, random)
+            this.map = widthOrTileMap;
+            this.random = heightOrRandom || new Random();
+        }
     }
 
     // Main generation method
