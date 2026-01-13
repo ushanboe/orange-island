@@ -608,7 +608,7 @@ export class Game {
 
     // Add tariff button to toolbar
     addTariffButton() {
-        const toolbar = document.querySelector('.toolbar');
+        const toolbar = document.querySelector('#toolbar');
         if (!toolbar) return;
 
         // Create tariff button
@@ -619,7 +619,7 @@ export class Game {
         tariffBtn.addEventListener('click', () => this.tariffUI.toggle());
 
         // Insert before the last buttons
-        const categoryBtns = toolbar.querySelector('.category-buttons');
+        const categoryBtns = toolbar.querySelector('.toolbar-categories');
         if (categoryBtns) {
             categoryBtns.appendChild(tariffBtn);
         } else {
