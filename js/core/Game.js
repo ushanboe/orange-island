@@ -8,6 +8,7 @@ import { ToolManager } from '../buildings/ToolManager.js';
 import { BUILDINGS } from '../buildings/Buildings.js';
 import { TariffSystem } from '../economy/TariffSystem.js';
 import { TariffUI } from '../ui/TariffUI.js';
+import { DevelopmentManager } from '../simulation/Development.js';
 
 export class Game {
     constructor() {
@@ -19,7 +20,8 @@ export class Game {
         this.maxPopulation = 0;
         this.month = 1;
         this.year = 1;
-        this.kingMood = 'happy';  // happy, neutral, angry, furious
+        this.kingMood = 50;  // 0-100 numeric for development system
+        this.kingMoodText = 'happy';  // happy, neutral, angry, furious
         this.kingEgo = 50;  // 0-100
         this.paused = false;
 
@@ -42,6 +44,9 @@ export class Game {
         // Tariff system
         this.tariffSystem = null;
         this.tariffUI = null;
+
+        // Development system
+        this.developmentManager = null;
 
         // Timing
         this.lastUpdate = 0;
@@ -78,6 +83,9 @@ export class Game {
         this.tariffSystem = new TariffSystem(this);
         this.tariffUI = new TariffUI(this);
 
+        // Initialize development system
+        this.developmentManager = new DevelopmentManager(this);
+
         // Add tariff button to toolbar
         this.addTariffButton();
 
@@ -102,11 +110,17 @@ export class Game {
     setupEvents() {
         // Building events
         this.events.on('buildingPlaced', (data) => {
+            // Track zone development
+            if (data.type === 'residential' || data.type === 'commercial' || data.type === 'industrial') {
+                this.developmentManager.initZone(data.x, data.y, data.type);
+            }
             this.updateUI();
             this.events.emit('treasuryChanged', this.treasury);
         });
 
         this.events.on('buildingDemolished', (data) => {
+            // Remove zone tracking
+            this.developmentManager.removeZone(data.x, data.y);
             this.updateUI();
             this.events.emit('treasuryChanged', this.treasury);
         });
@@ -289,7 +303,63 @@ export class Game {
             this.tariffSystem.render(ctx, this.canvas.offsetX, this.canvas.offsetY, this.canvas.tileSize);
         }
 
+        // Render development animations
+        if (this.developmentManager && this.canvas) {
+            this.renderDevelopmentAnimations();
+        }
+
         requestAnimationFrame(() => this.gameLoop());
+    }
+
+    renderDevelopmentAnimations() {
+        const ctx = this.canvas.ctx;
+        const animations = this.developmentManager.getAnimations();
+        const now = Date.now();
+
+        for (const anim of animations) {
+            const progress = (now - anim.startTime) / anim.duration;
+            if (progress >= 1) continue;
+
+            const screenX = anim.x * this.canvas.tileSize + this.canvas.offsetX;
+            const screenY = anim.y * this.canvas.tileSize + this.canvas.offsetY;
+            const size = this.canvas.tileSize;
+
+            ctx.save();
+
+            if (anim.type === 'construction') {
+                // Construction sparkle effect
+                ctx.globalAlpha = 1 - progress;
+                ctx.fillStyle = '#FFD700';
+                for (let i = 0; i < 5; i++) {
+                    const angle = (progress * Math.PI * 4) + (i * Math.PI * 2 / 5);
+                    const dist = progress * size * 0.5;
+                    const px = screenX + size/2 + Math.cos(angle) * dist;
+                    const py = screenY + size/2 + Math.sin(angle) * dist;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 3 * (1 - progress), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                // Construction icon
+                ctx.font = `${size * 0.6}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🏗️', screenX + size/2, screenY + size/2 - progress * 20);
+            } else if (anim.type === 'levelup') {
+                // Level up effect - rising stars
+                ctx.globalAlpha = 1 - progress;
+                ctx.font = `${size * 0.4}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText('⬆️✨', screenX + size/2, screenY + size/2 - progress * 30);
+            } else if (anim.type === 'decline') {
+                // Decline effect - falling
+                ctx.globalAlpha = 1 - progress;
+                ctx.font = `${size * 0.4}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText('📉', screenX + size/2, screenY + size/2 + progress * 20);
+            }
+
+            ctx.restore();
+        }
     }
 
     tick() {
@@ -299,6 +369,13 @@ export class Game {
             this.month = 1;
             this.year++;
             this.yearlyUpdate();
+        }
+
+        // Update development system
+        if (this.developmentManager) {
+            const devStats = this.developmentManager.update();
+            // Use development-based population
+            this.population = devStats.totalPopulation;
         }
 
         // Simulate
@@ -313,22 +390,23 @@ export class Game {
     simulatePopulation() {
         // Count residential zones
         const residentialCount = this.tileMap.countBuildings('residential');
-        this.maxPopulation = residentialCount * 10;
+        this.maxPopulation = residentialCount * 25;  // Max based on fully developed zones
 
-        // Population grows towards max
-        if (this.population < this.maxPopulation) {
-            // Growth affected by walls (immigration)
-            const wallCoverage = this.tileMap.getWallCoverage();
-            const immigrationRate = 1 - (wallCoverage * 0.8);  // Walls reduce immigration
-            const growth = Math.ceil(Math.random() * 3 * immigrationRate);
-            this.population = Math.min(this.maxPopulation, this.population + growth);
+        // If no development manager, use simple growth
+        if (!this.developmentManager || this.developmentManager.development.size === 0) {
+            if (this.population < this.maxPopulation) {
+                const wallCoverage = this.tileMap.getWallCoverage?.() || 0;
+                const immigrationRate = 1 - (wallCoverage * 0.8);
+                const growth = Math.ceil(Math.random() * 3 * immigrationRate);
+                this.population = Math.min(this.maxPopulation, this.population + growth);
+            }
         }
 
         // Random king comments about population
         if (Math.random() < 0.05) {
             if (this.population > 100) {
                 this.kingTweet("Look at all these people! They LOVE me! 👥❤️");
-            } else if (this.population < 20) {
+            } else if (this.population < 20 && residentialCount > 0) {
                 this.kingTweet("We need more people! Where is everyone?! 😤");
             }
         }
@@ -343,11 +421,27 @@ export class Game {
         // Tax income from population
         const taxIncome = Math.floor(this.population * (this.taxRate / 100) * 2);
 
-        // Commercial income
-        const commercialIncome = commercialCount * 5;
+        // Commercial income (based on development level)
+        let commercialIncome = commercialCount * 5;
+        if (this.developmentManager) {
+            for (const dev of this.developmentManager.development.values()) {
+                if (dev.type === 'commercial') {
+                    commercialIncome += dev.level * 3;
+                }
+            }
+        }
 
-        // Tariff income from ports (now handled by TariffSystem)
-        // Base port income + tariff system monthly revenue
+        // Industrial income
+        let industrialIncome = industrialCount * 3;
+        if (this.developmentManager) {
+            for (const dev of this.developmentManager.development.values()) {
+                if (dev.type === 'industrial') {
+                    industrialIncome += dev.level * 4;
+                }
+            }
+        }
+
+        // Tariff income from ports
         const baseTariffIncome = portCount * 10;
         const tariffSystemRevenue = this.tariffSystem ? Math.floor(this.tariffSystem.stats.monthlyRevenue / 12) : 0;
         const tariffIncome = baseTariffIncome + tariffSystemRevenue;
@@ -357,7 +451,7 @@ export class Game {
         const towerCount = this.tileMap.countBuildings('tower');
         const tourismIncome = (statueCount * 5) + (towerCount * 50);
 
-        this.monthlyIncome = taxIncome + commercialIncome + tariffIncome + tourismIncome;
+        this.monthlyIncome = taxIncome + commercialIncome + industrialIncome + tariffIncome + tourismIncome;
 
         // Calculate expenses
         const roadCount = this.tileMap.countBuildings('road');
@@ -406,11 +500,14 @@ export class Game {
         if (this.population > 200) moodScore += 15;
         else if (this.population < 50) moodScore -= 10;
 
-        // Determine mood
-        if (moodScore >= 70) this.kingMood = 'happy';
-        else if (moodScore >= 40) this.kingMood = 'neutral';
-        else if (moodScore >= 20) this.kingMood = 'angry';
-        else this.kingMood = 'furious';
+        // Store numeric mood for development system
+        this.kingMood = Math.max(0, Math.min(100, moodScore));
+
+        // Determine mood text
+        if (moodScore >= 70) this.kingMoodText = 'happy';
+        else if (moodScore >= 40) this.kingMoodText = 'neutral';
+        else if (moodScore >= 20) this.kingMoodText = 'angry';
+        else this.kingMoodText = 'furious';
     }
 
     yearlyUpdate() {
@@ -432,6 +529,8 @@ export class Game {
             { msg: "Tourists came to see my beautiful statues! +$300 📸", effect: () => this.treasury += 300 },
             { msg: "Storm damaged some roads! -$200 🌧️", effect: () => this.treasury -= 200 },
             { msg: "The people threw a parade for ME! Ego +10 🎊", effect: () => this.kingEgo = Math.min(100, this.kingEgo + 10) },
+            { msg: "New businesses are BOOMING! Commercial growth! 📈", effect: () => {} },
+            { msg: "Factories working overtime! Industrial POWER! 🏭", effect: () => {} },
         ];
 
         const event = events[Math.floor(Math.random() * events.length)];
@@ -452,7 +551,7 @@ export class Game {
             angry: '😠',
             furious: '🤬'
         };
-        document.getElementById('king-mood').textContent = moodEmojis[this.kingMood] || '👑';
+        document.getElementById('king-mood').textContent = moodEmojis[this.kingMoodText] || '👑';
     }
 
     // Save game
@@ -465,7 +564,8 @@ export class Game {
             kingEgo: this.kingEgo,
             taxRate: this.taxRate,
             tariffRate: this.tariffRate,
-            tileMap: this.tileMap.serialize()
+            tileMap: this.tileMap.serialize(),
+            development: this.developmentManager?.serialize() || {}
         };
         localStorage.setItem('islandKingdom_save', JSON.stringify(saveData));
         this.kingTweet("Game SAVED! The best save ever! 💾");
@@ -489,6 +589,9 @@ export class Game {
             this.taxRate = saveData.taxRate;
             this.tariffRate = saveData.tariffRate;
             this.tileMap = TileMap.deserialize(saveData.tileMap);
+            if (saveData.development) {
+                this.developmentManager.deserialize(saveData.development);
+            }
             this.updateUI();
             this.kingTweet("Game LOADED! We're BACK! 🎮");
             return true;
@@ -497,6 +600,7 @@ export class Game {
             return false;
         }
     }
+
     // Alias for tariff system compatibility
     showKingTweet(message) {
         this.kingTweet(message);

@@ -1,5 +1,5 @@
 // Service Worker for Island Kingdom PWA
-const CACHE_NAME = 'island-kingdom-v6';
+const CACHE_NAME = 'island-kingdom-v7';
 
 const ASSETS_TO_CACHE = [
     './',
@@ -17,6 +17,7 @@ const ASSETS_TO_CACHE = [
     './js/buildings/ToolManager.js',
     './js/economy/Boat.js',
     './js/economy/TariffSystem.js',
+    './js/simulation/Development.js',
     './js/utils/Random.js',
     './assets/icon-192.png',
     './assets/icon-512.png',
@@ -25,33 +26,22 @@ const ASSETS_TO_CACHE = [
 
 // Install event - cache assets
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing service worker v6...');
-    // Force the new service worker to activate immediately
+    console.log('[SW] Installing service worker v7...');
     self.skipWaiting();
-
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('[SW] Caching assets...');
-                // Cache files one by one to avoid failures
-                return Promise.allSettled(
-                    ASSETS_TO_CACHE.map(url =>
-                        cache.add(url).catch(err => console.warn('[SW] Failed to cache:', url, err))
-                    )
-                );
-            })
-            .then(() => {
-                console.log('[SW] Caching complete');
-            })
-            .catch((err) => {
-                console.error('[SW] Cache failed:', err);
+                return cache.addAll(ASSETS_TO_CACHE).catch(err => {
+                    console.warn('[SW] Some assets failed to cache:', err);
+                });
             })
     );
 });
 
-// Activate event - clean old caches and take control
+// Activate event - clean old caches
 self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating service worker...');
+    console.log('[SW] Activating service worker v7...');
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
@@ -63,11 +53,9 @@ self.addEventListener('activate', (event) => {
                 })
             );
         }).then(() => {
-            // Take control of all clients immediately
             return self.clients.claim();
         })
     );
-    console.log('[SW] Service worker activated');
 });
 
 // Fetch event - network first, fallback to cache
@@ -75,7 +63,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
         fetch(event.request)
             .then((response) => {
-                // Clone the response and cache it
+                // Clone and cache successful responses
                 if (response && response.status === 200) {
                     const responseClone = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
