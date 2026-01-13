@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>Island Kingdom - The Mad King's Realm</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="ui-overlay">
+            <div id="top-bar">
+                <div id="funds">💰 $10,000</div>
+                <div id="population">👥 0</div>
+                <div id="king-mood">👑 😊</div>
+                <div id="date">Year 1, Month 1</div>
+            </div>
+            <div id="tweet-popup" class="hidden">
+                <div class="tweet-content"></div>
+            </div>
+        </div>
+        <div id="loading-screen">
+            <h1>🏝️ Island Kingdom</h1>
+            <p>The Mad King's Realm</p>
+            <div class="loading-bar"><div class="loading-progress"></div></div>
+            <p id="loading-status">Loading...</p>
+        </div>
+    </div>
+    
+    <!-- Core Scripts -->
+    <script src="js/utils/Random.js"></script>
+    <script src="js/core/EventEmitter.js"></script>
+    <script src="js/map/TileMap.js"></script>
+    <script src="js/map/IslandGenerator.js"></script>
+    <script src="js/ui/GameCanvas.js"></script>
+    <script src="js/core/Game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
