@@ -471,3 +471,23 @@ input[type="range"]::-moz-range-thumb {
         flex-direction: column;
     }
 }
+
+/* Fix tariff panel scrolling */
+.tariff-panel .panel-content {
+    overflow-y: auto !important;
+    max-height: calc(85vh - 80px);
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure panel is not too tall on small screens */
+@media (max-height: 600px) {
+    .tariff-panel {
+        max-height: 95vh;
+        top: 2.5vh;
+        transform: translateX(-50%);
+    }
+    
+    .tariff-panel .panel-content {
+        max-height: calc(95vh - 70px);
+    }
+}
