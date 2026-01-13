@@ -9,6 +9,7 @@ import { BUILDINGS } from '../buildings/Buildings.js';
 import { TariffSystem } from '../economy/TariffSystem.js';
 import { TariffUI } from '../ui/TariffUI.js';
 import { DevelopmentManager } from '../simulation/Development.js';
+import { DebugPanel } from '../ui/DebugPanel.js';
 
 export class Game {
     constructor() {
@@ -82,6 +83,7 @@ export class Game {
         // Initialize tariff system
         this.tariffSystem = new TariffSystem(this);
         this.tariffUI = new TariffUI(this);
+        this.debugPanel = new DebugPanel(this);
 
         // Initialize development system
         this.developmentManager = new DevelopmentManager(this);
