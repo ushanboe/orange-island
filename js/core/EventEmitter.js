@@ -1,7 +1,7 @@
 /**
  * EventEmitter - Simple pub/sub event system
  */
-class EventEmitter {
+export class EventEmitter {
     constructor() {
         this.events = {};
     }
@@ -38,5 +38,3 @@ class EventEmitter {
         return this.on(event, wrapper);
     }
 }
-
-window.EventEmitter = EventEmitter;

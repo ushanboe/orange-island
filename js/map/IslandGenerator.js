@@ -1,7 +1,9 @@
+import { Random } from '../utils/Random.js';
+
 /**
  * IslandGenerator - Creates procedural island terrain
  */
-class IslandGenerator {
+export class IslandGenerator {
     constructor(tileMap, random) {
         this.map = tileMap;
         this.random = random || new Random();

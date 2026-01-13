@@ -1,7 +1,7 @@
 /**
  * Random - Seeded random number generator for reproducible maps
  */
-class Random {
+export class Random {
     constructor(seed = Date.now()) {
         this.seed = seed;
         this.current = seed;
@@ -16,39 +16,31 @@ class Random {
     }
 
     // Random integer between min and max (inclusive)
-    int(min, max) {
+    nextInt(min, max) {
         return Math.floor(this.next() * (max - min + 1)) + min;
     }
 
     // Random float between min and max
-    float(min, max) {
+    nextFloat(min, max) {
         return this.next() * (max - min) + min;
     }
 
     // Random boolean with optional probability
-    bool(probability = 0.5) {
+    nextBool(probability = 0.5) {
         return this.next() < probability;
     }
 
     // Pick random element from array
     pick(array) {
-        return array[this.int(0, array.length - 1)];
+        return array[this.nextInt(0, array.length - 1)];
     }
 
     // Shuffle array in place
     shuffle(array) {
         for (let i = array.length - 1; i > 0; i--) {
-            const j = this.int(0, i);
+            const j = this.nextInt(0, i);
             [array[i], array[j]] = [array[j], array[i]];
         }
         return array;
     }
-
-    // Reset to original seed
-    reset() {
-        this.current = this.seed;
-    }
 }
-
-// Global instance
-window.Random = Random;
