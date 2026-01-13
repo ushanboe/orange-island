@@ -1,5 +1,5 @@
 import { Random } from '../utils/Random.js';
-import { TileMap } from './TileMap.js';
+import { TileMap, TERRAIN } from './TileMap.js';
 
 /**
  * IslandGenerator - Creates procedural island terrain
@@ -152,17 +152,17 @@ export class IslandGenerator {
                 let tile;
                 
                 if (h < 0.15) {
-                    tile = TILES.WATER_DEEP;
+                    tile = TERRAIN.DEEP_WATER;
                 } else if (h < 0.25) {
-                    tile = TILES.WATER_SHALLOW;
+                    tile = TERRAIN.WATER;
                 } else if (h < 0.32) {
-                    tile = TILES.SAND;
+                    tile = TERRAIN.SAND;
                 } else if (h < 0.7) {
-                    tile = TILES.GRASS;
+                    tile = TERRAIN.GRASS;
                 } else if (h < 0.85) {
-                    tile = TILES.ROCK;
+                    tile = TERRAIN.ROCK;
                 } else {
-                    tile = TILES.MOUNTAIN;
+                    tile = TERRAIN.MOUNTAIN;
                 }
                 
                 this.map.setTile(x, y, tile);
@@ -181,9 +181,9 @@ export class IslandGenerator {
                 const tile = this.map.getTile(x, y);
                 
                 // If grass and next to water, maybe make it sand
-                if (tile === TILES.GRASS && this.map.isCoastal(x, y)) {
+                if (tile === TERRAIN.GRASS && this.map.isCoastal(x, y)) {
                     if (this.random.bool(0.7)) {
-                        changes.push([x, y, TILES.SAND]);
+                        changes.push([x, y, TERRAIN.SAND]);
                     }
                 }
             }
@@ -200,11 +200,11 @@ export class IslandGenerator {
         
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                if (this.map.getTile(x, y) === TILES.GRASS) {
+                if (this.map.getTile(x, y) === TERRAIN.GRASS) {
                     // Use noise for forest clusters
                     const forestNoise = this.noise2D(x * 0.08, y * 0.08);
                     if (forestNoise > 0.55 && this.random.bool(0.6)) {
-                        this.map.setTile(x, y, TILES.FOREST);
+                        this.map.setTile(x, y, TERRAIN.FOREST);
                     }
                 }
             }
@@ -223,14 +223,14 @@ export class IslandGenerator {
                     const x = centerX + dx;
                     const y = centerY + dy;
                     
-                    if (this.map.getTile(x, y) === TILES.GRASS) {
+                    if (this.map.getTile(x, y) === TERRAIN.GRASS) {
                         // Clear 3x3 area for palace
                         for (let py = -1; py <= 1; py++) {
                             for (let px = -1; px <= 1; px++) {
-                                this.map.setTile(x + px, y + py, TILES.GRASS);
+                                this.map.setTile(x + px, y + py, TERRAIN.GRASS);
                             }
                         }
-                        this.map.setTile(x, y, TILES.PALACE);
+                        this.map.setTile(x, y, TERRAIN.PALACE);
                         console.log(`Palace placed at ${x}, ${y}`);
                         return;
                     }

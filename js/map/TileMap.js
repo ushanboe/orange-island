@@ -9,7 +9,8 @@ export const TERRAIN = {
     DIRT: 5,
     FOREST: 6,
     ROCK: 7,
-    MOUNTAIN: 8
+    MOUNTAIN: 8,
+    PALACE: 9
 };
 
 export const TERRAIN_COLORS = {
@@ -21,7 +22,8 @@ export const TERRAIN_COLORS = {
     [TERRAIN.DIRT]: '#8b7355',
     [TERRAIN.FOREST]: '#1e8449',
     [TERRAIN.ROCK]: '#7f8c8d',
-    [TERRAIN.MOUNTAIN]: '#5d6d7e'
+    [TERRAIN.MOUNTAIN]: '#5d6d7e',
+    [TERRAIN.PALACE]: '#ffd700'
 };
 
 export const TERRAIN_NAMES = {
@@ -33,7 +35,8 @@ export const TERRAIN_NAMES = {
     [TERRAIN.DIRT]: 'dirt',
     [TERRAIN.FOREST]: 'forest',
     [TERRAIN.ROCK]: 'rock',
-    [TERRAIN.MOUNTAIN]: 'mountain'
+    [TERRAIN.MOUNTAIN]: 'mountain',
+    [TERRAIN.PALACE]: 'palace'
 };
 
 export class TileMap {
