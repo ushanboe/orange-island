@@ -186,7 +186,7 @@ export class DevelopmentManager {
         for (let dx = -2; dx <= 2; dx++) {
             for (let dy = -2; dy <= 2; dy++) {
                 const tile = this.map.getTile(x + dx, y + dy);
-                if (tile && tile.building === 'road') return true;
+                if (tile && tile.building && tile.building.type === 'road') return true;
             }
         }
         return false;

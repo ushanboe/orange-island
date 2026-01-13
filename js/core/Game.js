@@ -17,6 +17,7 @@ export class Game {
 
         // Game state
         this.treasury = 10000;
+        this.frameCount = 0;
         this.population = 0;
         this.maxPopulation = 0;
         this.month = 1;
@@ -113,8 +114,9 @@ export class Game {
         // Building events
         this.events.on('buildingPlaced', (data) => {
             // Track zone development
-            if (data.type === 'residential' || data.type === 'commercial' || data.type === 'industrial') {
-                this.developmentManager.initZone(data.x, data.y, data.type);
+            const buildingType = data.building?.id || data.building;
+            if (buildingType === 'residential' || buildingType === 'commercial' || buildingType === 'industrial') {
+                this.developmentManager.initZone(data.tileX, data.tileY, buildingType);
             }
             this.updateUI();
             this.events.emit('treasuryChanged', this.treasury);
@@ -122,7 +124,7 @@ export class Game {
 
         this.events.on('buildingDemolished', (data) => {
             // Remove zone tracking
-            this.developmentManager.removeZone(data.x, data.y);
+            this.developmentManager.removeZone(data.tileX, data.tileY);
             this.updateUI();
             this.events.emit('treasuryChanged', this.treasury);
         });
@@ -275,6 +277,7 @@ export class Game {
     }
 
     start() {
+        this.running = true;
         this.lastUpdate = performance.now();
         this.lastTick = this.lastUpdate;
         this.gameLoop();
@@ -284,6 +287,7 @@ export class Game {
         const now = performance.now();
         const delta = now - this.lastUpdate;
         this.lastUpdate = now;
+        this.frameCount++;
 
         // Game tick (simulation)
         if (!this.paused && now - this.lastTick >= this.tickInterval) {

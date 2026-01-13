@@ -94,7 +94,7 @@ export class TariffSystem {
         for (let y = 0; y < map.height; y++) {
             for (let x = 0; x < map.width; x++) {
                 const tile = map.getTile(x, y);
-                if (tile && tile.building === 'port') {
+                if (tile && tile.building && tile.building.type === 'port') {
                     count++;
                 }
             }
@@ -110,7 +110,7 @@ export class TariffSystem {
         for (let y = 0; y < map.height; y++) {
             for (let x = 0; x < map.width; x++) {
                 const tile = map.getTile(x, y);
-                if (tile && tile.building === 'port') {
+                if (tile && tile.building && tile.building.type === 'port') {
                     ports.push({ x, y });
                 }
             }
