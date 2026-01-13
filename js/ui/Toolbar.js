@@ -22,6 +22,8 @@ export class Toolbar {
             <div class="toolbar-categories">
                 <button class="cat-btn" data-category="zones" title="Zones">🏘️</button>
                 <button class="cat-btn" data-category="infrastructure" title="Infrastructure">🛤️</button>
+                <button class="cat-btn" data-category="power" title="Power">⚡</button>
+                <button class="cat-btn" data-category="energy" title="Oil & Energy">🛢️</button>
                 <button class="cat-btn" data-category="special" title="Monuments">👑</button>
                 <button class="cat-btn" data-category="demolish" title="Demolish">🚜</button>
             </div>
@@ -64,6 +66,7 @@ export class Toolbar {
                 display: flex;
                 justify-content: center;
                 gap: 8px;
+                flex-wrap: wrap;
             }
 
             .cat-btn {
@@ -132,6 +135,13 @@ export class Toolbar {
                 font-size: 24px;
             }
 
+            .tool-btn .secondary-icon {
+                font-size: 12px;
+                position: absolute;
+                bottom: 2px;
+                right: 2px;
+            }
+
             .tool-btn .cost {
                 font-size: 10px;
                 color: #FFD700;
@@ -166,9 +176,9 @@ export class Toolbar {
             /* Mobile adjustments */
             @media (max-width: 600px) {
                 .cat-btn {
-                    width: 44px;
-                    height: 44px;
-                    font-size: 20px;
+                    width: 40px;
+                    height: 40px;
+                    font-size: 18px;
                 }
 
                 .tool-btn {
@@ -241,8 +251,13 @@ export class Toolbar {
                 btn.classList.add('cannot-afford');
             }
 
+            // Show secondary icon if available (for power plants, oil buildings)
+            const secondaryIcon = building.secondaryIcon ? 
+                `<span class="secondary-icon">${building.secondaryIcon}</span>` : '';
+
             btn.innerHTML = `
                 <span class="icon">${building.icon}</span>
+                ${secondaryIcon}
                 <span class="cost">$${building.cost}</span>
             `;
 

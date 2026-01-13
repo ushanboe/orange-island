@@ -4,6 +4,8 @@
 export const BUILDING_CATEGORIES = {
     ZONES: 'zones',
     INFRASTRUCTURE: 'infrastructure',
+    POWER: 'power',
+    ENERGY: 'energy',
     SPECIAL: 'special',
     DEMOLISH: 'demolish'
 };
@@ -70,7 +72,8 @@ export const BUILDINGS = {
         effects: {
             connectivity: 1
         },
-        canBuildOn: ['grass', 'dirt', 'sand']
+        canBuildOn: ['grass', 'dirt', 'sand'],
+        isRoad: true  // Flag for auto-tiling
     },
     wall: {
         id: 'wall',
@@ -102,6 +105,114 @@ export const BUILDINGS = {
         },
         canBuildOn: ['beach', 'sand'],
         mustBeNearWater: true
+    },
+
+    // === POWER ===
+    coalPlant: {
+        id: 'coalPlant',
+        name: 'Coal Power Plant',
+        description: 'Beautiful clean coal! The best energy!',
+        category: BUILDING_CATEGORIES.POWER,
+        cost: 3000,
+        size: 4,
+        color: '#37474F',  // Dark blue-gray
+        icon: '🏭',
+        secondaryIcon: '⚡',
+        effects: {
+            power: 100,
+            pollution: 10,
+            jobs: 20
+        },
+        canBuildOn: ['grass', 'dirt']
+    },
+    nuclearPlant: {
+        id: 'nuclearPlant',
+        name: 'Nuclear Power Plant',
+        description: 'Tremendous power! Very safe, believe me!',
+        category: BUILDING_CATEGORIES.POWER,
+        cost: 10000,
+        size: 4,
+        color: '#7B1FA2',  // Purple
+        icon: '☢️',
+        secondaryIcon: '⚡',
+        effects: {
+            power: 500,
+            pollution: 2,
+            jobs: 50,
+            meltdownRisk: 1
+        },
+        canBuildOn: ['grass', 'dirt']
+    },
+    powerLine: {
+        id: 'powerLine',
+        name: 'Power Line',
+        description: 'Carries electricity across the kingdom',
+        category: BUILDING_CATEGORIES.POWER,
+        cost: 5,
+        size: 1,
+        color: '#FFC107',  // Amber
+        icon: '⚡',
+        effects: {
+            powerTransmission: 1
+        },
+        canBuildOn: ['grass', 'dirt', 'sand'],
+        isPowerLine: true  // Flag for auto-tiling
+    },
+
+    // === ENERGY (Oil & Gas) ===
+    oilDerrick: {
+        id: 'oilDerrick',
+        name: 'Oil Derrick',
+        description: 'DRILL BABY DRILL! Black gold!',
+        category: BUILDING_CATEGORIES.ENERGY,
+        cost: 2000,
+        size: 2,
+        color: '#212121',  // Black
+        icon: '🛢️',
+        secondaryIcon: '⛽',
+        effects: {
+            oilProduction: 20,
+            pollution: 5,
+            jobs: 15,
+            income: 30
+        },
+        canBuildOn: ['grass', 'dirt', 'sand']
+    },
+    oilRefinery: {
+        id: 'oilRefinery',
+        name: 'Oil Refinery',
+        description: 'Turn that black gold into fuel! MAGA!',
+        category: BUILDING_CATEGORIES.ENERGY,
+        cost: 5000,
+        size: 4,
+        color: '#BF360C',  // Deep orange
+        icon: '🏭',
+        secondaryIcon: '⛽',
+        effects: {
+            fuelProduction: 50,
+            pollution: 15,
+            jobs: 40,
+            income: 100,
+            requiresOil: 20
+        },
+        canBuildOn: ['grass', 'dirt']
+    },
+    gasStation: {
+        id: 'gasStation',
+        name: 'Gas Station',
+        description: 'Fuel for the people! Low prices!',
+        category: BUILDING_CATEGORIES.ENERGY,
+        cost: 300,
+        size: 1,
+        color: '#E53935',  // Red
+        icon: '⛽',
+        effects: {
+            fuelDistribution: 10,
+            jobs: 3,
+            income: 10
+        },
+        canBuildOn: ['grass', 'dirt'],
+        requiresRoadAccess: true
     },
 
     // === SPECIAL (Monuments) ===
@@ -191,4 +302,16 @@ export function canBuildOn(buildingId, tileType) {
     if (!building) return false;
     if (building.canBuildOn.includes('any')) return true;
     return building.canBuildOn.includes(tileType);
+}
+
+// Check if building is a road (for auto-tiling)
+export function isRoadType(buildingId) {
+    const building = getBuilding(buildingId);
+    return building && building.isRoad === true;
+}
+
+// Check if building is a power line (for auto-tiling)
+export function isPowerLineType(buildingId) {
+    const building = getBuilding(buildingId);
+    return building && building.isPowerLine === true;
 }

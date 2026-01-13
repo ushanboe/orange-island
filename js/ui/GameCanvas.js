@@ -3,6 +3,122 @@ import { TERRAIN_COLORS } from '../map/TileMap.js';
 import { BUILDINGS } from '../buildings/Buildings.js';
 import { ZONE_VISUALS, DEV_LEVELS } from '../simulation/Development.js';
 
+
+// Road auto-tiling helper - determines road connections
+function getRoadConnections(tileMap, x, y) {
+    const connections = {
+        north: false,
+        south: false,
+        east: false,
+        west: false
+    };
+
+    // Check each adjacent tile for roads
+    const checkRoad = (tx, ty) => {
+        if (!tileMap.isInBounds(tx, ty)) return false;
+        const tile = tileMap.getTile(tx, ty);
+        return tile && tile.building && tile.building.type === 'road';
+    };
+
+    connections.north = checkRoad(x, y - 1);
+    connections.south = checkRoad(x, y + 1);
+    connections.east = checkRoad(x + 1, y);
+    connections.west = checkRoad(x - 1, y);
+
+    return connections;
+}
+
+// Draw road with proper connections
+function drawRoadTile(ctx, x, y, size, connections) {
+    const roadColor = '#505050';  // Asphalt gray
+    const lineColor = '#FFD700';  // Yellow road markings
+    const edgeColor = '#303030';  // Darker edge
+
+    // Fill base road
+    ctx.fillStyle = roadColor;
+    ctx.fillRect(x, y, size, size);
+
+    // Draw road edges (curbs)
+    ctx.fillStyle = edgeColor;
+    const edgeWidth = Math.max(1, size * 0.1);
+
+    // Draw edges where there's no connection
+    if (!connections.north) {
+        ctx.fillRect(x, y, size, edgeWidth);
+    }
+    if (!connections.south) {
+        ctx.fillRect(x, y + size - edgeWidth, size, edgeWidth);
+    }
+    if (!connections.west) {
+        ctx.fillRect(x, y, edgeWidth, size);
+    }
+    if (!connections.east) {
+        ctx.fillRect(x + size - edgeWidth, y, edgeWidth, size);
+    }
+
+    // Draw center line markings based on connections
+    ctx.fillStyle = lineColor;
+    const lineWidth = Math.max(1, size * 0.08);
+    const centerX = x + size / 2 - lineWidth / 2;
+    const centerY = y + size / 2 - lineWidth / 2;
+    const dashLen = size * 0.15;
+    const gapLen = size * 0.1;
+
+    // Count connections
+    const connCount = [connections.north, connections.south, 
+                       connections.east, connections.west].filter(c => c).length;
+
+    if (connCount === 0) {
+        // Isolated road - draw small square
+        ctx.fillRect(centerX, centerY, lineWidth, lineWidth);
+    } else if (connCount === 1) {
+        // Dead end - draw line toward connection
+        if (connections.north) {
+            ctx.fillRect(centerX, y, lineWidth, size/2);
+        } else if (connections.south) {
+            ctx.fillRect(centerX, centerY, lineWidth, size/2 + lineWidth/2);
+        } else if (connections.east) {
+            ctx.fillRect(centerX, centerY, size/2 + lineWidth/2, lineWidth);
+        } else if (connections.west) {
+            ctx.fillRect(x, centerY, size/2, lineWidth);
+        }
+    } else if (connCount === 2) {
+        // Straight or corner
+        if (connections.north && connections.south) {
+            // Vertical straight
+            ctx.fillRect(centerX, y, lineWidth, size);
+        } else if (connections.east && connections.west) {
+            // Horizontal straight
+            ctx.fillRect(x, centerY, size, lineWidth);
+        } else {
+            // Corner - draw L shape
+            if (connections.north) ctx.fillRect(centerX, y, lineWidth, size/2 + lineWidth/2);
+            if (connections.south) ctx.fillRect(centerX, centerY, lineWidth, size/2 + lineWidth/2);
+            if (connections.east) ctx.fillRect(centerX, centerY, size/2 + lineWidth/2, lineWidth);
+            if (connections.west) ctx.fillRect(x, centerY, size/2 + lineWidth/2, lineWidth);
+        }
+    } else if (connCount === 3) {
+        // T-intersection
+        if (!connections.north) {
+            ctx.fillRect(x, centerY, size, lineWidth);  // Horizontal
+            ctx.fillRect(centerX, centerY, lineWidth, size/2 + lineWidth/2);  // Down
+        } else if (!connections.south) {
+            ctx.fillRect(x, centerY, size, lineWidth);  // Horizontal
+            ctx.fillRect(centerX, y, lineWidth, size/2 + lineWidth/2);  // Up
+        } else if (!connections.east) {
+            ctx.fillRect(centerX, y, lineWidth, size);  // Vertical
+            ctx.fillRect(x, centerY, size/2 + lineWidth/2, lineWidth);  // Left
+        } else {
+            ctx.fillRect(centerX, y, lineWidth, size);  // Vertical
+            ctx.fillRect(centerX, centerY, size/2 + lineWidth/2, lineWidth);  // Right
+        }
+    } else {
+        // 4-way intersection - draw cross
+        ctx.fillRect(x, centerY, size, lineWidth);  // Horizontal
+        ctx.fillRect(centerX, y, lineWidth, size);  // Vertical
+    }
+}
+
 export class GameCanvas {
     constructor(game, canvasId) {
         this.game = game;
@@ -352,6 +468,20 @@ export class GameCanvas {
             return;
         }
 
+        // Special rendering for roads with auto-tiling
+        if (building.type === 'road') {
+            const connections = getRoadConnections(this.game.map, tileX, tileY);
+            drawRoadTile(ctx, screenX, screenY, this.tileSize, connections);
+            return;
+        }
+
+        // Special rendering for power lines
+        if (building.type === 'powerLine') {
+            const connections = getRoadConnections(this.game.map, tileX, tileY);
+            this.drawPowerLine(ctx, screenX, screenY, this.tileSize, connections);
+            return;
+        }
+
         const size = this.tileSize;
 
         // Check if this is a zone with development tracking
@@ -436,6 +566,60 @@ export class GameCanvas {
             ctx.fillStyle = '#fff';
             ctx.fillText(building.icon, screenX + this.tileSize/2, screenY + this.tileSize/2);
             ctx.globalAlpha = 1;
+        }
+    }
+
+    drawPowerLine(ctx, x, y, size, connections) {
+        // Draw power line poles and wires
+        const poleColor = '#8B4513';  // Brown poles
+        const wireColor = '#333333';  // Dark wires
+
+        // Draw base ground
+        ctx.fillStyle = '#90A955';  // Grass color
+        ctx.fillRect(x, y, size, size);
+
+        // Draw pole in center
+        const poleWidth = size * 0.15;
+        const poleHeight = size * 0.7;
+        ctx.fillStyle = poleColor;
+        ctx.fillRect(x + size/2 - poleWidth/2, y + size * 0.15, poleWidth, poleHeight);
+
+        // Draw crossbar
+        ctx.fillRect(x + size * 0.2, y + size * 0.2, size * 0.6, size * 0.08);
+
+        // Draw wires to connected tiles
+        ctx.strokeStyle = wireColor;
+        ctx.lineWidth = Math.max(1, size * 0.05);
+        ctx.beginPath();
+
+        const centerX = x + size / 2;
+        const centerY = y + size * 0.24;
+
+        if (connections.north) {
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX, y);
+        }
+        if (connections.south) {
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX, y + size);
+        }
+        if (connections.east) {
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(x + size, centerY);
+        }
+        if (connections.west) {
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(x, centerY);
+        }
+
+        ctx.stroke();
+
+        // Draw lightning bolt icon if zoomed in enough
+        if (size >= 20) {
+            ctx.font = `${Math.floor(size * 0.3)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('⚡', centerX, y + size * 0.6);
         }
     }
 }
