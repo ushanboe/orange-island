@@ -30,6 +30,12 @@ export class Random {
         return this.next() < probability;
     }
 
+
+    // Alias for nextBool
+    bool(probability = 0.5) {
+        return this.nextBool(probability);
+    }
+
     // Pick random element from array
     pick(array) {
         return array[this.nextInt(0, array.length - 1)];
