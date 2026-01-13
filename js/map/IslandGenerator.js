@@ -178,7 +178,7 @@ export class IslandGenerator {
         
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                const tile = this.map.getTile(x, y);
+                const tile = this.map.getTerrainAt(x, y);
                 
                 // If grass and next to water, maybe make it sand
                 if (tile === TERRAIN.GRASS && this.map.isCoastal(x, y)) {
@@ -200,7 +200,7 @@ export class IslandGenerator {
         
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                if (this.map.getTile(x, y) === TERRAIN.GRASS) {
+                if (this.map.getTerrainAt(x, y) === TERRAIN.GRASS) {
                     // Use noise for forest clusters
                     const forestNoise = this.noise2D(x * 0.08, y * 0.08);
                     if (forestNoise > 0.55 && this.random.bool(0.6)) {
@@ -223,7 +223,7 @@ export class IslandGenerator {
                     const x = centerX + dx;
                     const y = centerY + dy;
                     
-                    if (this.map.getTile(x, y) === TERRAIN.GRASS) {
+                    if (this.map.getTerrainAt(x, y) === TERRAIN.GRASS) {
                         // Clear 3x3 area for palace
                         for (let py = -1; py <= 1; py++) {
                             for (let px = -1; px <= 1; px++) {

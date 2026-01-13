@@ -68,10 +68,45 @@ export class TileMap {
         return x >= 0 && x < this.width && y >= 0 && y < this.height;
     }
 
-    // Get tile at position
+    // Get tile at position (returns full tile object)
     getTile(x, y) {
         if (!this.isInBounds(x, y)) return null;
         return this.tiles[y][x];
+    }
+
+    // Get terrain value at position (for IslandGenerator compatibility)
+    getTerrainAt(x, y) {
+        if (!this.isInBounds(x, y)) return null;
+        return this.tiles[y][x].terrain;
+    }
+
+    // Set tile terrain (alias for setTerrain for IslandGenerator compatibility)
+    setTile(x, y, terrain) {
+        if (!this.isInBounds(x, y)) return;
+        this.tiles[y][x].terrain = terrain;
+    }
+
+    // Check if tile is coastal (adjacent to water)
+    isCoastal(x, y) {
+        if (!this.isInBounds(x, y)) return false;
+        const tile = this.tiles[y][x];
+        // Must be land tile
+        if (tile.terrain === TERRAIN.WATER || tile.terrain === TERRAIN.DEEP_WATER) {
+            return false;
+        }
+        // Check if any neighbor is water
+        const dirs = [[-1,0], [1,0], [0,-1], [0,1]];
+        for (const [dx, dy] of dirs) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (this.isInBounds(nx, ny)) {
+                const neighbor = this.tiles[ny][nx];
+                if (neighbor.terrain === TERRAIN.WATER || neighbor.terrain === TERRAIN.DEEP_WATER) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // Set terrain at position
