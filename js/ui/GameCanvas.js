@@ -13,7 +13,6 @@ function getRoadConnections(tileMap, x, y) {
         west: false
     };
 
-    // Check each adjacent tile for roads
     const checkRoad = (tx, ty) => {
         if (!tileMap.isInBounds(tx, ty)) return false;
         const tile = tileMap.getTile(tx, ty);
@@ -28,111 +27,101 @@ function getRoadConnections(tileMap, x, y) {
     return connections;
 }
 
+// Get power line connections
+function getPowerLineConnections(tileMap, x, y) {
+    const connections = {
+        north: false,
+        south: false,
+        east: false,
+        west: false
+    };
+
+    const checkPower = (tx, ty) => {
+        if (!tileMap.isInBounds(tx, ty)) return false;
+        const tile = tileMap.getTile(tx, ty);
+        if (!tile || !tile.building) return false;
+        // Connect to power lines and power plants
+        const type = tile.building.type;
+        return type === 'powerLine' || type === 'coalPlant' || type === 'nuclearPlant';
+    };
+
+    connections.north = checkPower(x, y - 1);
+    connections.south = checkPower(x, y + 1);
+    connections.east = checkPower(x + 1, y);
+    connections.west = checkPower(x - 1, y);
+
+    return connections;
+}
+
 // Draw road with proper connections
 function drawRoadTile(ctx, x, y, size, connections) {
-    const roadColor = '#505050';  // Asphalt gray
-    const lineColor = '#FFD700';  // Yellow road markings
-    const edgeColor = '#303030';  // Darker edge
+    const roadColor = '#505050';
+    const lineColor = '#FFD700';
+    const edgeColor = '#303030';
 
-    // Fill base road
     ctx.fillStyle = roadColor;
     ctx.fillRect(x, y, size, size);
 
-    // Draw road edges (curbs)
     ctx.fillStyle = edgeColor;
     const edgeWidth = Math.max(1, size * 0.1);
 
-    // Draw edges where there's no connection
-    if (!connections.north) {
-        ctx.fillRect(x, y, size, edgeWidth);
-    }
-    if (!connections.south) {
-        ctx.fillRect(x, y + size - edgeWidth, size, edgeWidth);
-    }
-    if (!connections.west) {
-        ctx.fillRect(x, y, edgeWidth, size);
-    }
-    if (!connections.east) {
-        ctx.fillRect(x + size - edgeWidth, y, edgeWidth, size);
-    }
+    if (!connections.north) ctx.fillRect(x, y, size, edgeWidth);
+    if (!connections.south) ctx.fillRect(x, y + size - edgeWidth, size, edgeWidth);
+    if (!connections.west) ctx.fillRect(x, y, edgeWidth, size);
+    if (!connections.east) ctx.fillRect(x + size - edgeWidth, y, edgeWidth, size);
 
-    // Draw center line markings based on connections
     ctx.fillStyle = lineColor;
     const lineWidth = Math.max(1, size * 0.08);
     const centerX = x + size / 2 - lineWidth / 2;
     const centerY = y + size / 2 - lineWidth / 2;
-    const dashLen = size * 0.15;
-    const gapLen = size * 0.1;
 
-    // Count connections
-    const connCount = [connections.north, connections.south, 
+    const connCount = [connections.north, connections.south,
                        connections.east, connections.west].filter(c => c).length;
 
     if (connCount === 0) {
-        // Isolated road - draw small square
         ctx.fillRect(centerX, centerY, lineWidth, lineWidth);
     } else if (connCount === 1) {
-        // Dead end - draw line toward connection
-        if (connections.north) {
-            ctx.fillRect(centerX, y, lineWidth, size/2);
-        } else if (connections.south) {
-            ctx.fillRect(centerX, centerY, lineWidth, size/2 + lineWidth/2);
-        } else if (connections.east) {
-            ctx.fillRect(centerX, centerY, size/2 + lineWidth/2, lineWidth);
-        } else if (connections.west) {
-            ctx.fillRect(x, centerY, size/2, lineWidth);
-        }
+        if (connections.north) ctx.fillRect(centerX, y, lineWidth, size/2);
+        else if (connections.south) ctx.fillRect(centerX, centerY, lineWidth, size/2 + lineWidth/2);
+        else if (connections.east) ctx.fillRect(centerX, centerY, size/2 + lineWidth/2, lineWidth);
+        else if (connections.west) ctx.fillRect(x, centerY, size/2, lineWidth);
     } else if (connCount === 2) {
-        // Straight or corner
         if (connections.north && connections.south) {
-            // Vertical straight
-            ctx.fillRect(centerX, y, lineWidth, size);
+            for (let i = 0; i < 3; i++) {
+                ctx.fillRect(centerX, y + size * 0.1 + i * size * 0.3, lineWidth, size * 0.15);
+            }
         } else if (connections.east && connections.west) {
-            // Horizontal straight
-            ctx.fillRect(x, centerY, size, lineWidth);
+            for (let i = 0; i < 3; i++) {
+                ctx.fillRect(x + size * 0.1 + i * size * 0.3, centerY, size * 0.15, lineWidth);
+            }
         } else {
-            // Corner - draw L shape
             if (connections.north) ctx.fillRect(centerX, y, lineWidth, size/2 + lineWidth/2);
             if (connections.south) ctx.fillRect(centerX, centerY, lineWidth, size/2 + lineWidth/2);
             if (connections.east) ctx.fillRect(centerX, centerY, size/2 + lineWidth/2, lineWidth);
             if (connections.west) ctx.fillRect(x, centerY, size/2 + lineWidth/2, lineWidth);
         }
-    } else if (connCount === 3) {
-        // T-intersection
-        if (!connections.north) {
-            ctx.fillRect(x, centerY, size, lineWidth);  // Horizontal
-            ctx.fillRect(centerX, centerY, lineWidth, size/2 + lineWidth/2);  // Down
-        } else if (!connections.south) {
-            ctx.fillRect(x, centerY, size, lineWidth);  // Horizontal
-            ctx.fillRect(centerX, y, lineWidth, size/2 + lineWidth/2);  // Up
-        } else if (!connections.east) {
-            ctx.fillRect(centerX, y, lineWidth, size);  // Vertical
-            ctx.fillRect(x, centerY, size/2 + lineWidth/2, lineWidth);  // Left
-        } else {
-            ctx.fillRect(centerX, y, lineWidth, size);  // Vertical
-            ctx.fillRect(centerX, centerY, size/2 + lineWidth/2, lineWidth);  // Right
-        }
     } else {
-        // 4-way intersection - draw cross
-        ctx.fillRect(x, centerY, size, lineWidth);  // Horizontal
-        ctx.fillRect(centerX, y, lineWidth, size);  // Vertical
+        if (connections.north || connections.south) {
+            ctx.fillRect(centerX, y, lineWidth, size);
+        }
+        if (connections.east || connections.west) {
+            ctx.fillRect(x, centerY, size, lineWidth);
+        }
     }
 }
 
 export class GameCanvas {
-    constructor(game, canvasId) {
+    constructor(game) {
         this.game = game;
-        this.canvas = document.getElementById(canvasId);
+        this.canvas = document.getElementById('game-canvas');
         this.ctx = this.canvas.getContext('2d');
 
-        // View settings
-        this.tileSize = 20;
+        this.tileSize = 32;
         this.minTileSize = 8;
         this.maxTileSize = 50;
         this.offsetX = 0;
         this.offsetY = 0;
 
-        // Interaction state
         this.isDragging = false;
         this.isPanning = false;
         this.lastPointerX = 0;
@@ -140,15 +129,22 @@ export class GameCanvas {
         this.pointerStartX = 0;
         this.pointerStartY = 0;
 
-        // Touch handling
         this.touches = {};
         this.lastPinchDist = 0;
 
-        // Hover tile for preview
         this.hoverTileX = -1;
         this.hoverTileY = -1;
 
-        // Setup
+        // Animation time
+        this.animTime = 0;
+
+        // Vehicles on roads
+        this.vehicles = [];
+        this.maxVehicles = 30;
+
+        // Smoke particles
+        this.smokeParticles = [];
+
         this.resize();
         this.setupEventListeners();
         this.centerMap();
@@ -163,8 +159,6 @@ export class GameCanvas {
         this.canvas.width = window.innerWidth;
         this.canvas.height = Math.max(100, window.innerHeight - headerHeight - toolbarHeight);
         this.canvas.style.top = headerHeight + 'px';
-
-        console.log(`Canvas resized: ${this.canvas.width}x${this.canvas.height}`);
     }
 
     centerMap() {
@@ -178,14 +172,12 @@ export class GameCanvas {
     setupEventListeners() {
         window.addEventListener('resize', () => this.resize());
 
-        // Mouse events
         this.canvas.addEventListener('mousedown', (e) => this.onPointerDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.onPointerMove(e));
         this.canvas.addEventListener('mouseup', (e) => this.onPointerUp(e));
         this.canvas.addEventListener('mouseleave', (e) => this.onPointerUp(e));
         this.canvas.addEventListener('wheel', (e) => this.onWheel(e));
 
-        // Touch events
         this.canvas.addEventListener('touchstart', (e) => this.onTouchStart(e));
         this.canvas.addEventListener('touchmove', (e) => this.onTouchMove(e));
         this.canvas.addEventListener('touchend', (e) => this.onTouchEnd(e));
@@ -280,13 +272,16 @@ export class GameCanvas {
         e.preventDefault();
 
         for (const touch of e.changedTouches) {
-            this.touches[touch.identifier] = { x: touch.clientX, y: touch.clientY };
+            this.touches[touch.identifier] = {
+                x: touch.clientX,
+                y: touch.clientY
+            };
         }
 
         const touchCount = Object.keys(this.touches).length;
 
         if (touchCount === 1) {
-            const touch = e.touches[0];
+            const touch = e.changedTouches[0];
             const rect = this.canvas.getBoundingClientRect();
             const x = touch.clientX - rect.left;
             const y = touch.clientY - rect.top;
@@ -305,10 +300,8 @@ export class GameCanvas {
                 this.isPanning = true;
             }
         } else if (touchCount === 2) {
-            this.isPanning = false;
             this.isDragging = false;
-            if (this.game.toolManager) this.game.toolManager.onPointerUp();
-
+            this.isPanning = false;
             const touchList = Object.values(this.touches);
             this.lastPinchDist = this.getPinchDistance(touchList[0], touchList[1]);
         }
@@ -319,14 +312,15 @@ export class GameCanvas {
 
         for (const touch of e.changedTouches) {
             if (this.touches[touch.identifier]) {
-                this.touches[touch.identifier] = { x: touch.clientX, y: touch.clientY };
+                this.touches[touch.identifier].x = touch.clientX;
+                this.touches[touch.identifier].y = touch.clientY;
             }
         }
 
         const touchCount = Object.keys(this.touches).length;
 
-        if (touchCount === 1 && e.touches.length === 1) {
-            const touch = e.touches[0];
+        if (touchCount === 1) {
+            const touch = e.changedTouches[0];
             const rect = this.canvas.getBoundingClientRect();
             const x = touch.clientX - rect.left;
             const y = touch.clientY - rect.top;
@@ -393,7 +387,199 @@ export class GameCanvas {
         return Math.sqrt(dx * dx + dy * dy);
     }
 
+    // ==================== ANIMATION UPDATE ====================
+
+    updateAnimations() {
+        this.animTime += 16; // ~60fps
+
+        // Update vehicles
+        this.updateVehicles();
+
+        // Update smoke
+        this.updateSmoke();
+    }
+
+    // ==================== VEHICLE SYSTEM ====================
+
+    updateVehicles() {
+        const pop = this.game.population || 0;
+        const desiredVehicles = Math.min(this.maxVehicles, Math.floor(pop / 15) + 1);
+
+        // Spawn vehicles
+        if (this.vehicles.length < desiredVehicles && Math.random() < 0.03) {
+            this.spawnVehicle();
+        }
+
+        // Update existing vehicles
+        for (let i = this.vehicles.length - 1; i >= 0; i--) {
+            const v = this.vehicles[i];
+            v.lifetime++;
+
+            if (v.lifetime > v.maxLifetime) {
+                this.vehicles.splice(i, 1);
+                continue;
+            }
+
+            // Move vehicle
+            const dx = [0, 1, 0, -1][v.direction];
+            const dy = [-1, 0, 1, 0][v.direction];
+
+            v.x += dx * v.speed;
+            v.y += dy * v.speed;
+
+            // At tile center, choose next direction
+            const tileX = Math.floor(v.x);
+            const tileY = Math.floor(v.y);
+            const centerX = tileX + 0.5;
+            const centerY = tileY + 0.5;
+
+            if (Math.abs(v.x - centerX) < 0.05 && Math.abs(v.y - centerY) < 0.05) {
+                v.x = centerX;
+                v.y = centerY;
+                this.chooseNextDirection(v, tileX, tileY);
+            }
+
+            // Remove if off map
+            const map = this.game.tileMap;
+            if (map && (v.x < 0 || v.x >= map.width || v.y < 0 || v.y >= map.height)) {
+                this.vehicles.splice(i, 1);
+            }
+        }
+    }
+
+    spawnVehicle() {
+        const roads = this.findRoads();
+        if (roads.length === 0) return;
+
+        const startRoad = roads[Math.floor(Math.random() * roads.length)];
+
+        const types = ['🚗', '🚙', '🚕'];
+        if (this.game.population > 50) types.push('🚌');
+        if (this.game.tileMap?.countBuildings?.('industrial') > 0) types.push('🚚');
+
+        this.vehicles.push({
+            x: startRoad.x + 0.5,
+            y: startRoad.y + 0.5,
+            icon: types[Math.floor(Math.random() * types.length)],
+            direction: Math.floor(Math.random() * 4),
+            speed: 0.03 + Math.random() * 0.02,
+            lifetime: 0,
+            maxLifetime: 400 + Math.random() * 400
+        });
+    }
+
+    findRoads() {
+        const roads = [];
+        const map = this.game.tileMap;
+        if (!map) return roads;
+
+        for (let y = 0; y < map.height; y++) {
+            for (let x = 0; x < map.width; x++) {
+                const tile = map.getTile(x, y);
+                if (tile?.building?.type === 'road') {
+                    roads.push({x, y});
+                }
+            }
+        }
+        return roads;
+    }
+
+    chooseNextDirection(vehicle, tileX, tileY) {
+        const map = this.game.tileMap;
+        if (!map) return;
+
+        const connections = [];
+        const dirs = [
+            {dir: 0, dx: 0, dy: -1},
+            {dir: 1, dx: 1, dy: 0},
+            {dir: 2, dx: 0, dy: 1},
+            {dir: 3, dx: -1, dy: 0}
+        ];
+
+        for (const d of dirs) {
+            const nx = tileX + d.dx;
+            const ny = tileY + d.dy;
+            if (map.isInBounds(nx, ny)) {
+                const tile = map.getTile(nx, ny);
+                if (tile?.building?.type === 'road') {
+                    connections.push(d.dir);
+                }
+            }
+        }
+
+        if (connections.length === 0) {
+            vehicle.direction = (vehicle.direction + 2) % 4;
+        } else {
+            const opposite = (vehicle.direction + 2) % 4;
+            const options = connections.filter(d => d !== opposite);
+            if (options.length > 0) {
+                vehicle.direction = options[Math.floor(Math.random() * options.length)];
+            } else {
+                vehicle.direction = connections[Math.floor(Math.random() * connections.length)];
+            }
+        }
+    }
+
+    // ==================== SMOKE SYSTEM ====================
+
+    updateSmoke() {
+        // Spawn smoke from coal plants and refineries
+        if (Math.random() < 0.15) {
+            const map = this.game.tileMap;
+            if (!map) return;
+
+            for (let y = 0; y < map.height; y++) {
+                for (let x = 0; x < map.width; x++) {
+                    const tile = map.getTile(x, y);
+                    if (tile?.building?.type === 'coalPlant' && tile.building.mainTile !== false) {
+                        if (Math.random() < 0.4) this.spawnSmoke(x, y);
+                    }
+                    if (tile?.building?.type === 'oilRefinery' && tile.building.mainTile !== false) {
+                        if (Math.random() < 0.3) this.spawnSmoke(x, y);
+                    }
+                }
+            }
+        }
+
+        // Update smoke particles
+        for (let i = this.smokeParticles.length - 1; i >= 0; i--) {
+            const p = this.smokeParticles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.size += 0.008;
+            p.opacity -= 0.012;
+            p.life++;
+
+            if (p.life > p.maxLife || p.opacity <= 0) {
+                this.smokeParticles.splice(i, 1);
+            }
+        }
+
+        // Limit particles
+        if (this.smokeParticles.length > 100) {
+            this.smokeParticles.splice(0, this.smokeParticles.length - 100);
+        }
+    }
+
+    spawnSmoke(x, y) {
+        this.smokeParticles.push({
+            x: x + 0.3 + Math.random() * 0.4,
+            y: y + 0.2,
+            size: 0.15 + Math.random() * 0.1,
+            opacity: 0.5 + Math.random() * 0.3,
+            vx: (Math.random() - 0.5) * 0.015,
+            vy: -0.025 - Math.random() * 0.015,
+            life: 0,
+            maxLife: 50 + Math.random() * 30
+        });
+    }
+
+    // ==================== MAIN RENDER ====================
+
     render() {
+        // Update animations
+        this.updateAnimations();
+
         const ctx = this.ctx;
         const tileMap = this.game.tileMap;
 
@@ -431,9 +617,15 @@ export class GameCanvas {
             }
         }
 
+        // Draw vehicles on roads
+        this.renderVehicles(ctx);
+
+        // Draw smoke particles
+        this.renderSmoke(ctx);
+
         // Draw grid lines if zoomed in enough
         if (this.tileSize >= 15) {
-            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.strokeStyle = 'rgba(0,0,0,0.15)';
             ctx.lineWidth = 1;
 
             for (let y = startTileY; y <= endTileY; y++) {
@@ -457,6 +649,38 @@ export class GameCanvas {
         this.drawPlacementPreview(ctx);
     }
 
+    // ==================== RENDER VEHICLES ====================
+
+    renderVehicles(ctx) {
+        const fontSize = Math.max(8, this.tileSize * 0.5);
+        ctx.font = `${fontSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        for (const v of this.vehicles) {
+            const screenX = v.x * this.tileSize + this.offsetX;
+            const screenY = v.y * this.tileSize + this.offsetY;
+            ctx.fillText(v.icon, screenX, screenY);
+        }
+    }
+
+    // ==================== RENDER SMOKE ====================
+
+    renderSmoke(ctx) {
+        for (const p of this.smokeParticles) {
+            const screenX = p.x * this.tileSize + this.offsetX;
+            const screenY = p.y * this.tileSize + this.offsetY;
+            const size = p.size * this.tileSize;
+
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(80, 80, 80, ${p.opacity})`;
+            ctx.fill();
+        }
+    }
+
+    // ==================== DRAW BUILDING ====================
+
     drawBuilding(ctx, building, screenX, screenY, tileX, tileY) {
         const buildingDef = BUILDINGS[building.type];
         if (!buildingDef) return;
@@ -468,28 +692,43 @@ export class GameCanvas {
             return;
         }
 
-        // Special rendering for roads with auto-tiling
+        // Special rendering for roads
         if (building.type === 'road') {
-            const connections = getRoadConnections(this.game.map, tileX, tileY);
+            const connections = getRoadConnections(this.game.tileMap, tileX, tileY);
             drawRoadTile(ctx, screenX, screenY, this.tileSize, connections);
             return;
         }
 
         // Special rendering for power lines
         if (building.type === 'powerLine') {
-            const connections = getRoadConnections(this.game.map, tileX, tileY);
+            const connections = getPowerLineConnections(this.game.tileMap, tileX, tileY);
             this.drawPowerLine(ctx, screenX, screenY, this.tileSize, connections);
+            return;
+        }
+
+        // Special animated buildings
+        if (building.type === 'nuclearPlant') {
+            this.drawNuclearPlant(ctx, screenX, screenY, this.tileSize, buildingDef);
+            return;
+        }
+
+        if (building.type === 'coalPlant') {
+            this.drawCoalPlant(ctx, screenX, screenY, this.tileSize, buildingDef);
+            return;
+        }
+
+        if (building.type === 'oilDerrick') {
+            this.drawOilDerrick(ctx, screenX, screenY, this.tileSize, buildingDef);
             return;
         }
 
         const size = this.tileSize;
 
-        // Check if this is a zone with development tracking
+        // Check for zone development
         const devManager = this.game.developmentManager;
         const dev = devManager ? devManager.getDevelopment(tileX, tileY) : null;
         const visual = dev ? devManager.getVisual(tileX, tileY) : null;
 
-        // Use development visual if available, otherwise use building default
         let bgColor = buildingDef.color;
         let icon = buildingDef.icon;
 
@@ -509,7 +748,7 @@ export class GameCanvas {
             ctx.fillRect(screenX + 2, screenY + size - 5, progressWidth, 3);
         }
 
-        // Draw icon if tile is big enough
+        // Draw icon
         if (this.tileSize >= 16) {
             ctx.font = `${Math.floor(size * 0.6)}px Arial`;
             ctx.textAlign = 'center';
@@ -522,7 +761,7 @@ export class GameCanvas {
         ctx.lineWidth = 1;
         ctx.strokeRect(screenX + 1, screenY + 1, size - 2, size - 2);
 
-        // Draw level indicator for developed zones
+        // Draw level indicator
         if (dev && dev.level > 0 && this.tileSize >= 20) {
             ctx.fillStyle = '#FFD700';
             ctx.font = `bold ${Math.floor(size * 0.25)}px Arial`;
@@ -531,6 +770,258 @@ export class GameCanvas {
             ctx.fillText(`L${dev.level}`, screenX + size - 2, screenY + 2);
         }
     }
+
+    // ==================== ANIMATED BUILDINGS ====================
+
+    drawNuclearPlant(ctx, x, y, size, def) {
+        // Background
+        ctx.fillStyle = def.color;
+        const fullSize = size * 2; // 2x2 building
+        ctx.fillRect(x + 1, y + 1, fullSize - 2, fullSize - 2);
+
+        // Cooling tower shape
+        ctx.fillStyle = '#E0E0E0';
+        const towerW = fullSize * 0.35;
+        const towerH = fullSize * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x + fullSize * 0.2, y + fullSize * 0.7);
+        ctx.lineTo(x + fullSize * 0.25, y + fullSize * 0.2);
+        ctx.lineTo(x + fullSize * 0.45, y + fullSize * 0.2);
+        ctx.lineTo(x + fullSize * 0.5, y + fullSize * 0.7);
+        ctx.closePath();
+        ctx.fill();
+
+        // Second tower
+        ctx.beginPath();
+        ctx.moveTo(x + fullSize * 0.5, y + fullSize * 0.7);
+        ctx.lineTo(x + fullSize * 0.55, y + fullSize * 0.2);
+        ctx.lineTo(x + fullSize * 0.75, y + fullSize * 0.2);
+        ctx.lineTo(x + fullSize * 0.8, y + fullSize * 0.7);
+        ctx.closePath();
+        ctx.fill();
+
+        // Spinning nuclear symbol
+        if (size >= 12) {
+            const rotation = (this.animTime / 800) * Math.PI * 2;
+            const centerX = x + fullSize * 0.5;
+            const centerY = y + fullSize * 0.85;
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(rotation);
+            ctx.font = `${Math.floor(fullSize * 0.25)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('☢️', 0, 0);
+            ctx.restore();
+        }
+
+        // Border
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 1, y + 1, fullSize - 2, fullSize - 2);
+    }
+
+    drawCoalPlant(ctx, x, y, size, def) {
+        // Background
+        ctx.fillStyle = def.color;
+        const fullSize = size * 2; // 2x2 building
+        ctx.fillRect(x + 1, y + 1, fullSize - 2, fullSize - 2);
+
+        // Building structure
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(x + fullSize * 0.1, y + fullSize * 0.4, fullSize * 0.5, fullSize * 0.5);
+
+        // Smokestacks
+        ctx.fillStyle = '#696969';
+        const stackW = fullSize * 0.08;
+        ctx.fillRect(x + fullSize * 0.2, y + fullSize * 0.15, stackW, fullSize * 0.35);
+        ctx.fillRect(x + fullSize * 0.35, y + fullSize * 0.15, stackW, fullSize * 0.35);
+        ctx.fillRect(x + fullSize * 0.5, y + fullSize * 0.2, stackW, fullSize * 0.3);
+
+        // Coal pile
+        ctx.fillStyle = '#2F2F2F';
+        ctx.beginPath();
+        ctx.arc(x + fullSize * 0.75, y + fullSize * 0.75, fullSize * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Icon
+        if (size >= 12) {
+            ctx.font = `${Math.floor(fullSize * 0.2)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🏭', x + fullSize * 0.75, y + fullSize * 0.4);
+        }
+
+        // Border
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 1, y + 1, fullSize - 2, fullSize - 2);
+    }
+
+    drawOilDerrick(ctx, x, y, size, def) {
+        // Background - sandy/dirt
+        ctx.fillStyle = '#D2B48C';
+        ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
+
+        // Pumping animation - bobbing up and down
+        const pumpOffset = Math.sin(this.animTime / 300) * size * 0.1;
+
+        // Derrick base
+        ctx.fillStyle = '#4A4A4A';
+        ctx.fillRect(x + size * 0.35, y + size * 0.7, size * 0.3, size * 0.25);
+
+        // Derrick tower (A-frame)
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = Math.max(1, size * 0.06);
+        ctx.beginPath();
+        // Left leg
+        ctx.moveTo(x + size * 0.25, y + size * 0.7);
+        ctx.lineTo(x + size * 0.5, y + size * 0.15);
+        // Right leg
+        ctx.moveTo(x + size * 0.75, y + size * 0.7);
+        ctx.lineTo(x + size * 0.5, y + size * 0.15);
+        // Cross beams
+        ctx.moveTo(x + size * 0.32, y + size * 0.5);
+        ctx.lineTo(x + size * 0.68, y + size * 0.5);
+        ctx.moveTo(x + size * 0.38, y + size * 0.35);
+        ctx.lineTo(x + size * 0.62, y + size * 0.35);
+        ctx.stroke();
+
+        // Pump head (horse head) - animated
+        ctx.fillStyle = '#222';
+        ctx.save();
+        ctx.translate(x + size * 0.5, y + size * 0.2);
+        ctx.rotate(pumpOffset * 0.3);
+        // Horse head shape
+        ctx.fillRect(-size * 0.15, -size * 0.05, size * 0.3, size * 0.08);
+        ctx.fillRect(size * 0.1, -size * 0.05, size * 0.08, size * 0.15 + pumpOffset);
+        ctx.restore();
+
+        // Walking beam
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = Math.max(1, size * 0.04);
+        ctx.beginPath();
+        ctx.moveTo(x + size * 0.2, y + size * 0.25 + pumpOffset * 0.5);
+        ctx.lineTo(x + size * 0.8, y + size * 0.25 - pumpOffset * 0.5);
+        ctx.stroke();
+
+        // Oil drop icon
+        if (size >= 20) {
+            ctx.font = `${Math.floor(size * 0.25)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🛢️', x + size * 0.8, y + size * 0.8);
+        }
+
+        // Border
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 1, y + 1, size - 2, size - 2);
+    }
+
+    // ==================== POWER LINE (TOP-DOWN VIEW) ====================
+
+    drawPowerLine(ctx, x, y, size, connections) {
+        // Ground/grass background
+        ctx.fillStyle = '#7CB342';
+        ctx.fillRect(x, y, size, size);
+
+        const connCount = [connections.north, connections.south,
+                          connections.east, connections.west].filter(c => c).length;
+
+        // Draw wires first (under poles)
+        ctx.strokeStyle = '#1A1A1A';
+        ctx.lineWidth = Math.max(1, size * 0.04);
+
+        const centerX = x + size / 2;
+        const centerY = y + size / 2;
+        const wireOffset = size * 0.15;
+
+        // Draw parallel wires for each connection
+        if (connections.north) {
+            ctx.beginPath();
+            ctx.moveTo(centerX - wireOffset, centerY);
+            ctx.lineTo(centerX - wireOffset, y);
+            ctx.moveTo(centerX + wireOffset, centerY);
+            ctx.lineTo(centerX + wireOffset, y);
+            ctx.stroke();
+        }
+        if (connections.south) {
+            ctx.beginPath();
+            ctx.moveTo(centerX - wireOffset, centerY);
+            ctx.lineTo(centerX - wireOffset, y + size);
+            ctx.moveTo(centerX + wireOffset, centerY);
+            ctx.lineTo(centerX + wireOffset, y + size);
+            ctx.stroke();
+        }
+        if (connections.east) {
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - wireOffset);
+            ctx.lineTo(x + size, centerY - wireOffset);
+            ctx.moveTo(centerX, centerY + wireOffset);
+            ctx.lineTo(x + size, centerY + wireOffset);
+            ctx.stroke();
+        }
+        if (connections.west) {
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - wireOffset);
+            ctx.lineTo(x, centerY - wireOffset);
+            ctx.moveTo(centerX, centerY + wireOffset);
+            ctx.lineTo(x, centerY + wireOffset);
+            ctx.stroke();
+        }
+
+        // Draw pole (top-down view - circle with cross)
+        const poleRadius = size * 0.12;
+
+        // Pole shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.arc(centerX + 2, centerY + 2, poleRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pole top (brown wood)
+        ctx.fillStyle = '#8B4513';
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, poleRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pole center mark
+        ctx.fillStyle = '#5D3A1A';
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, poleRadius * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Crossarm (top-down view)
+        if (connCount >= 2) {
+            ctx.fillStyle = '#6B4423';
+            if (connections.east || connections.west) {
+                ctx.fillRect(x + size * 0.15, centerY - size * 0.04, size * 0.7, size * 0.08);
+            }
+            if (connections.north || connections.south) {
+                ctx.fillRect(centerX - size * 0.04, y + size * 0.15, size * 0.08, size * 0.7);
+            }
+        }
+
+        // Insulators (small dots where wires connect)
+        ctx.fillStyle = '#4FC3F7';
+        const insSize = size * 0.05;
+        if (connections.north || connections.south) {
+            ctx.beginPath();
+            ctx.arc(centerX - wireOffset, centerY, insSize, 0, Math.PI * 2);
+            ctx.arc(centerX + wireOffset, centerY, insSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        if (connections.east || connections.west) {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - wireOffset, insSize, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY + wireOffset, insSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // ==================== PLACEMENT PREVIEW ====================
 
     drawPlacementPreview(ctx) {
         if (!this.game.toolManager || !this.game.toolManager.selectedTool) return;
@@ -566,60 +1057,6 @@ export class GameCanvas {
             ctx.fillStyle = '#fff';
             ctx.fillText(building.icon, screenX + this.tileSize/2, screenY + this.tileSize/2);
             ctx.globalAlpha = 1;
-        }
-    }
-
-    drawPowerLine(ctx, x, y, size, connections) {
-        // Draw power line poles and wires
-        const poleColor = '#8B4513';  // Brown poles
-        const wireColor = '#333333';  // Dark wires
-
-        // Draw base ground
-        ctx.fillStyle = '#90A955';  // Grass color
-        ctx.fillRect(x, y, size, size);
-
-        // Draw pole in center
-        const poleWidth = size * 0.15;
-        const poleHeight = size * 0.7;
-        ctx.fillStyle = poleColor;
-        ctx.fillRect(x + size/2 - poleWidth/2, y + size * 0.15, poleWidth, poleHeight);
-
-        // Draw crossbar
-        ctx.fillRect(x + size * 0.2, y + size * 0.2, size * 0.6, size * 0.08);
-
-        // Draw wires to connected tiles
-        ctx.strokeStyle = wireColor;
-        ctx.lineWidth = Math.max(1, size * 0.05);
-        ctx.beginPath();
-
-        const centerX = x + size / 2;
-        const centerY = y + size * 0.24;
-
-        if (connections.north) {
-            ctx.moveTo(centerX, centerY);
-            ctx.lineTo(centerX, y);
-        }
-        if (connections.south) {
-            ctx.moveTo(centerX, centerY);
-            ctx.lineTo(centerX, y + size);
-        }
-        if (connections.east) {
-            ctx.moveTo(centerX, centerY);
-            ctx.lineTo(x + size, centerY);
-        }
-        if (connections.west) {
-            ctx.moveTo(centerX, centerY);
-            ctx.lineTo(x, centerY);
-        }
-
-        ctx.stroke();
-
-        // Draw lightning bolt icon if zoomed in enough
-        if (size >= 20) {
-            ctx.font = `${Math.floor(size * 0.3)}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('⚡', centerX, y + size * 0.6);
         }
     }
 }

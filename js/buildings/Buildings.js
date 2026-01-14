@@ -114,7 +114,7 @@ export const BUILDINGS = {
         description: 'Beautiful clean coal! The best energy!',
         category: BUILDING_CATEGORIES.POWER,
         cost: 3000,
-        size: 4,
+        size: 2,
         color: '#37474F',  // Dark blue-gray
         icon: '🏭',
         secondaryIcon: '⚡',
@@ -131,7 +131,7 @@ export const BUILDINGS = {
         description: 'Tremendous power! Very safe, believe me!',
         category: BUILDING_CATEGORIES.POWER,
         cost: 10000,
-        size: 4,
+        size: 2,
         color: '#7B1FA2',  // Purple
         icon: '☢️',
         secondaryIcon: '⚡',
@@ -184,7 +184,7 @@ export const BUILDINGS = {
         description: 'Turn that black gold into fuel! MAGA!',
         category: BUILDING_CATEGORIES.ENERGY,
         cost: 5000,
-        size: 4,
+        size: 2,
         color: '#BF360C',  // Deep orange
         icon: '🏭',
         secondaryIcon: '⛽',
@@ -254,7 +254,7 @@ export const BUILDINGS = {
         description: 'Where the king relaxes (very often)',
         category: BUILDING_CATEGORIES.SPECIAL,
         cost: 1500,
-        size: 4,
+        size: 2,
         color: '#8BC34A',  // Light green
         icon: '⛳',
         effects: {
