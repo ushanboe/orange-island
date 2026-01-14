@@ -33,6 +33,18 @@ export class ImmigrationSystem {
     }
 
     update() {
+        // Debug: log first call
+        if (!this._debugLogged) {
+            console.log("[IMMIGRATION] update() called for first time!");
+            this._debugLogged = true;
+        }
+        
+        // Debug: log every 100 ticks
+        if (this.spawnTimer % 100 === 0) {
+            const map = this.game.tileMap;
+            console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}/${this.spawnInterval}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
+        }
+        
         // Debug: log spawn attempts
         if (this.spawnTimer % 300 === 0 && this.spawnTimer > 0) {
             const map = this.game.tileMap;
@@ -303,6 +315,18 @@ export class PeopleBoat {
     }
 
     update() {
+        // Debug: log first call
+        if (!this._debugLogged) {
+            console.log("[IMMIGRATION] update() called for first time!");
+            this._debugLogged = true;
+        }
+        
+        // Debug: log every 100 ticks
+        if (this.spawnTimer % 100 === 0) {
+            const map = this.game.tileMap;
+            console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}/${this.spawnInterval}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
+        }
+        
         // Debug: log spawn attempts
         if (this.spawnTimer % 300 === 0 && this.spawnTimer > 0) {
             const map = this.game.tileMap;
@@ -448,6 +472,18 @@ export class Crowd {
     }
 
     update() {
+        // Debug: log first call
+        if (!this._debugLogged) {
+            console.log("[IMMIGRATION] update() called for first time!");
+            this._debugLogged = true;
+        }
+        
+        // Debug: log every 100 ticks
+        if (this.spawnTimer % 100 === 0) {
+            const map = this.game.tileMap;
+            console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}/${this.spawnInterval}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
+        }
+        
         // Debug: log spawn attempts
         if (this.spawnTimer % 300 === 0 && this.spawnTimer > 0) {
             const map = this.game.tileMap;
