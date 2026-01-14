@@ -1,5 +1,5 @@
 // Service Worker for Island Kingdom PWA
-const CACHE_NAME = 'island-kingdom-v68';
+const CACHE_NAME = 'island-kingdom-v69';
 
 const ASSETS_TO_CACHE = [
     './',
@@ -65,8 +65,13 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - network first, fallback to cache
 self.addEventListener('fetch', (event) => {
+    // For JS files, force network fetch with no-cache to ensure latest version
+    const fetchOptions = event.request.url.endsWith('.js') 
+        ? { cache: 'no-cache' } 
+        : {};
+    
     event.respondWith(
-        fetch(event.request)
+        fetch(event.request, fetchOptions)
             .then((response) => {
                 // Clone and cache successful responses
                 if (response && response.status === 200) {
