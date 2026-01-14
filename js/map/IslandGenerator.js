@@ -140,8 +140,8 @@ export class IslandGenerator {
         // Random Y positions for each island (keep away from very top/bottom)
         const minY = height * 0.15;
         const maxY = height * 0.85;
-        const leftY = minY + this.random.float() * (maxY - minY);
-        const rightY = minY + this.random.float() * (maxY - minY);
+        const leftY = minY + this.random.next() * (maxY - minY);
+        const rightY = minY + this.random.next() * (maxY - minY);
 
         // Left source island - at the FAR left edge
         const leftIsland = {
