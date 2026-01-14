@@ -667,4 +667,38 @@ export class Game {
     get map() {
         return this.tileMap;
     }
+
+    // Debug helper - call from console: game.debugTile(x, y)
+    debugTile(x, y) {
+        const tile = this.tileMap.getTile(x, y);
+        if (!tile) {
+            console.log(`Tile (${x}, ${y}) is out of bounds`);
+            return null;
+        }
+        const terrainName = this.tileMap.getTileType(tile.terrain);
+        console.log(`=== Tile (${x}, ${y}) ===`);
+        console.log(`Terrain: ${terrainName} (code: ${tile.terrain})`);
+        console.log(`Building:`, tile.building);
+        console.log(`Full tile data:`, tile);
+        return tile;
+    }
+
+    // Debug helper - check 3x3 area for residential placement
+    debugArea(x, y) {
+        console.log(`=== Checking 3x3 area starting at (${x}, ${y}) ===`);
+        for (let dy = 0; dy < 3; dy++) {
+            for (let dx = 0; dx < 3; dx++) {
+                const checkX = x + dx;
+                const checkY = y + dy;
+                const tile = this.tileMap.getTile(checkX, checkY);
+                if (!tile) {
+                    console.log(`  (${checkX}, ${checkY}): OUT OF BOUNDS`);
+                } else {
+                    const terrainName = this.tileMap.getTileType(tile.terrain);
+                    const hasBuilding = tile.building ? `YES - ${JSON.stringify(tile.building)}` : 'NO';
+                    console.log(`  (${checkX}, ${checkY}): terrain=${terrainName}, building=${hasBuilding}`);
+                }
+            }
+        }
+    }
 }
