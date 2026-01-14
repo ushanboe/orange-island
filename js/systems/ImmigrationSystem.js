@@ -248,6 +248,7 @@ export class ImmigrationSystem {
         const landX = boat.targetLanding ? boat.targetLanding.x : boat.x;
         const landY = boat.targetLanding ? boat.targetLanding.y : boat.y;
 
+        console.log(`[IMMIGRATION] Spawning crowd at (${landX}, ${landY}) with ${boat.peopleCount} people`);
         const crowd = new Crowd(
             this.game,
             landX,
@@ -373,18 +374,24 @@ export class PeopleBoat {
     moveAway() {
         // Move back toward source island
         const map = this.game.tileMap;
-        const targetX = this.sourceIsland === 'left' ? -5 : (map?.width || 128) + 5;
-
-        const dx = targetX - this.x;
-        const dy = 0;
-        const dist = Math.abs(dx);
-
-        if (dist < 1) {
-            this.remove = true;
-            return;
+        const mapWidth = map?.width || 128;
+        
+        // Move toward the edge
+        if (this.sourceIsland === 'left') {
+            this.x -= this.speed * 1.5;
+            // Remove when reaching left edge
+            if (this.x <= 0) {
+                this.remove = true;
+                console.log('[IMMIGRATION] Boat left via left edge');
+            }
+        } else {
+            this.x += this.speed * 1.5;
+            // Remove when reaching right edge
+            if (this.x >= mapWidth) {
+                this.remove = true;
+                console.log('[IMMIGRATION] Boat left via right edge');
+            }
         }
-
-        this.x += Math.sign(dx) * this.speed * 1.5;
     }
 
     render(ctx, offsetX, offsetY, tileSize) {
@@ -398,72 +405,15 @@ export class PeopleBoat {
         }
 
         ctx.save();
-        ctx.translate(screenX + tileSize / 2, screenY + tileSize / 2);
-
+        
         // Bobbing animation
         const bob = Math.sin(this.frame * 0.08) * 2;
-        ctx.translate(0, bob);
-
-        // Draw immigrant boat with sail
-        const scale = 1.5;  // Bigger boat
-        ctx.scale(scale, scale);
-
-        // Boat hull (wooden brown)
-        ctx.fillStyle = '#8B4513';
-        ctx.beginPath();
-        ctx.moveTo(-tileSize * 0.35, tileSize * 0.08);
-        ctx.lineTo(-tileSize * 0.25, tileSize * 0.2);
-        ctx.lineTo(tileSize * 0.3, tileSize * 0.2);
-        ctx.lineTo(tileSize * 0.4, tileSize * 0.08);
-        ctx.lineTo(tileSize * 0.3, -tileSize * 0.02);
-        ctx.lineTo(-tileSize * 0.25, -tileSize * 0.02);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#5D3A1A';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Mast (taller)
-        ctx.strokeStyle = '#3E2723';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(0, tileSize * 0.05);
-        ctx.lineTo(0, -tileSize * 0.5);
-        ctx.stroke();
-
-        // Main sail (bright white, larger triangle)
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath();
-        ctx.moveTo(tileSize * 0.02, -tileSize * 0.48);
-        ctx.lineTo(tileSize * 0.3, tileSize * 0.0);
-        ctx.lineTo(tileSize * 0.02, tileSize * 0.02);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#CCCCCC';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        // Red flag at top of mast
-        ctx.fillStyle = '#E53935';
-        ctx.beginPath();
-        ctx.moveTo(0, -tileSize * 0.5);
-        ctx.lineTo(tileSize * 0.12, -tileSize * 0.45);
-        ctx.lineTo(0, -tileSize * 0.4);
-        ctx.closePath();
-        ctx.fill();
-
-        // People silhouettes on deck
-        ctx.fillStyle = '#212121';
-        const peopleRows = Math.min(3, Math.ceil(this.peopleCount / 30));
-        for (let row = 0; row < peopleRows; row++) {
-            for (let i = 0; i < 4; i++) {
-                const px = -tileSize * 0.2 + (i * tileSize * 0.12);
-                const py = -tileSize * 0.15 - (row * tileSize * 0.08);
-                ctx.beginPath();
-                ctx.arc(px, py, 3, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
+        
+        // Draw boat as emoji - simple and guaranteed to show
+        ctx.font = '32px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⛵', screenX + tileSize/2, screenY + tileSize/2 + bob);
 
         ctx.restore();
 
@@ -641,9 +591,9 @@ export class Crowd {
         const nextY = this.y + (dy / dist) * this.speed;
         const terrain = map.getTerrainAt(Math.floor(nextX), Math.floor(nextY));
 
-        // Can walk on grass, sand, forest, dirt
-        // TERRAIN: SAND=2, GRASS=4, DIRT=5, FOREST=6
-        if (terrain === 2 || terrain === 4 || terrain === 5 || terrain === 6) {
+        // Can walk on grass, sand, forest, dirt, hills, mountains
+        // TERRAIN: SAND=2, HILL=3, GRASS=4, DIRT=5, FOREST=6, MOUNTAIN=7
+        if (terrain === 2 || terrain === 3 || terrain === 4 || terrain === 5 || terrain === 6 || terrain === 7) {
             this.x = nextX;
             this.y = nextY;
         } else {
@@ -654,7 +604,7 @@ export class Crowd {
             const altNextY = this.y + (altDy / dist) * this.speed;
             const altTerrain = map.getTerrainAt(Math.floor(altNextX), Math.floor(altNextY));
 
-            if (altTerrain === 2 || altTerrain === 4 || altTerrain === 5 || altTerrain === 6) {
+            if (altTerrain === 2 || altTerrain === 3 || altTerrain === 4 || altTerrain === 5 || altTerrain === 6 || altTerrain === 7) {
                 this.x = altNextX;
                 this.y = altNextY;
             }
