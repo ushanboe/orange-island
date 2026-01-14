@@ -99,8 +99,8 @@ export class ImmigrationSystem {
         }
 
         // Find landing spot far from civilization on main island
-        const landingSpot = this.findRemoteLandingSpot();
-        console.log(`[IMMIGRATION] findRemoteLandingSpot result:`, landingSpot);
+        const landingSpot = this.findRemoteLandingSpot(sourceIsland.name);
+        console.log(`[IMMIGRATION] findRemoteLandingSpot result for ${sourceIsland.name}:`, landingSpot);
         if (!landingSpot) {
             console.log('[IMMIGRATION] Could not find remote landing spot');
             return;
@@ -153,7 +153,7 @@ export class ImmigrationSystem {
         return null;
     }
 
-    findRemoteLandingSpot() {
+    findRemoteLandingSpot(sourceIslandName) {
         const map = this.game.tileMap;
         if (!map) return null;
 
@@ -161,6 +161,11 @@ export class ImmigrationSystem {
         const beachTiles = [];
         const centerX = map.width / 2;
         const centerY = map.height / 2;
+
+        // Determine which side of the island to prefer based on source
+        // If boat comes from left, prefer left-side beaches (x < centerX)
+        // If boat comes from right, prefer right-side beaches (x > centerX)
+        const preferLeftSide = sourceIslandName === 'left';
 
         for (let y = 0; y < map.height; y++) {
             for (let x = 0; x < map.width; x++) {
@@ -174,9 +179,15 @@ export class ImmigrationSystem {
 
                     // Main island beaches are within ~50 tiles of center
                     if (distFromCenter < 50 && distFromCenter > 15) {
+                        // Check if beach is on the correct side
+                        const isOnPreferredSide = preferLeftSide ? (x < centerX) : (x > centerX);
+                        
                         // Calculate distance from civilization (buildings)
                         const distFromCiv = this.getDistanceFromCivilization(x, y);
-                        beachTiles.push({ x, y, distFromCiv });
+                        
+                        // Give bonus score to beaches on the preferred side
+                        const sideBonus = isOnPreferredSide ? 100 : 0;
+                        beachTiles.push({ x, y, distFromCiv, score: distFromCiv + sideBonus, isOnPreferredSide });
                     }
                 }
             }
@@ -184,12 +195,25 @@ export class ImmigrationSystem {
 
         if (beachTiles.length === 0) return null;
 
-        // Sort by distance from civilization (furthest first)
-        beachTiles.sort((a, b) => b.distFromCiv - a.distFromCiv);
+        // First try to find beaches on the preferred side
+        const preferredBeaches = beachTiles.filter(b => b.isOnPreferredSide);
+        
+        if (preferredBeaches.length > 0) {
+            // Sort by distance from civilization (furthest first)
+            preferredBeaches.sort((a, b) => b.distFromCiv - a.distFromCiv);
+            // Pick from the top 30% most remote beaches on preferred side
+            const topRemote = preferredBeaches.slice(0, Math.max(1, Math.floor(preferredBeaches.length * 0.3)));
+            const chosen = topRemote[Math.floor(Math.random() * topRemote.length)];
+            console.log(`[IMMIGRATION] Chose beach on ${preferLeftSide ? 'left' : 'right'} side at (${chosen.x}, ${chosen.y})`);
+            return chosen;
+        }
 
-        // Pick from the top 20% most remote beaches
+        // Fallback: use any beach
+        beachTiles.sort((a, b) => b.distFromCiv - a.distFromCiv);
         const topRemote = beachTiles.slice(0, Math.max(1, Math.floor(beachTiles.length * 0.2)));
-        return topRemote[Math.floor(Math.random() * topRemote.length)];
+        const chosen = topRemote[Math.floor(Math.random() * topRemote.length)];
+        console.log(`[IMMIGRATION] Fallback: chose beach at (${chosen.x}, ${chosen.y})`);
+        return chosen;
     }
 
     getDistanceFromCivilization(x, y) {
