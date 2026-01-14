@@ -36,6 +36,9 @@ export class ToolManager {
     canPlaceAt(tileX, tileY) {
         if (!this.selectedTool) return { valid: false, reason: 'No tool selected' };
 
+        // Debug: only log for residential to avoid spam
+        const isResidential = this.selectedTool === 'residential';
+
         const building = getBuilding(this.selectedTool);
         if (!building) return { valid: false, reason: 'Invalid building' };
 
@@ -52,6 +55,7 @@ export class ToolManager {
 
         // Check if can build on this terrain
         if (!canBuildOn(this.selectedTool, tileType)) {
+            if (isResidential) console.log(`[ToolManager] ❌ Cannot build on terrain: ${tileType} (terrain code: ${tile.terrain})`);
             return { valid: false, reason: `Cannot build on ${tileType}` };
         }
 
@@ -83,9 +87,12 @@ export class ToolManager {
         if (building.size > 1) {
             // Special validation for residential allotments
             if (building.id === 'residential' && building.isAllotment && this.game.residentialManager) {
-                if (!this.game.residentialManager.canPlaceAllotment(tileX, tileY)) {
+                const canPlace = this.game.residentialManager.canPlaceAllotment(tileX, tileY);
+                if (!canPlace) {
+                    console.log(`[ToolManager] ❌ canPlaceAllotment returned false for (${tileX}, ${tileY})`);
                     return { valid: false, reason: 'Cannot place 3x3 allotment here' };
                 }
+                console.log(`[ToolManager] ✅ canPlaceAllotment returned true for (${tileX}, ${tileY})`);
             } else {
                 // Standard multi-tile building check
                 for (let dy = 0; dy < building.size; dy++) {
