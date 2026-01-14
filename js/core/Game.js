@@ -95,6 +95,7 @@ export class Game {
         this.infrastructureManager = new InfrastructureManager(this);
         this.animationSystem = new AnimationSystem(this);
         this.immigrationSystem = new ImmigrationSystem(this);
+        console.log("[INIT] ImmigrationSystem created:", !!this.immigrationSystem);
 
         // Initialize canvas (after managers so it can access them for rendering)
         this.canvas = new GameCanvas(this, 'game-canvas');
@@ -451,6 +452,7 @@ export class Game {
         }
 
         // Update immigration system (people boats and crowds) - OUTSIDE developmentManager block
+        console.log("[DEBUG] About to check immigrationSystem:", !!this.immigrationSystem);
         if (this.immigrationSystem) {
             this.immigrationSystem.update();
         }
