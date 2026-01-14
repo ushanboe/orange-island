@@ -15,8 +15,8 @@ export class ResidentialRenderer {
         if (!cellData) return;
         console.log(`[ResidentialRenderer] renderCell at (${x},${y})`, cellData);
 
-        const screenX = x * tileSize - cameraX;
-        const screenY = y * tileSize - cameraY;
+        const screenX = x * tileSize + cameraX;
+        const screenY = y * tileSize + cameraY;
 
         const { cell, phase, progress, allotment } = cellData;
 
@@ -338,8 +338,8 @@ export class ResidentialRenderer {
     // Draw allotment boundary (for the whole 3x3)
     drawAllotmentBoundary(x, y, tileSize, cameraX, cameraY, phase) {
         const ctx = this.ctx;
-        const screenX = x * tileSize - cameraX;
-        const screenY = y * tileSize - cameraY;
+        const screenX = x * tileSize + cameraX;
+        const screenY = y * tileSize + cameraY;
         const totalSize = tileSize * 3;
 
         // Boundary color based on phase
@@ -361,8 +361,8 @@ export class ResidentialRenderer {
     // Draw progress bar for the whole allotment
     drawAllotmentProgress(x, y, tileSize, cameraX, cameraY, progress, phase) {
         const ctx = this.ctx;
-        const screenX = x * tileSize - cameraX;
-        const screenY = y * tileSize - cameraY;
+        const screenX = x * tileSize + cameraX;
+        const screenY = y * tileSize + cameraY;
         const totalSize = tileSize * 3;
 
         // Progress bar at bottom of allotment
