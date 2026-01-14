@@ -75,7 +75,13 @@ export class Game {
         // Initialize tool manager (before canvas and toolbar)
         this.toolManager = new ToolManager(this);
 
-        // Initialize canvas
+        // Initialize development system (before canvas for rendering)
+        this.developmentManager = new DevelopmentManager(this);
+
+        // Initialize residential allotment system (before canvas for rendering)
+        this.residentialManager = new ResidentialAllotmentManager(this);
+
+        // Initialize canvas (after managers so it can access them for rendering)
         this.canvas = new GameCanvas(this, 'game-canvas');
 
         // Initialize toolbar
@@ -89,12 +95,6 @@ export class Game {
         this.tariffSystem = new TariffSystem(this);
         this.tariffUI = new TariffUI(this);
         this.debugPanel = new DebugPanel(this);
-
-        // Initialize development system
-        this.developmentManager = new DevelopmentManager(this);
-
-        // Initialize residential allotment system
-        this.residentialManager = new ResidentialAllotmentManager(this);
 
         // Add tariff button to toolbar
         this.addTariffButton();

@@ -796,9 +796,17 @@ export class GameCanvas {
         // Get cell data from the residential manager
         const resManager = this.game.residentialManager;
         if (!resManager) {
-            // Fallback: just draw a green square
+            // Fallback: just draw a green square with construction icon
+            console.warn('[GameCanvas] No residentialManager available for rendering!');
             ctx.fillStyle = '#4CAF50';
             ctx.fillRect(screenX + 1, screenY + 1, this.tileSize - 2, this.tileSize - 2);
+            // Draw construction icon as fallback
+            if (this.tileSize >= 16) {
+                ctx.font = `${Math.floor(this.tileSize * 0.6)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🏗️', screenX + this.tileSize/2, screenY + this.tileSize/2);
+            }
             return;
         }
 
