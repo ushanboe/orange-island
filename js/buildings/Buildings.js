@@ -14,16 +14,17 @@ export const BUILDINGS = {
     // === ZONES ===
     residential: {
         id: 'residential',
-        name: 'Residential Zone',
-        description: 'Housing for your loyal subjects',
+        name: 'Residential Allotment',
+        description: '3x3 housing zone - grows from houses to apartments to high-rises!',
         category: BUILDING_CATEGORIES.ZONES,
-        cost: 100,
-        size: 1,
+        cost: 500,  // Costs more but it's a 3x3 area
+        size: 3,    // 3x3 allotment
         color: '#4CAF50',  // Green
-        icon: '🏠',
+        icon: '🏘️',
+        isAllotment: true,  // Special flag for allotment handling
         effects: {
-            maxPopulation: 10,
-            happiness: 1
+            maxPopulation: 200,  // At full development (high-rises)
+            happiness: 2
         },
         canBuildOn: ['grass', 'dirt']
     },

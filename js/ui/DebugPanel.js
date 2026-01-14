@@ -189,6 +189,26 @@ export class DebugPanel {
         }
         html += `</div>`;
 
+        // Residential Allotments
+        html += `<div style="margin-bottom:10px;border-bottom:1px solid #006600;padding-bottom:8px;">`;
+        html += `<b style="color:#ffff00;">🏘️ RESIDENTIAL</b><br>`;
+        if (g.residentialManager) {
+            const rm = g.residentialManager;
+            html += `Initialized: ✅ YES<br>`;
+            html += `Allotments: ${rm.allotments ? rm.allotments.size : 0}<br>`;
+            html += `Total Pop: ${rm.getTotalPopulation ? rm.getTotalPopulation() : 0}<br>`;
+            if (rm.allotments && rm.allotments.size > 0) {
+                let phases = {1:0, 2:0, 3:0, 4:0, 5:0};
+                rm.allotments.forEach(a => {
+                    phases[a.phase] = (phases[a.phase] || 0) + 1;
+                });
+                html += `By Phase: ${JSON.stringify(phases)}<br>`;
+            }
+        } else {
+            html += `Initialized: ❌ NO<br>`;
+        }
+        html += `</div>`;
+
         // Canvas/Rendering
         html += `<div style="margin-bottom:10px;border-bottom:1px solid #006600;padding-bottom:8px;">`;
         html += `<b style="color:#ffff00;">🎨 RENDERING</b><br>`;

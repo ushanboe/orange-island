@@ -80,16 +80,24 @@ export class ToolManager {
 
         // For larger buildings, check all tiles
         if (building.size > 1) {
-            for (let dy = 0; dy < building.size; dy++) {
-                for (let dx = 0; dx < building.size; dx++) {
-                    const checkX = tileX + dx;
-                    const checkY = tileY + dy;
-                    if (!tileMap.isInBounds(checkX, checkY)) {
-                        return { valid: false, reason: 'Building too large for location' };
-                    }
-                    const checkTile = tileMap.getTile(checkX, checkY);
-                    if (checkTile.building) {
-                        return { valid: false, reason: 'Area not clear' };
+            // Special validation for residential allotments
+            if (building.id === 'residential' && building.isAllotment && this.game.residentialManager) {
+                if (!this.game.residentialManager.canPlaceAllotment(tileX, tileY)) {
+                    return { valid: false, reason: 'Cannot place 3x3 allotment here' };
+                }
+            } else {
+                // Standard multi-tile building check
+                for (let dy = 0; dy < building.size; dy++) {
+                    for (let dx = 0; dx < building.size; dx++) {
+                        const checkX = tileX + dx;
+                        const checkY = tileY + dy;
+                        if (!tileMap.isInBounds(checkX, checkY)) {
+                            return { valid: false, reason: 'Building too large for location' };
+                        }
+                        const checkTile = tileMap.getTile(checkX, checkY);
+                        if (checkTile.building) {
+                            return { valid: false, reason: 'Area not clear' };
+                        }
                     }
                 }
             }
@@ -144,17 +152,42 @@ export class ToolManager {
         }
 
         // Place the building
-        // For larger buildings, mark all tiles
-        for (let dy = 0; dy < building.size; dy++) {
-            for (let dx = 0; dx < building.size; dx++) {
-                const placeX = tileX + dx;
-                const placeY = tileY + dy;
-                tileMap.setBuilding(placeX, placeY, {
-                    type: building.id,
-                    mainTile: dx === 0 && dy === 0,
-                    originX: tileX,
-                    originY: tileY
-                });
+        // Special handling for residential allotments (3x3 zones)
+        if (building.id === 'residential' && building.isAllotment) {
+            // Use the ResidentialAllotmentManager
+            if (this.game.residentialManager) {
+                const success = this.game.residentialManager.createAllotment(tileX, tileY);
+                if (!success) {
+                    this.game.events.emit('placementFailed', { reason: 'Cannot place allotment here', tileX, tileY });
+                    return false;
+                }
+            } else {
+                // Fallback: mark tiles manually
+                for (let dy = 0; dy < 3; dy++) {
+                    for (let dx = 0; dx < 3; dx++) {
+                        tileMap.setBuilding(tileX + dx, tileY + dy, {
+                            type: 'residential_allotment',
+                            mainTile: dx === 0 && dy === 0,
+                            originX: tileX,
+                            originY: tileY
+                        });
+                    }
+                }
+            }
+        } else {
+            // Standard building placement
+            // For larger buildings, mark all tiles
+            for (let dy = 0; dy < building.size; dy++) {
+                for (let dx = 0; dx < building.size; dx++) {
+                    const placeX = tileX + dx;
+                    const placeY = tileY + dy;
+                    tileMap.setBuilding(placeX, placeY, {
+                        type: building.id,
+                        mainTile: dx === 0 && dy === 0,
+                        originX: tileX,
+                        originY: tileY
+                    });
+                }
             }
         }
 
@@ -195,8 +228,9 @@ export class ToolManager {
     kingCommentOnBuilding(building) {
         const comments = {
             residential: [
-                "Beautiful homes for beautiful people! 🏠",
-                "Housing! The best housing! Everyone says so! 🏘️"
+                "A whole NEIGHBORHOOD! 3x3 of pure greatness! 🏘️",
+                "Housing development! Watch it GROW! 🏠➡️🏢➡️🏙️",
+                "From houses to HIGH-RISES! That's how we do it! 💪"
             ],
             commercial: [
                 "Shops! Great deals! Tremendous commerce! 🏪",

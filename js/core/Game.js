@@ -9,6 +9,7 @@ import { BUILDINGS } from '../buildings/Buildings.js';
 import { TariffSystem } from '../economy/TariffSystem.js';
 import { TariffUI } from '../ui/TariffUI.js';
 import { DevelopmentManager } from '../simulation/Development.js';
+import { ResidentialAllotmentManager } from '../simulation/ResidentialAllotment.js';
 import { DebugPanel } from '../ui/DebugPanel.js';
 
 export class Game {
@@ -50,6 +51,9 @@ export class Game {
         // Development system
         this.developmentManager = null;
 
+        // Residential allotment system (3x3 zones)
+        this.residentialManager = null;
+
         // Timing
         this.lastUpdate = 0;
         this.tickInterval = 2000;  // 2 seconds per game tick
@@ -89,6 +93,9 @@ export class Game {
         // Initialize development system
         this.developmentManager = new DevelopmentManager(this);
 
+        // Initialize residential allotment system
+        this.residentialManager = new ResidentialAllotmentManager(this);
+
         // Add tariff button to toolbar
         this.addTariffButton();
 
@@ -115,7 +122,13 @@ export class Game {
         this.events.on('buildingPlaced', (data) => {
             // Track zone development
             const buildingType = data.building?.id || data.building;
-            if (buildingType === 'residential' || buildingType === 'commercial' || buildingType === 'industrial') {
+
+            // Residential uses the new 3x3 allotment system
+            if (buildingType === 'residential') {
+                // Allotment is created by ToolManager, just log it
+                console.log('Residential allotment placed at', data.tileX, data.tileY);
+            } else if (buildingType === 'commercial' || buildingType === 'industrial') {
+                // Commercial and industrial still use old development system
                 this.developmentManager.initZone(data.tileX, data.tileY, buildingType);
             }
             this.updateUI();
@@ -380,8 +393,16 @@ export class Game {
         // Update development system
         if (this.developmentManager) {
             const devStats = this.developmentManager.update();
-            // Use development-based population
-            this.population = devStats.totalPopulation;
+            // Use development-based population for commercial/industrial
+            let totalPop = devStats.totalPopulation;
+
+            // Add residential allotment population
+            if (this.residentialManager) {
+                const resStats = this.residentialManager.update();
+                totalPop += resStats.totalPopulation;
+            }
+
+            this.population = totalPop;
         }
 
         // Simulate

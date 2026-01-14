@@ -1,5 +1,6 @@
 // GameCanvas - Handles rendering and input for the game
 import { TERRAIN_COLORS } from '../map/TileMap.js';
+import { ResidentialRenderer } from '../rendering/ResidentialRenderer.js';
 import { BUILDINGS } from '../buildings/Buildings.js';
 import { ZONE_VISUALS, DEV_LEVELS } from '../simulation/Development.js';
 
@@ -115,6 +116,9 @@ export class GameCanvas {
         this.game = game;
         this.canvas = document.getElementById('game-canvas');
         this.ctx = this.canvas.getContext('2d');
+
+        // Initialize residential renderer
+        this.residentialRenderer = new ResidentialRenderer(this.canvas, this.ctx);
 
         this.tileSize = 32;
         this.minTileSize = 8;
@@ -682,6 +686,12 @@ export class GameCanvas {
     // ==================== DRAW BUILDING ====================
 
     drawBuilding(ctx, building, screenX, screenY, tileX, tileY) {
+        // Special handling for residential allotments (3x3 zones)
+        if (building.type === 'residential_allotment') {
+            this.drawResidentialAllotment(ctx, building, screenX, screenY, tileX, tileY);
+            return;
+        }
+
         const buildingDef = BUILDINGS[building.type];
         if (!buildingDef) return;
 
@@ -768,6 +778,109 @@ export class GameCanvas {
             ctx.textAlign = 'right';
             ctx.textBaseline = 'top';
             ctx.fillText(`L${dev.level}`, screenX + size - 2, screenY + 2);
+        }
+    }
+
+    
+
+    // ==================== RESIDENTIAL ALLOTMENT ====================
+
+    drawResidentialAllotment(ctx, building, screenX, screenY, tileX, tileY) {
+        // Get cell data from the residential manager
+        const resManager = this.game.residentialManager;
+        if (!resManager) {
+            // Fallback: just draw a green square
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(screenX + 1, screenY + 1, this.tileSize - 2, this.tileSize - 2);
+            return;
+        }
+
+        const cellData = resManager.getCellRenderData(tileX, tileY);
+
+        if (cellData && this.residentialRenderer) {
+            // Use the dedicated renderer
+            this.residentialRenderer.renderCell(
+                tileX, tileY, 
+                this.tileSize, 
+                cellData, 
+                this.offsetX, 
+                this.offsetY
+            );
+
+            // Draw allotment boundary on main tile
+            if (building.mainTile && cellData.allotment) {
+                this.residentialRenderer.drawAllotmentBoundary(
+                    cellData.allotment.x, 
+                    cellData.allotment.y,
+                    this.tileSize,
+                    this.offsetX,
+                    this.offsetY,
+                    cellData.phase
+                );
+
+                // Draw progress bar
+                this.residentialRenderer.drawAllotmentProgress(
+                    cellData.allotment.x,
+                    cellData.allotment.y,
+                    this.tileSize,
+                    this.offsetX,
+                    this.offsetY,
+                    cellData.progress,
+                    cellData.phase
+                );
+            }
+        } else {
+            // Fallback rendering
+            const size = this.tileSize;
+
+            // Draw based on cell position
+            ctx.fillStyle = '#90EE90';  // Light green
+            ctx.fillRect(screenX + 1, screenY + 1, size - 2, size - 2);
+
+            // Draw house icon if we have cell data
+            if (cellData?.cell?.type === 'house') {
+                ctx.fillStyle = '#4CAF50';
+                ctx.fillRect(screenX + 2, screenY + 2, size - 4, size - 4);
+                if (size >= 16) {
+                    ctx.font = `${Math.floor(size * 0.6)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('🏠', screenX + size/2, screenY + size/2);
+                }
+            } else if (cellData?.cell?.type === 'apartment') {
+                ctx.fillStyle = '#4682B4';
+                ctx.fillRect(screenX + 2, screenY + 2, size - 4, size - 4);
+                if (size >= 16) {
+                    ctx.font = `${Math.floor(size * 0.6)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('🏢', screenX + size/2, screenY + size/2);
+                }
+            } else if (cellData?.cell?.type === 'highrise') {
+                ctx.fillStyle = '#9370DB';
+                ctx.fillRect(screenX + 2, screenY + 2, size - 4, size - 4);
+                if (size >= 16) {
+                    ctx.font = `${Math.floor(size * 0.6)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('🏙️', screenX + size/2, screenY + size/2);
+                }
+            } else {
+                // Empty lot
+                ctx.fillStyle = '#DEB887';
+                ctx.fillRect(screenX + 3, screenY + 3, size - 6, size - 6);
+                if (size >= 16) {
+                    ctx.font = `${Math.floor(size * 0.5)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('🏗️', screenX + size/2, screenY + size/2);
+                }
+            }
+
+            // Border
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(screenX + 1, screenY + 1, size - 2, size - 2);
         }
     }
 
