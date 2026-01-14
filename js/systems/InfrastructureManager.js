@@ -7,7 +7,7 @@ export class InfrastructureManager {
         this.powerGrids = [];    // Array of connected power grids
         this.updateInterval = 30; // Update every 30 ticks (0.5 seconds at 60fps)
         this.tickCounter = 0;
-        
+
         // Cache for quick lookups
         this.buildingConnections = new Map(); // buildingKey -> { hasRoad, hasPower, connectedTo: [] }
     }
@@ -25,10 +25,11 @@ export class InfrastructureManager {
         this.calculateRoadNetworks();
         this.calculatePowerGrids();
         this.updateBuildingConnections();
+        console.log('[INFRA] Networks recalculated:', this.getStatus());
     }
 
     // ==================== ROAD NETWORK ====================
-    
+
     calculateRoadNetworks() {
         const tileMap = this.game.tileMap;
         if (!tileMap) return;
@@ -64,11 +65,11 @@ export class InfrastructureManager {
         };
 
         const queue = [{x: startX, y: startY}];
-        
+
         while (queue.length > 0) {
             const {x, y} = queue.shift();
             const key = `${x},${y}`;
-            
+
             if (visited.has(key)) continue;
             visited.add(key);
 
@@ -87,24 +88,24 @@ export class InfrastructureManager {
                 const nx = x + dx;
                 const ny = y + dy;
                 const neighborTile = tileMap.getTile(nx, ny);
-                
+
                 if (!neighborTile) continue;
 
                 if (neighborTile.building) {
                     const buildingType = neighborTile.building.type;
-                    
+
                     if (buildingType === 'road') {
                         if (!visited.has(`${nx},${ny}`)) {
                             queue.push({x: nx, y: ny});
                         }
                     } else {
-                        // Track connected buildings
-                        const buildingKey = neighborTile.building.originX !== undefined 
+                        // Track connected buildings using origin coordinates for multi-tile buildings
+                        const buildingKey = neighborTile.building.originX !== undefined
                             ? `${neighborTile.building.originX},${neighborTile.building.originY}`
                             : `${nx},${ny}`;
-                        
+
                         network.connectedBuildings.add(buildingKey);
-                        
+
                         // Track building types
                         if (buildingType === 'port') network.hasPort = true;
                         if (buildingType === 'commercial_allotment') network.hasCommercial = true;
@@ -120,7 +121,7 @@ export class InfrastructureManager {
     }
 
     // ==================== POWER GRID ====================
-    
+
     calculatePowerGrids() {
         const tileMap = this.game.tileMap;
         if (!tileMap) return;
@@ -152,11 +153,11 @@ export class InfrastructureManager {
         };
 
         const queue = [{x: startX, y: startY}];
-        
+
         while (queue.length > 0) {
             const {x, y} = queue.shift();
             const key = `${x},${y}`;
-            
+
             if (visited.has(key)) continue;
             visited.add(key);
 
@@ -164,12 +165,12 @@ export class InfrastructureManager {
             if (!tile?.building) continue;
 
             const buildingType = tile.building.type;
-            
+
             if (this.isPowerSource(buildingType)) {
                 grid.powerSources.push({x, y, type: buildingType});
                 grid.totalPower += this.getPowerOutput(buildingType);
             }
-            
+
             if (buildingType === 'powerLine') {
                 grid.powerLines.push({x, y});
             }
@@ -184,21 +185,23 @@ export class InfrastructureManager {
                 const nx = x + dx;
                 const ny = y + dy;
                 const neighborTile = tileMap.getTile(nx, ny);
-                
+
                 if (!neighborTile?.building) continue;
 
                 const neighborType = neighborTile.building.type;
-                
+
                 if (this.isPowerConductor(neighborType)) {
                     if (!visited.has(`${nx},${ny}`)) {
                         queue.push({x: nx, y: ny});
                     }
                 } else if (neighborType !== 'road') {
-                    // Building adjacent to power line gets power
-                    const buildingKey = neighborTile.building.originX !== undefined 
+                    // Building adjacent to power line/source gets power
+                    // Use origin coordinates for multi-tile buildings
+                    const buildingKey = neighborTile.building.originX !== undefined
                         ? `${neighborTile.building.originX},${neighborTile.building.originY}`
                         : `${nx},${ny}`;
                     grid.poweredBuildings.add(buildingKey);
+                    console.log(`[INFRA] Power connected to building at ${buildingKey} (type: ${neighborType})`);
                 }
             }
         }
@@ -226,10 +229,10 @@ export class InfrastructureManager {
     }
 
     // ==================== CONNECTION QUERIES ====================
-    
+
     updateBuildingConnections() {
         this.buildingConnections.clear();
-        
+
         // Process road networks
         for (const network of this.roadNetworks) {
             for (const buildingKey of network.connectedBuildings) {
@@ -250,7 +253,7 @@ export class InfrastructureManager {
         // Process power grids
         for (const grid of this.powerGrids) {
             if (grid.totalPower <= 0) continue; // No power sources
-            
+
             for (const buildingKey of grid.poweredBuildings) {
                 if (!this.buildingConnections.has(buildingKey)) {
                     this.buildingConnections.set(buildingKey, {
@@ -263,6 +266,14 @@ export class InfrastructureManager {
                 const conn = this.buildingConnections.get(buildingKey);
                 conn.hasPower = true;
                 conn.powerGrid = grid;
+            }
+        }
+
+        // Debug: log all building connections
+        if (this.buildingConnections.size > 0) {
+            console.log('[INFRA] Building connections updated:', this.buildingConnections.size, 'buildings tracked');
+            for (const [key, conn] of this.buildingConnections) {
+                console.log(`[INFRA]   ${key}: road=${conn.hasRoad}, power=${conn.hasPower}`);
             }
         }
     }
@@ -290,18 +301,19 @@ export class InfrastructureManager {
     canPortOperateBoats(portX, portY) {
         const key = `${portX},${portY}`;
         const conn = this.buildingConnections.get(key);
-        
-        console.log('[INFRA] canPortOperateBoats check for port at', portX, portY);
-        console.log('[INFRA] Port connection:', conn);
-        
+
+        console.log('[INFRA] === canPortOperateBoats check ===');
+        console.log('[INFRA] Port location:', portX, portY);
+        console.log('[INFRA] Port connection data:', conn);
+
         if (!conn?.hasRoad) {
-            console.log('[INFRA] Port has no road - boats NOT allowed');
+            console.log('[INFRA] ❌ Port has no road connection');
             return false;
         }
-        
+
         const network = conn.roadNetwork;
         if (!network) {
-            console.log('[INFRA] Port has no road network - boats NOT allowed');
+            console.log('[INFRA] ❌ Port has no road network');
             return false;
         }
 
@@ -314,27 +326,33 @@ export class InfrastructureManager {
 
         for (const buildingKey of network.connectedBuildings) {
             const buildingConn = this.buildingConnections.get(buildingKey);
-            
+
             // Check what type of building this is
             const [bx, by] = buildingKey.split(',').map(Number);
             const tile = this.game.tileMap?.getTile(bx, by);
-            
-            console.log('[INFRA] Checking connected building at', buildingKey, '- type:', tile?.building?.type, 'hasPower:', buildingConn?.hasPower);
-            
-            if (!buildingConn?.hasPower) continue;
+            const buildingType = tile?.building?.type;
 
-            if (tile?.building?.type === 'commercial_allotment') {
-                hasConnectedCommercialWithPower = true;
-                console.log('[INFRA] Found commercial with power!');
+            console.log(`[INFRA] Checking building at ${buildingKey}: type=${buildingType}, hasPower=${buildingConn?.hasPower}`);
+
+            if (!buildingConn?.hasPower) {
+                console.log(`[INFRA]   - No power, skipping`);
+                continue;
             }
-            if (tile?.building?.type === 'industrial_allotment') {
+
+            if (buildingType === 'commercial_allotment') {
+                hasConnectedCommercialWithPower = true;
+                console.log('[INFRA] ✅ Found COMMERCIAL with power!');
+            }
+            if (buildingType === 'industrial_allotment') {
                 hasConnectedIndustrialWithPower = true;
-                console.log('[INFRA] Found industrial with power!');
+                console.log('[INFRA] ✅ Found INDUSTRIAL with power!');
             }
         }
 
         const canOperate = hasConnectedCommercialWithPower && hasConnectedIndustrialWithPower;
-        console.log('[INFRA] canPortOperateBoats result:', canOperate, '(commercial:', hasConnectedCommercialWithPower, 'industrial:', hasConnectedIndustrialWithPower, ')');
+        console.log('[INFRA] === Result:', canOperate ? '✅ BOATS CAN OPERATE' : '❌ BOATS CANNOT OPERATE', '===');
+        console.log('[INFRA]   Commercial with power:', hasConnectedCommercialWithPower);
+        console.log('[INFRA]   Industrial with power:', hasConnectedIndustrialWithPower);
         return canOperate;
     }
 

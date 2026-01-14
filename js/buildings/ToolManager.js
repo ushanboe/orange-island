@@ -1,3 +1,4 @@
+
 // ToolManager - Handles tool selection and building placement
 import { BUILDINGS, getBuilding, canAfford, canBuildOn, BUILDING_CATEGORIES } from './Buildings.js';
 
@@ -10,7 +11,7 @@ export class ToolManager {
         this.lastPlacedTile = null;
 
         // Tools that can be dragged to place multiple
-        this.dragTools = ['road', 'wall', 'bulldozer', 'power_line'];
+        this.dragTools = ['road', 'wall', 'bulldozer', 'powerLine'];
     }
 
     // Select a tool
@@ -32,12 +33,32 @@ export class ToolManager {
         return this.selectedTool ? getBuilding(this.selectedTool) : null;
     }
 
+    // Find nearest empty tile adjacent to target (for power line connections)
+    findNearestEmptyAdjacent(tileX, tileY) {
+        const tileMap = this.game.tileMap;
+        const directions = [
+            {dx: 0, dy: -1}, {dx: 0, dy: 1},
+            {dx: -1, dy: 0}, {dx: 1, dy: 0}
+        ];
+
+        for (const {dx, dy} of directions) {
+            const nx = tileX + dx;
+            const ny = tileY + dy;
+            if (tileMap.isInBounds(nx, ny)) {
+                const tile = tileMap.getTile(nx, ny);
+                const tileType = tileMap.getTileType(tile.terrain);
+                // Check if empty and buildable
+                if (!tile.building && (tileType === 'grass' || tileType === 'dirt' || tileType === 'sand')) {
+                    return {x: nx, y: ny};
+                }
+            }
+        }
+        return null;
+    }
+
     // Check if placement is valid at tile position
     canPlaceAt(tileX, tileY) {
         if (!this.selectedTool) return { valid: false, reason: 'No tool selected' };
-
-        // Debug: only log for residential to avoid spam
-        const isResidential = this.selectedTool === 'residential';
 
         const building = getBuilding(this.selectedTool);
         if (!building) return { valid: false, reason: 'Invalid building' };
@@ -54,18 +75,20 @@ export class ToolManager {
         const tileType = tileMap.getTileType(tile.terrain);
 
         // For residential allotments, skip single-tile terrain check
-        // The canPlaceAllotment method will validate all 9 tiles properly
         const isAllotmentBuilding = building.isAllotment && building.size > 1;
-        
+
         // Check if can build on this terrain (skip for residential allotments)
         if (!isAllotmentBuilding && !canBuildOn(this.selectedTool, tileType)) {
-            if (isResidential) console.log(`[ToolManager] ❌ Cannot build on terrain: ${tileType} (terrain code: ${tile.terrain})`);
             return { valid: false, reason: `Cannot build on ${tileType}` };
         }
 
         // Check if tile already has a building (unless bulldozing or multi-tile building)
-        // For multi-tile buildings, we check all tiles later
+        // For power lines trying to connect to buildings, suggest adjacent placement
         if (tile.building && this.selectedTool !== 'bulldozer' && building.size === 1) {
+            // Special case: power lines can be redirected to adjacent empty tile
+            if (this.selectedTool === 'powerLine') {
+                return { valid: false, reason: 'Tile occupied - place adjacent to connect', redirectable: true };
+            }
             return { valid: false, reason: 'Tile already occupied' };
         }
 
@@ -89,42 +112,28 @@ export class ToolManager {
 
         // For larger buildings, check all tiles
         if (building.size > 1) {
-            // Debug: Log building info for multi-tile buildings
             console.log(`[ToolManager] Multi-tile building check:`, {
                 id: building.id,
                 size: building.size,
-                isAllotment: building.isAllotment,
-                hasResidentialManager: !!this.game.residentialManager
+                isAllotment: building.isAllotment
             });
 
-            // Special validation for residential allotments
+            // Special validation for allotments
             if (building.isAllotment && building.size > 1) {
-                // Handle all allotment types
                 let canPlace = false;
-                let managerName = '';
-                
+
                 if (building.id === 'residential' && this.game.residentialManager) {
-                    console.log(`[ToolManager] Using residential allotment path`);
                     canPlace = this.game.residentialManager.canPlaceAllotment(tileX, tileY);
-                    managerName = 'residential';
                 } else if (building.id === 'commercial' && this.game.commercialManager) {
-                    console.log(`[ToolManager] Using commercial allotment path`);
                     canPlace = this.game.commercialManager.canPlaceAllotment(tileX, tileY);
-                    managerName = 'commercial';
                 } else if (building.id === 'industrial' && this.game.industrialManager) {
-                    console.log(`[ToolManager] Using industrial allotment path`);
                     canPlace = this.game.industrialManager.canPlaceAllotment(tileX, tileY);
-                    managerName = 'industrial';
                 }
-                
-                const canPlaceResult = canPlace;
+
                 if (!canPlace) {
-                    console.log(`[ToolManager] ❌ canPlaceAllotment returned false for (${tileX}, ${tileY})`);
                     return { valid: false, reason: 'Cannot place 3x3 allotment here' };
                 }
-                console.log(`[ToolManager] ✅ canPlaceAllotment returned true for (${tileX}, ${tileY})`);
             } else {
-                console.log(`[ToolManager] Using standard multi-tile path`);
                 // Standard multi-tile building check
                 for (let dy = 0; dy < building.size; dy++) {
                     for (let dx = 0; dx < building.size; dx++) {
@@ -167,7 +176,19 @@ export class ToolManager {
     // Place building at tile position
     placeAt(tileX, tileY) {
         console.log(`[ToolManager] placeAt called at (${tileX}, ${tileY})`);
-        const check = this.canPlaceAt(tileX, tileY);
+        let check = this.canPlaceAt(tileX, tileY);
+
+        // Special handling for power lines - try to find adjacent spot if clicking on building
+        if (!check.valid && check.redirectable && this.selectedTool === 'powerLine') {
+            const adjacent = this.findNearestEmptyAdjacent(tileX, tileY);
+            if (adjacent) {
+                console.log(`[ToolManager] Redirecting power line to adjacent tile (${adjacent.x}, ${adjacent.y})`);
+                tileX = adjacent.x;
+                tileY = adjacent.y;
+                check = this.canPlaceAt(tileX, tileY);
+            }
+        }
+
         if (!check.valid) {
             this.game.events.emit('placementFailed', { reason: check.reason, tileX, tileY });
             return false;
@@ -182,43 +203,37 @@ export class ToolManager {
             const oldBuilding = tile.building;
             tileMap.setBuilding(tileX, tileY, null);
             this.game.treasury -= building.cost;
-            this.game.events.emit('buildingDemolished', { 
-                tileX, tileY, 
+            this.game.events.emit('buildingDemolished', {
+                tileX, tileY,
                 building: oldBuilding,
-                cost: building.cost 
+                cost: building.cost
             });
             this.game.kingTweet(`Demolished! Sad! But sometimes you gotta tear it down to build it better! 🚜`);
             return true;
         }
 
         // Place the building
-        // Special handling for allotments (3x3 zones)
         if (building.isAllotment && building.size > 1) {
             let success = false;
             let allotmentType = '';
-            
+
             if (building.id === 'residential' && this.game.residentialManager) {
-                console.log(`[ToolManager] Calling residential createAllotment at (${tileX}, ${tileY})`);
                 success = this.game.residentialManager.createAllotment(tileX, tileY);
                 allotmentType = 'residential';
             } else if (building.id === 'commercial' && this.game.commercialManager) {
-                console.log(`[ToolManager] Calling commercial createAllotment at (${tileX}, ${tileY})`);
                 success = this.game.commercialManager.createAllotment(tileX, tileY);
                 allotmentType = 'commercial';
             } else if (building.id === 'industrial' && this.game.industrialManager) {
-                console.log(`[ToolManager] Calling industrial createAllotment at (${tileX}, ${tileY})`);
                 success = this.game.industrialManager.createAllotment(tileX, tileY);
                 allotmentType = 'industrial';
             }
-            
-            console.log(`[ToolManager] ${allotmentType} createAllotment returned: ${success}`);
+
             if (!success) {
                 this.game.events.emit('placementFailed', { reason: `Cannot place ${allotmentType} allotment here`, tileX, tileY });
                 return false;
             }
         } else {
             // Standard building placement
-            // For larger buildings, mark all tiles
             for (let dy = 0; dy < building.size; dy++) {
                 for (let dx = 0; dx < building.size; dx++) {
                     const placeX = tileX + dx;
@@ -239,11 +254,18 @@ export class ToolManager {
         // Apply effects
         this.applyBuildingEffects(building);
 
+        // Force infrastructure recalculation when placing power-related buildings
+        if (building.id === 'powerLine' || building.category === 'power') {
+            if (this.game.infrastructureManager) {
+                this.game.infrastructureManager.recalculateNetworks();
+            }
+        }
+
         // Emit event
-        this.game.events.emit('buildingPlaced', { 
-            tileX, tileY, 
+        this.game.events.emit('buildingPlaced', {
+            tileX, tileY,
             building,
-            cost: building.cost 
+            cost: building.cost
         });
 
         // King comments on special buildings
@@ -263,7 +285,6 @@ export class ToolManager {
         if (effects.maxPopulation) {
             this.game.maxPopulation += effects.maxPopulation;
         }
-        // Other effects applied during simulation tick
     }
 
     // King makes comments about buildings
@@ -282,7 +303,7 @@ export class ToolManager {
                 "Factories! Jobs! Making the kingdom great! 🏭",
                 "Industry! We're bringing back industry! 💪"
             ],
-            road: null,  // No comment for roads
+            road: null,
             wall: [
                 "THE WALL! It's going to be HUGE! 🧱",
                 "Keep them OUT! Build that wall! 🚧",
@@ -303,7 +324,8 @@ export class ToolManager {
             golfCourse: [
                 "Golf! Finally somewhere to relax! ⛳",
                 "The best golf course in any kingdom! 🏌️"
-            ]
+            ],
+            powerLine: null  // No comment for power lines
         };
 
         const buildingComments = comments[building.id];
@@ -337,8 +359,8 @@ export class ToolManager {
         if (!this.selectedTool) return;
 
         // Don't place on same tile twice
-        if (this.lastPlacedTile && 
-            this.lastPlacedTile.x === tileX && 
+        if (this.lastPlacedTile &&
+            this.lastPlacedTile.x === tileX &&
             this.lastPlacedTile.y === tileY) {
             return;
         }

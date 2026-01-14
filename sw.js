@@ -1,5 +1,5 @@
 // Service Worker for Island Kingdom PWA
-const CACHE_NAME = 'island-kingdom-v42';
+const CACHE_NAME = 'island-kingdom-v43';
 
 const ASSETS_TO_CACHE = [
     './',
