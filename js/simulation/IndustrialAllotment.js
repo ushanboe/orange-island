@@ -112,7 +112,9 @@ export class IndustrialAllotmentManager {
                         allotmentKey: key,
                         cellX: dx,
                         cellY: dy,
-                        mainTile: (dx === 0 && dy === 0)
+                        mainTile: (dx === 0 && dy === 0),
+                        originX: x,
+                        originY: y
                     };
                 }
             }
