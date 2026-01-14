@@ -379,16 +379,32 @@ export class ToolManager {
 
     // Handle pointer move (drag placement)
     onPointerMove(tileX, tileY) {
-        if (!this.isPlacing || !this.dragBuilding) return;
-        if (!this.selectedTool) return;
+        console.log('[ToolManager] onPointerMove:', { 
+            tileX, tileY, 
+            isPlacing: this.isPlacing, 
+            dragBuilding: this.dragBuilding,
+            selectedTool: this.selectedTool,
+            lastPlacedTile: this.lastPlacedTile
+        });
+
+        if (!this.isPlacing || !this.dragBuilding) {
+            console.log('[ToolManager] Drag placement blocked - isPlacing:', this.isPlacing, 'dragBuilding:', this.dragBuilding);
+            return;
+        }
+        if (!this.selectedTool) {
+            console.log('[ToolManager] No tool selected during drag');
+            return;
+        }
 
         // Don't place on same tile twice
         if (this.lastPlacedTile &&
             this.lastPlacedTile.x === tileX &&
             this.lastPlacedTile.y === tileY) {
+            console.log('[ToolManager] Same tile, skipping');
             return;
         }
 
+        console.log('[ToolManager] Drag placing at:', tileX, tileY);
         this.placeAt(tileX, tileY);
     }
 
