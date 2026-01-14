@@ -322,23 +322,6 @@ export class PeopleBoat {
     }
 
     update() {
-        // Debug: log first call
-        if (!this._debugLogged) {
-            console.log("[IMMIGRATION] update() called for first time!");
-            this._debugLogged = true;
-        }
-        
-        // Debug: log every 100 ticks
-        if (this.spawnTimer % 10 === 0) {
-            const map = this.game.tileMap;
-            console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}/${this.spawnInterval}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
-        }
-        
-        // Debug: log spawn attempts
-        if (this.spawnTimer % 300 === 0 && this.spawnTimer > 0) {
-            const map = this.game.tileMap;
-            console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
-        }
         this.frame++;
 
         if (this.state === 'arriving') {
@@ -358,6 +341,22 @@ export class PeopleBoat {
         const dy = this.targetLanding.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
+        // Check if we're about to hit land - stop at water's edge
+        const map = this.game.tileMap;
+        if (map) {
+            const nextX = this.x + (dx / dist) * this.speed;
+            const nextY = this.y + (dy / dist) * this.speed;
+            const nextTerrain = map.getTerrainAt(Math.floor(nextX), Math.floor(nextY));
+            
+            // WATER=0, DEEP_WATER=1 - if next tile is NOT water, we've reached shore
+            if (nextTerrain !== 0 && nextTerrain !== 1) {
+                console.log(`[IMMIGRATION] Boat reached shore at (${Math.floor(this.x)}, ${Math.floor(this.y)})`);
+                this.state = 'landed';
+                return;
+            }
+        }
+
+        // Also stop if very close to target
         if (dist < 1.5) {
             this.state = 'landed';
             return;
@@ -401,23 +400,43 @@ export class PeopleBoat {
         const bob = Math.sin(this.frame * 0.08) * 2;
         ctx.translate(0, bob);
 
-        // Draw boat (different color from cargo boats - darker/wooden)
-        const scale = 1.0;
+        // Draw immigrant boat with sail
+        const scale = 1.2;
         ctx.scale(scale, scale);
 
-        // Boat hull (darker wood)
-        ctx.fillStyle = '#5D4037';
+        // Boat hull (wooden brown)
+        ctx.fillStyle = '#8B4513';
         ctx.beginPath();
-        ctx.moveTo(-tileSize * 0.4, 0);
-        ctx.lineTo(-tileSize * 0.3, tileSize * 0.2);
-        ctx.lineTo(tileSize * 0.3, tileSize * 0.2);
-        ctx.lineTo(tileSize * 0.4, 0);
-        ctx.lineTo(tileSize * 0.3, -tileSize * 0.08);
-        ctx.lineTo(-tileSize * 0.3, -tileSize * 0.08);
+        ctx.moveTo(-tileSize * 0.35, tileSize * 0.05);
+        ctx.lineTo(-tileSize * 0.25, tileSize * 0.18);
+        ctx.lineTo(tileSize * 0.25, tileSize * 0.18);
+        ctx.lineTo(tileSize * 0.35, tileSize * 0.05);
+        ctx.lineTo(tileSize * 0.28, -tileSize * 0.02);
+        ctx.lineTo(-tileSize * 0.28, -tileSize * 0.02);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = '#3E2723';
+        ctx.strokeStyle = '#5D3A1A';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Mast
+        ctx.strokeStyle = '#4A3728';
         ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, tileSize * 0.05);
+        ctx.lineTo(0, -tileSize * 0.35);
+        ctx.stroke();
+
+        // Sail (white/cream colored, triangular)
+        ctx.fillStyle = '#F5F5DC';
+        ctx.beginPath();
+        ctx.moveTo(0, -tileSize * 0.33);
+        ctx.lineTo(tileSize * 0.22, tileSize * 0.0);
+        ctx.lineTo(0, tileSize * 0.02);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#D4D4AA';
+        ctx.lineWidth = 1;
         ctx.stroke();
 
         // People silhouettes on deck
@@ -479,23 +498,6 @@ export class Crowd {
     }
 
     update() {
-        // Debug: log first call
-        if (!this._debugLogged) {
-            console.log("[IMMIGRATION] update() called for first time!");
-            this._debugLogged = true;
-        }
-        
-        // Debug: log every 100 ticks
-        if (this.spawnTimer % 10 === 0) {
-            const map = this.game.tileMap;
-            console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}/${this.spawnInterval}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
-        }
-        
-        // Debug: log spawn attempts
-        if (this.spawnTimer % 300 === 0 && this.spawnTimer > 0) {
-            const map = this.game.tileMap;
-            console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
-        }
         this.frame++;
         this.splitCooldown = Math.max(0, this.splitCooldown - 1);
 
