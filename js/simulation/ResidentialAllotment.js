@@ -1,4 +1,5 @@
 // js/simulation/ResidentialAllotment.js
+import { TERRAIN } from '../map/TileMap.js';
 // Advanced residential development system with 3x3 allotments
 // Phases: Empty -> Houses fill in -> Apartments replace houses -> High-rises
 
@@ -107,20 +108,33 @@ export class ResidentialAllotmentManager {
 
     // Check if we can place a 3x3 allotment
     canPlaceAllotment(x, y) {
+        console.log(`[ResidentialAllotment] Checking placement at (${x}, ${y})`);
         for (let dy = 0; dy < 3; dy++) {
             for (let dx = 0; dx < 3; dx++) {
-                const tile = this.map.getTile(x + dx, y + dy);
-                if (!tile) return false;
-                if (tile.building) return false;
+                const checkX = x + dx;
+                const checkY = y + dy;
+                const tile = this.map.getTile(checkX, checkY);
+
+                if (!tile) {
+                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) is null/undefined (out of bounds?)`);
+                    return false;
+                }
+                if (tile.building) {
+                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) has building:`, tile.building);
+                    return false;
+                }
 
                 // Check terrain - must be buildable
                 const terrain = tile.terrain;
-                if (terrain === 'water' || terrain === 'deep_water' || 
-                    terrain === 'mountain' || terrain === 'rock') {
+                if (terrain === TERRAIN.WATER || terrain === TERRAIN.DEEP_WATER ||
+                    terrain === TERRAIN.MOUNTAIN || terrain === TERRAIN.ROCK) {
+                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) has unbuildable terrain: ${terrain}`);
                     return false;
                 }
+                console.log(`  ✓ Tile at (${checkX}, ${checkY}) OK (terrain: ${terrain})`);
             }
         }
+        console.log(`  ✅ All 9 tiles valid for placement`);
         return true;
     }
 
