@@ -214,9 +214,16 @@ export class GameCanvas {
         this.lastPointerY = y;
 
         const { tileX, tileY } = this.screenToTile(x, y);
+        
+        console.log('[GameCanvas] onPointerDown:', { 
+            tileX, tileY, 
+            hasToolManager: !!this.game.toolManager,
+            selectedTool: this.game.toolManager?.selectedTool 
+        });
 
         if (this.game.toolManager && this.game.toolManager.selectedTool) {
             this.isDragging = true;
+            console.log('[GameCanvas] Calling toolManager.onPointerDown');
             this.game.toolManager.onPointerDown(tileX, tileY);
         } else {
             this.isPanning = true;

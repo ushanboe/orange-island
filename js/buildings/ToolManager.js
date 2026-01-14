@@ -294,7 +294,11 @@ export class ToolManager {
 
     // Handle pointer down (start placement)
     onPointerDown(tileX, tileY) {
-        if (!this.selectedTool) return;
+        console.log('[ToolManager] onPointerDown called:', { tileX, tileY, selectedTool: this.selectedTool });
+        if (!this.selectedTool) {
+            console.log('[ToolManager] No tool selected, returning early');
+            return;
+        }
 
         this.isPlacing = true;
 
