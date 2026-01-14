@@ -11,7 +11,7 @@ export class ImmigrationSystem {
         this.maxPeopleBoats = 5;
         this.maxCrowds = 20;
         this.spawnTimer = 0;
-        this.spawnInterval = 300;   // Ticks between spawn attempts
+        this.spawnInterval = 30;   // Ticks between spawn attempts
 
         // Immigration tweets for the king
         this.immigrationTweets = [
@@ -40,7 +40,7 @@ export class ImmigrationSystem {
         }
         
         // Debug: log every 100 ticks
-        if (this.spawnTimer % 100 === 0) {
+        if (this.spawnTimer % 10 === 0) {
             const map = this.game.tileMap;
             console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}/${this.spawnInterval}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
         }
@@ -322,7 +322,7 @@ export class PeopleBoat {
         }
         
         // Debug: log every 100 ticks
-        if (this.spawnTimer % 100 === 0) {
+        if (this.spawnTimer % 10 === 0) {
             const map = this.game.tileMap;
             console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}/${this.spawnInterval}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
         }
@@ -479,7 +479,7 @@ export class Crowd {
         }
         
         // Debug: log every 100 ticks
-        if (this.spawnTimer % 100 === 0) {
+        if (this.spawnTimer % 10 === 0) {
             const map = this.game.tileMap;
             console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}/${this.spawnInterval}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
         }
