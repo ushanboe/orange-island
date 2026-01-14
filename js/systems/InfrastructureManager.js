@@ -73,7 +73,7 @@ export class InfrastructureManager {
             visited.add(key);
 
             const tile = tileMap.getTile(x, y);
-            if (!tile?.building?.type === 'road') continue;
+            if (tile?.building?.type !== 'road') continue;
 
             network.roads.push({x, y});
 
