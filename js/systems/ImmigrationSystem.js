@@ -510,6 +510,7 @@ export class Crowd {
         this.pathUpdateTimer = 0;
         this.pathUpdateInterval = 60;  // Update path every 60 frames
         this.splitCooldown = 0;
+        this.targetMode = 'nearest';  // 'nearest', 'random', or 'wander' 
     }
 
     update() {
@@ -537,7 +538,17 @@ export class Crowd {
         const map = this.game.tileMap;
         if (!map) return;
 
-        // Find nearest building or palace (civilization)
+        // Different behavior based on target mode
+        if (this.targetMode === 'random') {
+            this.pickRandomTarget();
+            return;
+        }
+        if (this.targetMode === 'wander') {
+            this.pickWanderTarget();
+            return;
+        }
+
+        // Default: Find nearest building or palace (civilization)
         let nearestDist = Infinity;
         let nearestX = map.width / 2;
         let nearestY = map.height / 2;
@@ -562,6 +573,55 @@ export class Crowd {
 
         this.targetX = nearestX;
         this.targetY = nearestY;
+    }
+
+    pickRandomTarget() {
+        const map = this.game.tileMap;
+        if (!map) return;
+
+        // Collect all buildings and pick a random one
+        const buildings = [];
+        for (let y = 0; y < map.height; y++) {
+            for (let x = 0; x < map.width; x++) {
+                const tile = map.getTile(x, y);
+                const terrain = map.getTerrainAt(x, y);
+                if (tile?.building || terrain === 9) {
+                    buildings.push({ x, y });
+                }
+            }
+        }
+
+        if (buildings.length > 0) {
+            // Pick a random building (not necessarily nearest)
+            const target = buildings[Math.floor(Math.random() * buildings.length)];
+            this.targetX = target.x;
+            this.targetY = target.y;
+        } else {
+            // No buildings, wander toward center
+            this.targetX = map.width / 2 + (Math.random() - 0.5) * 20;
+            this.targetY = map.height / 2 + (Math.random() - 0.5) * 20;
+        }
+        
+        // 20% chance to go back to shore instead
+        if (Math.random() < 0.2) {
+            this.targetMode = 'wander';
+            this.pickWanderTarget();
+        }
+    }
+
+    pickWanderTarget() {
+        const map = this.game.tileMap;
+        if (!map) return;
+
+        // Wander in a random direction, possibly back toward shore
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 10 + Math.random() * 20;
+        this.targetX = this.x + Math.cos(angle) * distance;
+        this.targetY = this.y + Math.sin(angle) * distance;
+        
+        // Clamp to map bounds
+        this.targetX = Math.max(5, Math.min(map.width - 5, this.targetX));
+        this.targetY = Math.max(5, Math.min(map.height - 5, this.targetY));
     }
 
     moveTowardTarget() {
@@ -653,12 +713,15 @@ export class Crowd {
         this.splitCooldown = 60;  // 1 second cooldown
 
         // New crowd spawns slightly offset
-        const offsetX = (Math.random() - 0.5) * 2;
-        const offsetY = (Math.random() - 0.5) * 2;
+        const offsetX = (Math.random() - 0.5) * 3;
+        const offsetY = (Math.random() - 0.5) * 3;
 
         console.log(`[IMMIGRATION] Crowd split: ${splitCount} broke off, ${this.count} remain`);
 
-        return new Crowd(this.game, this.x + offsetX, this.y + offsetY, splitCount);
+        const newCrowd = new Crowd(this.game, this.x + offsetX, this.y + offsetY, splitCount);
+        // Make the new crowd go in a DIFFERENT direction
+        newCrowd.targetMode = 'random';  // Will pick a random target instead of nearest
+        return newCrowd;
     }
 
     render(ctx, offsetX, offsetY, tileSize) {
