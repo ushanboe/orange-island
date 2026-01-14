@@ -10,7 +10,7 @@ export class ToolManager {
         this.lastPlacedTile = null;
 
         // Tools that can be dragged to place multiple
-        this.dragTools = ['road', 'wall', 'bulldozer'];
+        this.dragTools = ['road', 'wall', 'bulldozer', 'power_line'];
     }
 
     // Select a tool

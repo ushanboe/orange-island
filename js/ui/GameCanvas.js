@@ -993,14 +993,16 @@ export class GameCanvas {
         ctx.arc(centerX, centerY, poleRadius * 0.4, 0, Math.PI * 2);
         ctx.fill();
 
-        // Crossarm (top-down view)
-        if (connCount >= 2) {
+        // Crossarm (top-down view) - perpendicular to wire direction
+        if (connCount >= 1) {
             ctx.fillStyle = '#6B4423';
+            // Horizontal wires (east/west) get VERTICAL crossbar
             if (connections.east || connections.west) {
-                ctx.fillRect(x + size * 0.15, centerY - size * 0.04, size * 0.7, size * 0.08);
+                ctx.fillRect(centerX - size * 0.04, y + size * 0.2, size * 0.08, size * 0.6);
             }
+            // Vertical wires (north/south) get HORIZONTAL crossbar
             if (connections.north || connections.south) {
-                ctx.fillRect(centerX - size * 0.04, y + size * 0.15, size * 0.08, size * 0.7);
+                ctx.fillRect(x + size * 0.2, centerY - size * 0.04, size * 0.6, size * 0.08);
             }
         }
 
