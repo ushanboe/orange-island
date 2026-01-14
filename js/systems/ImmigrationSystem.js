@@ -82,10 +82,10 @@ export class ImmigrationSystem {
         // Random chance to spawn
         const roll = Math.random();
         if (roll > 0.8) {
-            console.log(`[IMMIGRATION] Random check failed: ${roll.toFixed(2)} > >0.4`);;
+            console.log(`[IMMIGRATION] Random check failed: ${roll.toFixed(2)} > 0.8`);;
             return;
         }
-        console.log(`[IMMIGRATION] Random check passed: ${roll.toFixed(2)} <= >0.4`);;
+        console.log(`[IMMIGRATION] Random check passed: ${roll.toFixed(2)} <= 0.8`);;
 
         // Pick a random source island
         const sourceIsland = map.sourceIslands[Math.floor(Math.random() * map.sourceIslands.length)];
@@ -137,8 +137,8 @@ export class ImmigrationSystem {
 
         for (let radius = 5; radius < 20; radius++) {
             for (let dy = -radius; dy <= radius; dy++) {
-                const x = island.centerX + (radius * searchDirection);
-                const y = island.centerY + dy;
+                const x = Math.floor(island.centerX + (radius * searchDirection));
+                const y = Math.floor(island.centerY + dy);
 
                 if (x >= 0 && x < map.width && y >= 0 && y < map.height) {
                     const terrain = map.getTerrainAt(x, y);
