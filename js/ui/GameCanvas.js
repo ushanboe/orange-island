@@ -774,51 +774,86 @@ export class GameCanvas {
     // ==================== ANIMATED BUILDINGS ====================
 
     drawNuclearPlant(ctx, x, y, size, def) {
-        // Background
-        ctx.fillStyle = def.color;
         const fullSize = size * 2; // 2x2 building
+
+        // Background - concrete pad
+        ctx.fillStyle = '#808080';
         ctx.fillRect(x + 1, y + 1, fullSize - 2, fullSize - 2);
 
-        // Cooling tower shape
-        ctx.fillStyle = '#E0E0E0';
-        const towerW = fullSize * 0.35;
-        const towerH = fullSize * 0.5;
+        // Inner area
+        ctx.fillStyle = def.color || '#9932CC';
+        ctx.fillRect(x + 3, y + 3, fullSize - 6, fullSize - 6);
+
+        // Cooling tower 1 (left) - hyperboloid shape
+        ctx.fillStyle = '#E8E8E8';
         ctx.beginPath();
-        ctx.moveTo(x + fullSize * 0.2, y + fullSize * 0.7);
-        ctx.lineTo(x + fullSize * 0.25, y + fullSize * 0.2);
-        ctx.lineTo(x + fullSize * 0.45, y + fullSize * 0.2);
-        ctx.lineTo(x + fullSize * 0.5, y + fullSize * 0.7);
+        ctx.moveTo(x + fullSize * 0.1, y + fullSize * 0.75);
+        ctx.quadraticCurveTo(x + fullSize * 0.15, y + fullSize * 0.4, x + fullSize * 0.2, y + fullSize * 0.15);
+        ctx.lineTo(x + fullSize * 0.4, y + fullSize * 0.15);
+        ctx.quadraticCurveTo(x + fullSize * 0.45, y + fullSize * 0.4, x + fullSize * 0.5, y + fullSize * 0.75);
         ctx.closePath();
         ctx.fill();
+        ctx.strokeStyle = '#CCCCCC';
+        ctx.lineWidth = 1;
+        ctx.stroke();
 
-        // Second tower
+        // Cooling tower 2 (right)
+        ctx.fillStyle = '#E8E8E8';
         ctx.beginPath();
-        ctx.moveTo(x + fullSize * 0.5, y + fullSize * 0.7);
-        ctx.lineTo(x + fullSize * 0.55, y + fullSize * 0.2);
-        ctx.lineTo(x + fullSize * 0.75, y + fullSize * 0.2);
-        ctx.lineTo(x + fullSize * 0.8, y + fullSize * 0.7);
+        ctx.moveTo(x + fullSize * 0.5, y + fullSize * 0.75);
+        ctx.quadraticCurveTo(x + fullSize * 0.55, y + fullSize * 0.4, x + fullSize * 0.6, y + fullSize * 0.15);
+        ctx.lineTo(x + fullSize * 0.8, y + fullSize * 0.15);
+        ctx.quadraticCurveTo(x + fullSize * 0.85, y + fullSize * 0.4, x + fullSize * 0.9, y + fullSize * 0.75);
         ctx.closePath();
         ctx.fill();
+        ctx.strokeStyle = '#CCCCCC';
+        ctx.stroke();
 
-        // Spinning nuclear symbol
-        if (size >= 12) {
-            const rotation = (this.animTime / 800) * Math.PI * 2;
-            const centerX = x + fullSize * 0.5;
-            const centerY = y + fullSize * 0.85;
+        // Steam from towers (animated)
+        const steamOffset = Math.sin(this.animTime / 200) * 2;
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.beginPath();
+        ctx.arc(x + fullSize * 0.3, y + fullSize * 0.1 + steamOffset, fullSize * 0.08, 0, Math.PI * 2);
+        ctx.arc(x + fullSize * 0.7, y + fullSize * 0.08 - steamOffset, fullSize * 0.1, 0, Math.PI * 2);
+        ctx.fill();
 
-            ctx.save();
-            ctx.translate(centerX, centerY);
-            ctx.rotate(rotation);
-            ctx.font = `${Math.floor(fullSize * 0.25)}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('☢️', 0, 0);
-            ctx.restore();
+        // Spinning nuclear symbol (always show, scale with size)
+        const rotation = (this.animTime / 600) * Math.PI * 2;
+        const centerX = x + fullSize * 0.5;
+        const centerY = y + fullSize * 0.88;
+        const symbolSize = Math.max(10, fullSize * 0.22);
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(rotation);
+
+        // Draw nuclear symbol manually for better visibility
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(0, 0, symbolSize * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Nuclear trefoil
+        ctx.fillStyle = '#000000';
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            const angle = (i * 2 * Math.PI / 3) - Math.PI / 2;
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, symbolSize * 0.45, angle - 0.4, angle + 0.4);
+            ctx.closePath();
+            ctx.fill();
         }
+        // Center dot
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(0, 0, symbolSize * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
 
         // Border
-        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 2;
         ctx.strokeRect(x + 1, y + 1, fullSize - 2, fullSize - 2);
     }
 
