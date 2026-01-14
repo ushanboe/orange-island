@@ -454,24 +454,26 @@ export class PeopleBoat {
 
         ctx.restore();
 
-        // Draw people count marker
-        ctx.save();
-        ctx.font = 'bold 14px Arial';
-        ctx.textAlign = 'center';
+        // Draw people count marker only when arriving (has people on board)
+        if (this.state === 'arriving') {
+            ctx.save();
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
 
-        // Background pill
-        const text = this.peopleCount.toString();
-        const textWidth = ctx.measureText(text).width;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.beginPath();
-        ctx.roundRect(screenX + tileSize/2 - textWidth/2 - 6, screenY - 20, textWidth + 12, 18, 9);
-        ctx.fill();
+            // Background pill
+            const text = this.peopleCount.toString();
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.beginPath();
+            ctx.roundRect(screenX + tileSize/2 - textWidth/2 - 6, screenY - 20, textWidth + 12, 18, 9);
+            ctx.fill();
 
-        // People icon and count
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillText('👥 ' + text, screenX + tileSize/2, screenY - 6);
+            // People icon and count
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText('👥 ' + text, screenX + tileSize/2, screenY - 6);
 
-        ctx.restore();
+            ctx.restore();
+        }
     }
 }
 
