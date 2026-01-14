@@ -163,8 +163,6 @@ export class ImmigrationSystem {
         const centerY = map.height / 2;
 
         // Determine which side of the island to prefer based on source
-        // If boat comes from left, prefer left-side beaches (x < centerX)
-        // If boat comes from right, prefer right-side beaches (x > centerX)
         const preferLeftSide = sourceIslandName === 'left';
 
         for (let y = 0; y < map.height; y++) {
@@ -179,15 +177,25 @@ export class ImmigrationSystem {
 
                     // Main island beaches are within ~50 tiles of center
                     if (distFromCenter < 50 && distFromCenter > 15) {
-                        // Check if beach is on the correct side
-                        const isOnPreferredSide = preferLeftSide ? (x < centerX) : (x > centerX);
+                        // Check if beach is on the correct HORIZONTAL side (left or right)
+                        const isOnPreferredSide = preferLeftSide ? (x < centerX - 10) : (x > centerX + 10);
+                        
+                        // ALSO check that beach is not at extreme top or bottom
+                        // Prefer beaches in the middle 60% of Y range (20% to 80%)
+                        const yRatio = y / map.height;
+                        const isInMiddleY = yRatio > 0.25 && yRatio < 0.75;
                         
                         // Calculate distance from civilization (buildings)
                         const distFromCiv = this.getDistanceFromCivilization(x, y);
                         
-                        // Give bonus score to beaches on the preferred side
-                        const sideBonus = isOnPreferredSide ? 100 : 0;
-                        beachTiles.push({ x, y, distFromCiv, score: distFromCiv + sideBonus, isOnPreferredSide });
+                        beachTiles.push({ 
+                            x, y, 
+                            distFromCiv, 
+                            isOnPreferredSide,
+                            isInMiddleY,
+                            // Best beaches are on correct side AND in middle Y
+                            priority: (isOnPreferredSide ? 2 : 0) + (isInMiddleY ? 1 : 0)
+                        });
                     }
                 }
             }
@@ -195,24 +203,21 @@ export class ImmigrationSystem {
 
         if (beachTiles.length === 0) return null;
 
-        // First try to find beaches on the preferred side
-        const preferredBeaches = beachTiles.filter(b => b.isOnPreferredSide);
-        
-        if (preferredBeaches.length > 0) {
-            // Sort by distance from civilization (furthest first)
-            preferredBeaches.sort((a, b) => b.distFromCiv - a.distFromCiv);
-            // Pick from the top 30% most remote beaches on preferred side
-            const topRemote = preferredBeaches.slice(0, Math.max(1, Math.floor(preferredBeaches.length * 0.3)));
-            const chosen = topRemote[Math.floor(Math.random() * topRemote.length)];
-            console.log(`[IMMIGRATION] Chose beach on ${preferLeftSide ? 'left' : 'right'} side at (${chosen.x}, ${chosen.y})`);
-            return chosen;
-        }
+        // Sort by priority (highest first), then by distance from civ
+        beachTiles.sort((a, b) => {
+            if (b.priority !== a.priority) return b.priority - a.priority;
+            return b.distFromCiv - a.distFromCiv;
+        });
 
-        // Fallback: use any beach
-        beachTiles.sort((a, b) => b.distFromCiv - a.distFromCiv);
-        const topRemote = beachTiles.slice(0, Math.max(1, Math.floor(beachTiles.length * 0.2)));
-        const chosen = topRemote[Math.floor(Math.random() * topRemote.length)];
-        console.log(`[IMMIGRATION] Fallback: chose beach at (${chosen.x}, ${chosen.y})`);
+        // Get the best priority level available
+        const bestPriority = beachTiles[0].priority;
+        const bestBeaches = beachTiles.filter(b => b.priority === bestPriority);
+        
+        // Pick randomly from top 30% of best beaches
+        const topCount = Math.max(1, Math.floor(bestBeaches.length * 0.3));
+        const chosen = bestBeaches[Math.floor(Math.random() * topCount)];
+        
+        console.log(`[IMMIGRATION] Chose beach at (${chosen.x}, ${chosen.y}) - side: ${preferLeftSide ? 'left' : 'right'}, priority: ${chosen.priority}`);
         return chosen;
     }
 
