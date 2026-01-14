@@ -105,8 +105,6 @@ export class TariffSystem {
                     count++;
                 }
             }
-        }
-        return count;
     }
 
     findRandomPort() {
@@ -126,9 +124,49 @@ export class TariffSystem {
         return ports[Math.floor(Math.random() * ports.length)];
     }
 
+    // Find a random OPERATIONAL port (connected to powered commercial + industrial)
+    findOperationalPort() {
+        const ports = [];
+        const map = this.game.map;
+        const infraManager = this.game.infrastructureManager;
+        
+        if (!map) return null;
+        if (!infraManager) {
+            console.warn('[TARIFF] No infrastructure manager - falling back to any port');
+            return this.findRandomPort();
+        }
+
+        for (let y = 0; y < map.height; y++) {
+            for (let x = 0; x < map.width; x++) {
+                const tile = map.getTile(x, y);
+                if (tile && tile.building && tile.building.type === 'port' && tile.building.mainTile !== false) {
+                    // Get the origin coordinates for multi-tile buildings
+                    const portX = tile.building.originX ?? x;
+                    const portY = tile.building.originY ?? y;
+                    
+                    // Check if this port can operate boats
+                    if (infraManager.canPortOperateBoats(portX, portY)) {
+                        ports.push({ x: portX, y: portY });
+                    }
+                }
+            }
+        }
+        
+        if (ports.length === 0) {
+            // Only log occasionally to avoid spam
+            if (Math.random() < 0.01) {
+                console.log('[TARIFF] No operational ports (need road + powered commercial + powered industrial)');
+            }
+            return null;
+        }
+        
+        return ports[Math.floor(Math.random() * ports.length)];
+    }
+
     trySpawnBoat() {
-        const port = this.findRandomPort();
-        if (!port) return; // No ports, no boats
+        // FIXED: Only spawn boats at operational ports
+        const port = this.findOperationalPort();
+        if (!port) return; // No operational ports, no boats
 
         // Check if boat wants to come based on tariffs
         const avgTariff = this.getAverageTariff();
@@ -160,19 +198,15 @@ export class TariffSystem {
         const variance = (Math.random() - 0.5) * 4; // Small random offset
 
         if (minDist === distToLeft) {
-            // Spawn from left edge
             startX = -2;
             startY = port.y + variance;
         } else if (minDist === distToRight) {
-            // Spawn from right edge
             startX = mapWidth + 2;
             startY = port.y + variance;
         } else if (minDist === distToTop) {
-            // Spawn from top edge
             startX = port.x + variance;
             startY = -2;
         } else {
-            // Spawn from bottom edge
             startX = port.x + variance;
             startY = mapHeight + 2;
         }
@@ -191,8 +225,8 @@ export class TariffSystem {
         }
 
         this.boats.push(boat);
+        console.log('[TARIFF] Boat spawned heading to operational port at', port.x, port.y);
     }
-
     processBoat(boat) {
         // Calculate tariff for this boat's cargo
         let totalTariff = 0;
