@@ -26,6 +26,7 @@ export class Game {
         this.frameCount = 0;
         this.population = 0;
         this.maxPopulation = 0;
+        this.visitors = 0;  // Immigrants who landed but haven't integrated
         this.month = 1;
         this.year = 1;
         this.kingMood = 50;  // 0-100 numeric for development system
@@ -66,7 +67,7 @@ export class Game {
 
         // Timing
         this.lastUpdate = 0;
-        this.tickInterval = 2000;  // 2 seconds per game tick
+        this.tickInterval = 4000;  // 4 seconds per game tick (50% slower)
         this.lastTick = 0;
 
         // King's tweets
@@ -539,8 +540,9 @@ export class Game {
         const roadMaintenance = roadCount * 1;
         const golfMaintenance = golfCount * 20;
         const generalExpenses = Math.floor(this.population * 0.5);
+        const visitorWelfare = this.visitors * 5;  // $5 per visitor per month
 
-        this.monthlyExpenses = roadMaintenance + golfMaintenance + generalExpenses;
+        this.monthlyExpenses = roadMaintenance + golfMaintenance + generalExpenses + visitorWelfare;
 
         // Apply to treasury
         const netIncome = this.monthlyIncome - this.monthlyExpenses;

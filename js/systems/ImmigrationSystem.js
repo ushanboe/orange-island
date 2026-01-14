@@ -298,9 +298,9 @@ export class ImmigrationSystem {
 
             // Check if crowd reached civilization
             if (crowd.reachedCivilization) {
-                // Add to population
-                this.game.population = (this.game.population || 0) + crowd.count;
-                console.log(`[IMMIGRATION] ${crowd.count} immigrants joined the population!`);
+                // Add to visitors count (not population - they're visitors until integrated)
+                this.game.visitors = (this.game.visitors || 0) + crowd.count;
+                console.log(`[IMMIGRATION] ${crowd.count} visitors arrived! Total visitors: ${this.game.visitors}`);
                 crowd.remove = true;
 
                 // King tweet about immigrants arriving

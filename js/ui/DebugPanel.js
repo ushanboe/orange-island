@@ -136,6 +136,7 @@ export class DebugPanel {
         html += `Game Time: Year ${g.year}, Month ${g.month}<br>`;
         html += `Treasury: $${g.treasury}<br>`;
         html += `Population: ${g.population}<br>`;
+        html += `Visitors: ${g.visitors || 0} (welfare: $${(g.visitors || 0) * 5}/mo)<br>`;
         html += `King Mood: ${g.kingMood}<br>`;
         html += `</div>`;
 
