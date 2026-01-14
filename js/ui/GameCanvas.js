@@ -1,6 +1,8 @@
 // GameCanvas - Handles rendering and input for the game
 import { TERRAIN_COLORS } from '../map/TileMap.js';
 import { ResidentialRenderer } from '../rendering/ResidentialRenderer.js';
+import { CommercialRenderer } from '../rendering/CommercialRenderer.js';
+import { IndustrialRenderer } from '../rendering/IndustrialRenderer.js';
 import { BUILDINGS } from '../buildings/Buildings.js';
 import { ZONE_VISUALS, DEV_LEVELS } from '../simulation/Development.js';
 
@@ -119,6 +121,8 @@ export class GameCanvas {
 
         // Initialize residential renderer
         this.residentialRenderer = new ResidentialRenderer(this.canvas, this.ctx);
+        this.commercialRenderer = new CommercialRenderer(this.canvas, this.ctx);
+        this.industrialRenderer = new IndustrialRenderer(this.canvas, this.ctx);
 
         this.tileSize = 32;
         this.minTileSize = 8;
@@ -709,12 +713,17 @@ export class GameCanvas {
 
     drawBuilding(ctx, building, screenX, screenY, tileX, tileY) {
         // Debug: log all building draws for residential
-        if (building.type === 'residential_allotment') {
-            console.log(`[DRAW] drawBuilding called for residential_allotment at (${tileX},${tileY})`);
-        }
-        // Special handling for residential allotments (3x3 zones)
+        // Special handling for allotments (3x3 zones)
         if (building.type === 'residential_allotment') {
             this.drawResidentialAllotment(ctx, building, screenX, screenY, tileX, tileY);
+            return;
+        }
+        if (building.type === 'commercial_allotment') {
+            this.drawCommercialAllotment(ctx, building, screenX, screenY, tileX, tileY);
+            return;
+        }
+        if (building.type === 'industrial_allotment') {
+            this.drawIndustrialAllotment(ctx, building, screenX, screenY, tileX, tileY);
             return;
         }
 
@@ -918,6 +927,130 @@ export class GameCanvas {
             ctx.strokeStyle = 'rgba(0,0,0,0.2)';
             ctx.lineWidth = 1;
             ctx.strokeRect(screenX + 1, screenY + 1, size - 2, size - 2);
+        }
+    }
+
+    // ==================== COMMERCIAL ALLOTMENT ====================
+
+    drawCommercialAllotment(ctx, building, screenX, screenY, tileX, tileY) {
+        const comManager = this.game.commercialManager;
+        if (!comManager) {
+            // Fallback: just draw a blue square
+            ctx.fillStyle = '#2196F3';
+            ctx.fillRect(screenX + 1, screenY + 1, this.tileSize - 2, this.tileSize - 2);
+            if (this.tileSize >= 16) {
+                ctx.font = `${Math.floor(this.tileSize * 0.6)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🏗️', screenX + this.tileSize/2, screenY + this.tileSize/2);
+            }
+            return;
+        }
+
+        const cellData = comManager.getCellRenderData(tileX, tileY);
+
+        if (cellData && this.commercialRenderer) {
+            this.commercialRenderer.renderCell(
+                tileX, tileY,
+                this.tileSize,
+                cellData,
+                this.offsetX,
+                this.offsetY
+            );
+
+            if (building.mainTile && cellData.allotment) {
+                this.commercialRenderer.drawAllotmentBoundary(
+                    cellData.allotment.x,
+                    cellData.allotment.y,
+                    this.tileSize,
+                    this.offsetX,
+                    this.offsetY,
+                    cellData.phase
+                );
+
+                this.commercialRenderer.drawAllotmentProgress(
+                    cellData.allotment.x,
+                    cellData.allotment.y,
+                    this.tileSize,
+                    this.offsetX,
+                    this.offsetY,
+                    cellData.progress,
+                    cellData.phase
+                );
+            }
+        } else {
+            // Fallback rendering
+            const size = this.tileSize;
+            ctx.fillStyle = '#64B5F6';
+            ctx.fillRect(screenX + 1, screenY + 1, size - 2, size - 2);
+            if (size >= 16) {
+                ctx.font = `${Math.floor(size * 0.5)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🏗️', screenX + size/2, screenY + size/2);
+            }
+        }
+    }
+
+    // ==================== INDUSTRIAL ALLOTMENT ====================
+
+    drawIndustrialAllotment(ctx, building, screenX, screenY, tileX, tileY) {
+        const indManager = this.game.industrialManager;
+        if (!indManager) {
+            // Fallback: just draw an orange square
+            ctx.fillStyle = '#FF9800';
+            ctx.fillRect(screenX + 1, screenY + 1, this.tileSize - 2, this.tileSize - 2);
+            if (this.tileSize >= 16) {
+                ctx.font = `${Math.floor(this.tileSize * 0.6)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🏗️', screenX + this.tileSize/2, screenY + this.tileSize/2);
+            }
+            return;
+        }
+
+        const cellData = indManager.getCellRenderData(tileX, tileY);
+
+        if (cellData && this.industrialRenderer) {
+            this.industrialRenderer.renderCell(
+                tileX, tileY,
+                this.tileSize,
+                cellData,
+                this.offsetX,
+                this.offsetY
+            );
+
+            if (building.mainTile && cellData.allotment) {
+                this.industrialRenderer.drawAllotmentBoundary(
+                    cellData.allotment.x,
+                    cellData.allotment.y,
+                    this.tileSize,
+                    this.offsetX,
+                    this.offsetY,
+                    cellData.phase
+                );
+
+                this.industrialRenderer.drawAllotmentProgress(
+                    cellData.allotment.x,
+                    cellData.allotment.y,
+                    this.tileSize,
+                    this.offsetX,
+                    this.offsetY,
+                    cellData.progress,
+                    cellData.phase
+                );
+            }
+        } else {
+            // Fallback rendering
+            const size = this.tileSize;
+            ctx.fillStyle = '#FFB74D';
+            ctx.fillRect(screenX + 1, screenY + 1, size - 2, size - 2);
+            if (size >= 16) {
+                ctx.font = `${Math.floor(size * 0.5)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🏗️', screenX + size/2, screenY + size/2);
+            }
         }
     }
 

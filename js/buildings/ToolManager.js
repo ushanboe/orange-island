@@ -55,7 +55,7 @@ export class ToolManager {
 
         // For residential allotments, skip single-tile terrain check
         // The canPlaceAllotment method will validate all 9 tiles properly
-        const isResidentialAllotment = building.id === 'residential' && building.isAllotment && building.size > 1;
+        const isAllotmentBuilding = building.isAllotment && building.size > 1;
         
         // Check if can build on this terrain (skip for residential allotments)
         if (!isResidentialAllotment && !canBuildOn(this.selectedTool, tileType)) {
@@ -98,9 +98,26 @@ export class ToolManager {
             });
 
             // Special validation for residential allotments
-            if (building.id === 'residential' && building.isAllotment && this.game.residentialManager) {
-                console.log(`[ToolManager] Using residential allotment path`);
-                const canPlace = this.game.residentialManager.canPlaceAllotment(tileX, tileY);
+            if (building.isAllotment && building.size > 1) {
+                // Handle all allotment types
+                let canPlace = false;
+                let managerName = '';
+                
+                if (building.id === 'residential' && this.game.residentialManager) {
+                    console.log(`[ToolManager] Using residential allotment path`);
+                    canPlace = this.game.residentialManager.canPlaceAllotment(tileX, tileY);
+                    managerName = 'residential';
+                } else if (building.id === 'commercial' && this.game.commercialManager) {
+                    console.log(`[ToolManager] Using commercial allotment path`);
+                    canPlace = this.game.commercialManager.canPlaceAllotment(tileX, tileY);
+                    managerName = 'commercial';
+                } else if (building.id === 'industrial' && this.game.industrialManager) {
+                    console.log(`[ToolManager] Using industrial allotment path`);
+                    canPlace = this.game.industrialManager.canPlaceAllotment(tileX, tileY);
+                    managerName = 'industrial';
+                }
+                
+                const canPlaceResult = canPlace;
                 if (!canPlace) {
                     console.log(`[ToolManager] ❌ canPlaceAllotment returned false for (${tileX}, ${tileY})`);
                     return { valid: false, reason: 'Cannot place 3x3 allotment here' };
@@ -175,29 +192,29 @@ export class ToolManager {
         }
 
         // Place the building
-        // Special handling for residential allotments (3x3 zones)
-        if (building.id === 'residential' && building.isAllotment) {
-            // Use the ResidentialAllotmentManager
-            if (this.game.residentialManager) {
-                console.log(`[ToolManager] Calling createAllotment at (${tileX}, ${tileY})`);
-                const success = this.game.residentialManager.createAllotment(tileX, tileY);
-                console.log(`[ToolManager] createAllotment returned: ${success}`);
-                if (!success) {
-                    this.game.events.emit('placementFailed', { reason: 'Cannot place allotment here', tileX, tileY });
-                    return false;
-                }
-            } else {
-                // Fallback: mark tiles manually
-                for (let dy = 0; dy < 3; dy++) {
-                    for (let dx = 0; dx < 3; dx++) {
-                        tileMap.setBuilding(tileX + dx, tileY + dy, {
-                            type: 'residential_allotment',
-                            mainTile: dx === 0 && dy === 0,
-                            originX: tileX,
-                            originY: tileY
-                        });
-                    }
-                }
+        // Special handling for allotments (3x3 zones)
+        if (building.isAllotment && building.size > 1) {
+            let success = false;
+            let allotmentType = '';
+            
+            if (building.id === 'residential' && this.game.residentialManager) {
+                console.log(`[ToolManager] Calling residential createAllotment at (${tileX}, ${tileY})`);
+                success = this.game.residentialManager.createAllotment(tileX, tileY);
+                allotmentType = 'residential';
+            } else if (building.id === 'commercial' && this.game.commercialManager) {
+                console.log(`[ToolManager] Calling commercial createAllotment at (${tileX}, ${tileY})`);
+                success = this.game.commercialManager.createAllotment(tileX, tileY);
+                allotmentType = 'commercial';
+            } else if (building.id === 'industrial' && this.game.industrialManager) {
+                console.log(`[ToolManager] Calling industrial createAllotment at (${tileX}, ${tileY})`);
+                success = this.game.industrialManager.createAllotment(tileX, tileY);
+                allotmentType = 'industrial';
+            }
+            
+            console.log(`[ToolManager] ${allotmentType} createAllotment returned: ${success}`);
+            if (!success) {
+                this.game.events.emit('placementFailed', { reason: `Cannot place ${allotmentType} allotment here`, tileX, tileY });
+                return false;
             }
         } else {
             // Standard building placement

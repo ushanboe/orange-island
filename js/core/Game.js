@@ -10,6 +10,8 @@ import { TariffSystem } from '../economy/TariffSystem.js';
 import { TariffUI } from '../ui/TariffUI.js';
 import { DevelopmentManager } from '../simulation/Development.js';
 import { ResidentialAllotmentManager } from '../simulation/ResidentialAllotment.js';
+import { CommercialAllotmentManager } from '../simulation/CommercialAllotment.js';
+import { IndustrialAllotmentManager } from '../simulation/IndustrialAllotment.js';
 import { DebugPanel } from '../ui/DebugPanel.js';
 
 export class Game {
@@ -53,6 +55,8 @@ export class Game {
 
         // Residential allotment system (3x3 zones)
         this.residentialManager = null;
+        this.commercialManager = null;
+        this.industrialManager = null;
 
         // Timing
         this.lastUpdate = 0;
@@ -80,6 +84,8 @@ export class Game {
 
         // Initialize residential allotment system (before canvas for rendering)
         this.residentialManager = new ResidentialAllotmentManager(this);
+        this.commercialManager = new CommercialAllotmentManager(this);
+        this.industrialManager = new IndustrialAllotmentManager(this);
 
         // Initialize canvas (after managers so it can access them for rendering)
         this.canvas = new GameCanvas(this, 'game-canvas');
@@ -399,6 +405,14 @@ export class Game {
             // Add residential allotment population
             if (this.residentialManager) {
                 const resStats = this.residentialManager.update();
+            }
+            
+            if (this.commercialManager) {
+                const comStats = this.commercialManager.update();
+            }
+            
+            if (this.industrialManager) {
+                const indStats = this.industrialManager.update();
                 totalPop += resStats.totalPopulation;
             }
 

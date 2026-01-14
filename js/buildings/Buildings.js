@@ -30,32 +30,34 @@ export const BUILDINGS = {
     },
     commercial: {
         id: 'commercial',
-        name: 'Commercial Zone',
-        description: 'Shops to sell imported goods (with tariffs!)',
+        name: 'Commercial Allotment',
+        description: '3x3 commercial zone - grows from shops to strip malls to mega malls!',
         category: BUILDING_CATEGORIES.ZONES,
-        cost: 150,
-        size: 1,
+        cost: 400,
+        size: 3,
         color: '#2196F3',  // Blue
         icon: '🏪',
+        isAllotment: true,
         effects: {
-            taxIncome: 5,
-            jobs: 5
+            maxJobs: 200,
+            maxTaxIncome: 500
         },
         canBuildOn: ['grass', 'dirt', 'forest']
     },
     industrial: {
         id: 'industrial',
-        name: 'Industrial Zone',
-        description: 'Factories to make the kingdom great again',
+        name: 'Industrial Allotment',
+        description: '3x3 industrial zone - grows from workshops to factories to industrial complexes!',
         category: BUILDING_CATEGORIES.ZONES,
-        cost: 200,
-        size: 1,
+        cost: 600,
+        size: 3,
         color: '#FF9800',  // Orange
         icon: '🏭',
+        isAllotment: true,
         effects: {
-            jobs: 10,
-            pollution: 2,
-            production: 5
+            maxJobs: 300,
+            maxProduction: 250,
+            maxPollution: 80
         },
         canBuildOn: ['grass', 'dirt', 'forest']
     },
