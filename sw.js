@@ -30,7 +30,7 @@ const ASSETS_TO_CACHE = [
 
 // Install event - cache assets
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing service worker v7...');
+    console.log('[SW] Installing service worker ' + CACHE_NAME + '...');
     self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -45,7 +45,7 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean old caches
 self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating service worker v7...');
+    console.log('[SW] Activating service worker ' + CACHE_NAME + '...');
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
