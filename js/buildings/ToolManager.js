@@ -55,8 +55,9 @@ export class ToolManager {
             return { valid: false, reason: `Cannot build on ${tileType}` };
         }
 
-        // Check if tile already has a building (unless bulldozing)
-        if (tile.building && this.selectedTool !== 'bulldozer') {
+        // Check if tile already has a building (unless bulldozing or multi-tile building)
+        // For multi-tile buildings, we check all tiles later
+        if (tile.building && this.selectedTool !== 'bulldozer' && building.size === 1) {
             return { valid: false, reason: 'Tile already occupied' };
         }
 
