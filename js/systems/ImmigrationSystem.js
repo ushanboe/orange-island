@@ -81,11 +81,11 @@ export class ImmigrationSystem {
 
         // Random chance to spawn
         const roll = Math.random();
-        if (roll > 0.4) {
-            console.log(`[IMMIGRATION] Random check failed: ${roll.toFixed(2)} > 0.4`);
+        if (roll > 0.8) {
+            console.log(`[IMMIGRATION] Random check failed: ${roll.toFixed(2)} > >0.4`);;
             return;
         }
-        console.log(`[IMMIGRATION] Random check passed: ${roll.toFixed(2)} <= 0.4`);
+        console.log(`[IMMIGRATION] Random check passed: ${roll.toFixed(2)} <= >0.4`);;
 
         // Pick a random source island
         const sourceIsland = map.sourceIslands[Math.floor(Math.random() * map.sourceIslands.length)];
