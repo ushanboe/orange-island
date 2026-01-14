@@ -11,7 +11,7 @@ export class ImmigrationSystem {
         this.maxPeopleBoats = 5;
         this.maxCrowds = 20;
         this.spawnTimer = 0;
-        this.spawnInterval = 30;   // Ticks between spawn attempts
+        this.spawnInterval = 18;   // Ticks between spawn attempts (1.5 years)
 
         // Immigration tweets for the king
         this.immigrationTweets = [
@@ -343,7 +343,7 @@ export class PeopleBoat {
         this.targetLanding = targetLanding;
         this.peopleCount = peopleCount;
         this.sourceIsland = sourceIsland;
-        this.speed = 0.5;  // 10x faster  // Slower than cargo boats
+        this.speed = 1.0;  // Doubled for slower tick rate
         this.state = 'arriving';  // arriving, landed, leaving
         this.crowdSpawned = false;
         this.frame = 0;
@@ -474,7 +474,7 @@ export class Crowd {
         this.x = x;
         this.y = y;
         this.count = count;
-        this.speed = 0.2;  // 10x faster  // Very slow movement
+        this.speed = 0.4;  // Doubled for slower tick rate
         this.frame = 0;
         this.remove = false;
         this.reachedCivilization = false;
