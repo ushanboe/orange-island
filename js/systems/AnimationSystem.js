@@ -106,7 +106,6 @@ export class AnimationSystem {
         }
         return ports;
     }
-    }
 
     spawnBoat(operationalPorts) {
         if (operationalPorts.length === 0) return;
