@@ -145,6 +145,7 @@ export class ToolManager {
 
     // Place building at tile position
     placeAt(tileX, tileY) {
+        console.log(`[ToolManager] placeAt called at (${tileX}, ${tileY})`);
         const check = this.canPlaceAt(tileX, tileY);
         if (!check.valid) {
             this.game.events.emit('placementFailed', { reason: check.reason, tileX, tileY });
@@ -174,7 +175,9 @@ export class ToolManager {
         if (building.id === 'residential' && building.isAllotment) {
             // Use the ResidentialAllotmentManager
             if (this.game.residentialManager) {
+                console.log(`[ToolManager] Calling createAllotment at (${tileX}, ${tileY})`);
                 const success = this.game.residentialManager.createAllotment(tileX, tileY);
+                console.log(`[ToolManager] createAllotment returned: ${success}`);
                 if (!success) {
                     this.game.events.emit('placementFailed', { reason: 'Cannot place allotment here', tileX, tileY });
                     return false;

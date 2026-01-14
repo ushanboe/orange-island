@@ -56,10 +56,14 @@ export class ResidentialAllotmentManager {
 
     // Create a new 3x3 residential allotment
     createAllotment(x, y) {
+        console.log(`[ResidentialAllotment] createAllotment called at (${x}, ${y})`);
+
         // Ensure we're placing at valid position
         if (!this.canPlaceAllotment(x, y)) {
+            console.log(`[ResidentialAllotment] ❌ createAllotment: canPlaceAllotment returned false`);
             return false;
         }
+        console.log(`[ResidentialAllotment] ✅ createAllotment: canPlaceAllotment passed`);
 
         const key = `${x},${y}`;
 
@@ -103,6 +107,7 @@ export class ResidentialAllotmentManager {
             }
         }
 
+        console.log(`[ResidentialAllotment] ✅ createAllotment: Allotment created successfully at (${x}, ${y})`);
         return true;
     }
 
