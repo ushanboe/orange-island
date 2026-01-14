@@ -77,6 +77,11 @@ export class TileMap {
     // Get terrain value at position (for IslandGenerator compatibility)
     getTerrainAt(x, y) {
         if (!this.isInBounds(x, y)) return null;
+        // Extra safety check
+        if (!this.tiles || !this.tiles[y] || !this.tiles[y][x]) {
+            console.warn(`[TileMap] Invalid tile access at (${x}, ${y})`);
+            return null;
+        }
         return this.tiles[y][x].terrain;
     }
 
