@@ -85,8 +85,17 @@ export class ToolManager {
 
         // For larger buildings, check all tiles
         if (building.size > 1) {
+            // Debug: Log building info for multi-tile buildings
+            console.log(`[ToolManager] Multi-tile building check:`, {
+                id: building.id,
+                size: building.size,
+                isAllotment: building.isAllotment,
+                hasResidentialManager: !!this.game.residentialManager
+            });
+
             // Special validation for residential allotments
             if (building.id === 'residential' && building.isAllotment && this.game.residentialManager) {
+                console.log(`[ToolManager] Using residential allotment path`);
                 const canPlace = this.game.residentialManager.canPlaceAllotment(tileX, tileY);
                 if (!canPlace) {
                     console.log(`[ToolManager] ❌ canPlaceAllotment returned false for (${tileX}, ${tileY})`);
@@ -94,6 +103,7 @@ export class ToolManager {
                 }
                 console.log(`[ToolManager] ✅ canPlaceAllotment returned true for (${tileX}, ${tileY})`);
             } else {
+                console.log(`[ToolManager] Using standard multi-tile path`);
                 // Standard multi-tile building check
                 for (let dy = 0; dy < building.size; dy++) {
                     for (let dx = 0; dx < building.size; dx++) {
