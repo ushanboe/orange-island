@@ -14,6 +14,7 @@ import { CommercialAllotmentManager } from '../simulation/CommercialAllotment.js
 import { IndustrialAllotmentManager } from '../simulation/IndustrialAllotment.js';
 import { InfrastructureManager } from '../systems/InfrastructureManager.js';
 import { AnimationSystem } from '../systems/AnimationSystem.js';
+import { ImmigrationSystem } from '../systems/ImmigrationSystem.js';
 import { DebugPanel } from '../ui/DebugPanel.js';
 
 export class Game {
@@ -40,8 +41,8 @@ export class Game {
 
         // Map
         this.tileMap = null;
-        this.mapWidth = 64;
-        this.mapHeight = 64;
+        this.mapWidth = 128;
+        this.mapHeight = 128;
 
         // Components
         this.canvas = null;
@@ -61,6 +62,7 @@ export class Game {
         this.industrialManager = null;
         this.infrastructureManager = null;
         this.animationSystem = null;
+        this.immigrationSystem = null;
 
         // Timing
         this.lastUpdate = 0;
@@ -92,6 +94,7 @@ export class Game {
         this.industrialManager = new IndustrialAllotmentManager(this);
         this.infrastructureManager = new InfrastructureManager(this);
         this.animationSystem = new AnimationSystem(this);
+        this.immigrationSystem = new ImmigrationSystem(this);
 
         // Initialize canvas (after managers so it can access them for rendering)
         this.canvas = new GameCanvas(this, 'game-canvas');
@@ -334,6 +337,12 @@ export class Game {
             this.tariffSystem.render(ctx, this.canvas.offsetX, this.canvas.offsetY, this.canvas.tileSize);
         }
 
+        // Render immigration (people boats and crowds)
+        if (this.immigrationSystem && this.canvas) {
+            const ctx = this.canvas.ctx;
+            this.immigrationSystem.render(ctx, this.canvas.offsetX, this.canvas.offsetY, this.canvas.tileSize);
+        }
+
         // Render development animations
         if (this.developmentManager && this.canvas) {
             this.renderDevelopmentAnimations();
@@ -434,6 +443,11 @@ export class Game {
             // Update animations (vehicles, boats, etc.)
             if (this.animationSystem) {
                 this.animationSystem.update();
+
+                // Update immigration system (people boats and crowds)
+                if (this.immigrationSystem) {
+                    this.immigrationSystem.update();
+                }
             }
 
             this.population = totalPop;
