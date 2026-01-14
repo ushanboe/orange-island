@@ -6,8 +6,12 @@ export class AnimationSystem {
         this.game = game;
         this.time = 0;
         this.vehicles = [];
+        this.boats = [];  // Trade boats
         this.smokeParticles = [];
         this.maxVehicles = 50;
+        this.maxBoats = 10;
+        this.boatCheckInterval = 60;  // Check every 60 ticks
+        this.boatCheckCounter = 0;
     }
 
     update(deltaTime) {
@@ -16,11 +20,17 @@ export class AnimationSystem {
         // Update vehicles
         this.updateVehicles();
 
+        // Update boats
+        this.updateBoats();
+
         // Update smoke particles
         this.updateSmoke();
 
         // Spawn new vehicles based on population
         this.manageVehicles();
+        
+        // Manage boats based on port connectivity
+        this.manageBoats();
     }
 
     // ==================== VEHICLE SYSTEM ====================
@@ -34,6 +44,190 @@ export class AnimationSystem {
         if (this.vehicles.length < desiredVehicles && Math.random() < 0.02) {
             this.spawnVehicle();
         }
+    }
+
+    // ==================== BOAT SYSTEM ====================
+
+    manageBoats() {
+        this.boatCheckCounter++;
+        if (this.boatCheckCounter < this.boatCheckInterval) return;
+        this.boatCheckCounter = 0;
+
+        // Find all operational ports
+        const operationalPorts = this.findOperationalPorts();
+        
+        if (operationalPorts.length === 0) {
+            // No operational ports - boats leave
+            return;
+        }
+
+        // Spawn boats for operational ports
+        const desiredBoats = Math.min(this.maxBoats, operationalPorts.length * 2);
+        
+        if (this.boats.length < desiredBoats && Math.random() < 0.1) {
+            this.spawnBoat(operationalPorts);
+        }
+    }
+
+    findOperationalPorts() {
+        const ports = [];
+        const map = this.game.tileMap;
+        const infraManager = this.game.infrastructureManager;
+        
+        if (!map || !infraManager) return ports;
+
+        // Find all port buildings
+        for (let y = 0; y < map.height; y++) {
+            for (let x = 0; x < map.width; x++) {
+                const tile = map.getTile(x, y);
+                if (tile?.building?.type === 'port' && tile.building.mainTile) {
+                    // Check if this port can operate boats
+                    const portX = tile.building.originX ?? x;
+                    const portY = tile.building.originY ?? y;
+                    
+                    if (infraManager.canPortOperateBoats(portX, portY)) {
+                        ports.push({ x: portX, y: portY });
+                    }
+                }
+            }
+        }
+        return ports;
+    }
+
+    spawnBoat(operationalPorts) {
+        if (operationalPorts.length === 0) return;
+
+        // Pick a random operational port
+        const port = operationalPorts[Math.floor(Math.random() * operationalPorts.length)];
+        
+        // Find water tiles near the port to spawn boat
+        const waterTile = this.findWaterNearPort(port.x, port.y);
+        if (!waterTile) return;
+
+        // Boat types
+        const types = ['⛵', '🚢', '🛥️', '⛴️'];
+        if (this.game.population > 100) types.push('🚢');
+
+        const boat = {
+            x: waterTile.x + 0.5,
+            y: waterTile.y + 0.5,
+            icon: types[Math.floor(Math.random() * types.length)],
+            targetPort: port,
+            state: 'arriving',  // arriving, docked, departing
+            speed: 0.01 + Math.random() * 0.01,
+            lifetime: 0,
+            maxLifetime: 800 + Math.random() * 400,
+            dockTime: 0,
+            maxDockTime: 200 + Math.random() * 100
+        };
+
+        this.boats.push(boat);
+        
+        // Emit event for trade income
+        this.game.events?.emit('boatArrived', { port, boat });
+    }
+
+    findWaterNearPort(portX, portY) {
+        const map = this.game.tileMap;
+        if (!map) return null;
+
+        // Search in expanding rings around port
+        for (let radius = 2; radius < 10; radius++) {
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
+                    
+                    const x = portX + dx;
+                    const y = portY + dy;
+                    const tile = map.getTile(x, y);
+                    
+                    // Check if it's deep water
+                    if (tile && (tile.terrain === 0 || tile.terrain === 'deepwater' || tile.terrain === 'water')) {
+                        return { x, y };
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    updateBoats() {
+        for (let i = this.boats.length - 1; i >= 0; i--) {
+            const boat = this.boats[i];
+            boat.lifetime++;
+
+            // Remove old boats
+            if (boat.lifetime > boat.maxLifetime) {
+                this.boats.splice(i, 1);
+                continue;
+            }
+
+            switch (boat.state) {
+                case 'arriving':
+                    // Move towards port
+                    this.moveBoatTowardsPort(boat);
+                    break;
+                    
+                case 'docked':
+                    // Wait at port
+                    boat.dockTime++;
+                    if (boat.dockTime >= boat.maxDockTime) {
+                        boat.state = 'departing';
+                        // Generate trade income
+                        this.game.treasury = (this.game.treasury || 0) + 50;
+                        this.game.events?.emit('tradeCompleted', { boat, income: 50 });
+                    }
+                    break;
+                    
+                case 'departing':
+                    // Move away from port
+                    this.moveBoatAway(boat);
+                    // Remove when far enough
+                    if (boat.lifetime > boat.maxLifetime * 0.9) {
+                        this.boats.splice(i, 1);
+                    }
+                    break;
+            }
+        }
+    }
+
+    moveBoatTowardsPort(boat) {
+        const targetX = boat.targetPort.x + 1;  // Center of 2x2 port
+        const targetY = boat.targetPort.y + 1;
+        
+        const dx = targetX - boat.x;
+        const dy = targetY - boat.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 2) {
+            boat.state = 'docked';
+            return;
+        }
+        
+        boat.x += (dx / dist) * boat.speed;
+        boat.y += (dy / dist) * boat.speed;
+    }
+
+    moveBoatAway(boat) {
+        const targetX = boat.targetPort.x + 1;
+        const targetY = boat.targetPort.y + 1;
+        
+        const dx = boat.x - targetX;
+        const dy = boat.y - targetY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 0.1) {
+            // Pick a random direction away
+            boat.x += (Math.random() - 0.5) * boat.speed;
+            boat.y += (Math.random() - 0.5) * boat.speed;
+        } else {
+            boat.x += (dx / dist) * boat.speed;
+            boat.y += (dy / dist) * boat.speed;
+        }
+    }
+
+    getBoats() {
+        return this.boats;
     }
 
     spawnVehicle() {

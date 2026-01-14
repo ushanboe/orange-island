@@ -190,13 +190,27 @@ export class IndustrialAllotmentManager {
     }
 
     calculateGrowthRate(allotment) {
+        // Check infrastructure requirements using InfrastructureManager
+        const infraManager = this.game.infrastructureManager;
+        const hasRoad = infraManager ? infraManager.hasRoadAccess(allotment.x, allotment.y) : this.hasRoadAccess(allotment);
+        const hasPower = infraManager ? infraManager.hasPower(allotment.x, allotment.y) : false;
+        
+        // Store connection status on allotment for rendering
+        allotment.hasRoad = hasRoad;
+        allotment.hasPower = hasPower;
+        
+        // REQUIREMENT: Must have BOTH road AND power to develop
+        if (!hasRoad || !hasPower) {
+            if (allotment.phase === INDUSTRIAL_PHASES.EMPTY) {
+                return 0.1; // Very slow - just shows activity
+            }
+            return 0; // No growth without infrastructure
+        }
+        
         let rate = this.baseGrowthRate;
 
-        if (this.hasRoadAccess(allotment)) {
-            rate += 3;
-        } else {
-            rate -= 5;
-        }
+        // Bonus for having both connections
+        rate += 5;
 
         // Industrial grows faster with more commercial activity
         const commercialJobs = this.game.commercialManager?.getTotalJobs() || 0;

@@ -12,6 +12,8 @@ import { DevelopmentManager } from '../simulation/Development.js';
 import { ResidentialAllotmentManager } from '../simulation/ResidentialAllotment.js';
 import { CommercialAllotmentManager } from '../simulation/CommercialAllotment.js';
 import { IndustrialAllotmentManager } from '../simulation/IndustrialAllotment.js';
+import { InfrastructureManager } from '../systems/InfrastructureManager.js';
+import { AnimationSystem } from '../systems/AnimationSystem.js';
 import { DebugPanel } from '../ui/DebugPanel.js';
 
 export class Game {
@@ -57,6 +59,8 @@ export class Game {
         this.residentialManager = null;
         this.commercialManager = null;
         this.industrialManager = null;
+        this.infrastructureManager = null;
+        this.animationSystem = null;
 
         // Timing
         this.lastUpdate = 0;
@@ -86,6 +90,8 @@ export class Game {
         this.residentialManager = new ResidentialAllotmentManager(this);
         this.commercialManager = new CommercialAllotmentManager(this);
         this.industrialManager = new IndustrialAllotmentManager(this);
+        this.infrastructureManager = new InfrastructureManager(this);
+        this.animationSystem = new AnimationSystem(this);
 
         // Initialize canvas (after managers so it can access them for rendering)
         this.canvas = new GameCanvas(this, 'game-canvas');
@@ -418,6 +424,16 @@ export class Game {
             if (this.industrialManager) {
                 const indStats = this.industrialManager.update();
                 // Industrial provides jobs, not population
+            }
+            
+            // Update infrastructure connectivity
+            if (this.infrastructureManager) {
+                this.infrastructureManager.update();
+            }
+            
+            // Update animations (vehicles, boats, etc.)
+            if (this.animationSystem) {
+                this.animationSystem.update();
             }
 
             this.population = totalPop;

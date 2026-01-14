@@ -289,7 +289,7 @@ export class IndustrialRenderer {
         ctx.setLineDash([]);
     }
 
-    drawAllotmentProgress(x, y, tileSize, cameraX, cameraY, progress, phase) {
+    drawAllotmentProgress(x, y, tileSize, cameraX, cameraY, progress, phase, allotment) {
         const ctx = this.ctx;
         const screenX = x * tileSize + cameraX;
         const screenY = y * tileSize + cameraY;
@@ -305,5 +305,51 @@ export class IndustrialRenderer {
         // Progress
         ctx.fillStyle = '#FF9800';
         ctx.fillRect(screenX + 2, barY, (totalSize - 4) * (progress / 100), barHeight);
+        
+        // Draw infrastructure status indicators
+        if (allotment) {
+            this.drawInfrastructureStatus(screenX, screenY, tileSize, allotment);
+        }
+    }
+    
+    // Draw infrastructure connection status icons
+    drawInfrastructureStatus(screenX, screenY, tileSize, allotment) {
+        const ctx = this.ctx;
+        const iconSize = Math.max(10, tileSize * 0.4);
+        const totalSize = tileSize * 3;
+        
+        let iconX = screenX + totalSize - iconSize - 4;
+        const iconY = screenY + 4;
+        
+        ctx.font = `${iconSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Power status
+        if (allotment.hasPower === false) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(iconX - iconSize/2 - 2, iconY - 2, iconSize + 4, iconSize + 4);
+            ctx.fillText('⚡', iconX, iconY + iconSize/2);
+            ctx.fillStyle = '#FF0000';
+            ctx.font = `${iconSize * 0.6}px Arial`;
+            ctx.fillText('❌', iconX + iconSize/3, iconY + iconSize/3);
+            ctx.font = `${iconSize}px Arial`;
+            iconX -= iconSize + 4;
+        } else if (allotment.hasPower === true) {
+            ctx.fillText('⚡', iconX, iconY + iconSize/2);
+            iconX -= iconSize + 4;
+        }
+        
+        // Road status
+        if (allotment.hasRoad === false) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(iconX - iconSize/2 - 2, iconY - 2, iconSize + 4, iconSize + 4);
+            ctx.fillText('🛣️', iconX, iconY + iconSize/2);
+            ctx.fillStyle = '#FF0000';
+            ctx.font = `${iconSize * 0.6}px Arial`;
+            ctx.fillText('❌', iconX + iconSize/3, iconY + iconSize/3);
+        } else if (allotment.hasRoad === true) {
+            ctx.fillText('🛣️', iconX, iconY + iconSize/2);
+        }
     }
 }

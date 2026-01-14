@@ -650,6 +650,9 @@ export class GameCanvas {
         // Draw vehicles on roads
         this.renderVehicles(ctx);
 
+        // Draw boats on water
+        this.renderBoats(ctx);
+
         // Draw smoke particles
         this.renderSmoke(ctx);
 
@@ -691,6 +694,40 @@ export class GameCanvas {
             const screenX = v.x * this.tileSize + this.offsetX;
             const screenY = v.y * this.tileSize + this.offsetY;
             ctx.fillText(v.icon, screenX, screenY);
+        }
+    }
+
+    // ==================== RENDER BOATS ====================
+
+    renderBoats(ctx) {
+        // Get boats from AnimationSystem
+        const animSystem = this.game.animationSystem;
+        if (!animSystem || !animSystem.boats) return;
+
+        const fontSize = Math.max(12, this.tileSize * 0.7);
+        ctx.font = `${fontSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        for (const boat of animSystem.boats) {
+            const screenX = boat.x * this.tileSize + this.offsetX;
+            const screenY = boat.y * this.tileSize + this.offsetY;
+            
+            // Draw boat shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.beginPath();
+            ctx.ellipse(screenX + 2, screenY + 2, this.tileSize * 0.3, this.tileSize * 0.15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw boat icon
+            ctx.fillText(boat.icon, screenX, screenY);
+            
+            // Draw docked indicator
+            if (boat.state === 'docked') {
+                ctx.font = `${fontSize * 0.5}px Arial`;
+                ctx.fillText('📦', screenX + this.tileSize * 0.3, screenY - this.tileSize * 0.2);
+                ctx.font = `${fontSize}px Arial`;
+            }
         }
     }
 
@@ -864,7 +901,7 @@ export class GameCanvas {
                     cellData.phase
                 );
 
-                // Draw progress bar
+                // Draw progress bar and infrastructure status
                 this.residentialRenderer.drawAllotmentProgress(
                     cellData.allotment.x,
                     cellData.allotment.y,
@@ -872,7 +909,8 @@ export class GameCanvas {
                     this.offsetX,
                     this.offsetY,
                     cellData.progress,
-                    cellData.phase
+                    cellData.phase,
+                    cellData.allotment  // Pass allotment for infrastructure status
                 );
             }
         } else {
@@ -975,7 +1013,8 @@ export class GameCanvas {
                     this.offsetX,
                     this.offsetY,
                     cellData.progress,
-                    cellData.phase
+                    cellData.phase,
+                    cellData.allotment  // Pass allotment for infrastructure status
                 );
             }
         } else {
@@ -1037,7 +1076,8 @@ export class GameCanvas {
                     this.offsetX,
                     this.offsetY,
                     cellData.progress,
-                    cellData.phase
+                    cellData.phase,
+                    cellData.allotment  // Pass allotment for infrastructure status
                 );
             }
         } else {
