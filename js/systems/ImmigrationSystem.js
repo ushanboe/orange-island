@@ -80,13 +80,19 @@ export class ImmigrationSystem {
         }
 
         // Random chance to spawn
-        if (Math.random() > 0.4) return;
+        const roll = Math.random();
+        if (roll > 0.4) {
+            console.log(`[IMMIGRATION] Random check failed: ${roll.toFixed(2)} > 0.4`);
+            return;
+        }
+        console.log(`[IMMIGRATION] Random check passed: ${roll.toFixed(2)} <= 0.4`);
 
         // Pick a random source island
         const sourceIsland = map.sourceIslands[Math.floor(Math.random() * map.sourceIslands.length)];
 
         // Find a water tile near the source island to spawn the boat
         const spawnPoint = this.findWaterNearIsland(sourceIsland);
+        console.log(`[IMMIGRATION] findWaterNearIsland result:`, spawnPoint);
         if (!spawnPoint) {
             console.log('[IMMIGRATION] Could not find water spawn point');
             return;
@@ -94,6 +100,7 @@ export class ImmigrationSystem {
 
         // Find landing spot far from civilization on main island
         const landingSpot = this.findRemoteLandingSpot();
+        console.log(`[IMMIGRATION] findRemoteLandingSpot result:`, landingSpot);
         if (!landingSpot) {
             console.log('[IMMIGRATION] Could not find remote landing spot');
             return;
