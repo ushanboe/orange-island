@@ -450,10 +450,17 @@ export class ResidentialAllotmentManager {
     // Get rendering data for a specific cell
     getCellRenderData(x, y) {
         const tile = this.map.getTile(x, y);
-        if (!tile?.building?.allotmentKey) return null;
+        if (!tile?.building?.allotmentKey) {
+            // Only log occasionally to avoid spam
+            if (Math.random() < 0.001) console.log(`[ResidentialAllotment] getCellRenderData(${x},${y}): no allotmentKey`, tile?.building);
+            return null;
+        }
 
         const allotment = this.allotments.get(tile.building.allotmentKey);
-        if (!allotment) return null;
+        if (!allotment) {
+            console.warn(`[ResidentialAllotment] getCellRenderData(${x},${y}): allotment not found for key ${tile.building.allotmentKey}`);
+            return null;
+        }
 
         const cellX = tile.building.cellX;
         const cellY = tile.building.cellY;
