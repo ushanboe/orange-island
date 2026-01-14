@@ -291,10 +291,21 @@ export class InfrastructureManager {
         const key = `${portX},${portY}`;
         const conn = this.buildingConnections.get(key);
         
-        if (!conn?.hasRoad) return false;
+        console.log('[INFRA] canPortOperateBoats check for port at', portX, portY);
+        console.log('[INFRA] Port connection:', conn);
+        
+        if (!conn?.hasRoad) {
+            console.log('[INFRA] Port has no road - boats NOT allowed');
+            return false;
+        }
         
         const network = conn.roadNetwork;
-        if (!network) return false;
+        if (!network) {
+            console.log('[INFRA] Port has no road network - boats NOT allowed');
+            return false;
+        }
+
+        console.log('[INFRA] Port road network has', network.connectedBuildings?.size || 0, 'connected buildings');
 
         // Port needs road connection to both commercial and industrial
         // AND those need to have power
@@ -303,21 +314,28 @@ export class InfrastructureManager {
 
         for (const buildingKey of network.connectedBuildings) {
             const buildingConn = this.buildingConnections.get(buildingKey);
-            if (!buildingConn?.hasPower) continue;
-
+            
             // Check what type of building this is
             const [bx, by] = buildingKey.split(',').map(Number);
             const tile = this.game.tileMap?.getTile(bx, by);
             
+            console.log('[INFRA] Checking connected building at', buildingKey, '- type:', tile?.building?.type, 'hasPower:', buildingConn?.hasPower);
+            
+            if (!buildingConn?.hasPower) continue;
+
             if (tile?.building?.type === 'commercial_allotment') {
                 hasConnectedCommercialWithPower = true;
+                console.log('[INFRA] Found commercial with power!');
             }
             if (tile?.building?.type === 'industrial_allotment') {
                 hasConnectedIndustrialWithPower = true;
+                console.log('[INFRA] Found industrial with power!');
             }
         }
 
-        return hasConnectedCommercialWithPower && hasConnectedIndustrialWithPower;
+        const canOperate = hasConnectedCommercialWithPower && hasConnectedIndustrialWithPower;
+        console.log('[INFRA] canPortOperateBoats result:', canOperate, '(commercial:', hasConnectedCommercialWithPower, 'industrial:', hasConnectedIndustrialWithPower, ')');
+        return canOperate;
     }
 
     // Get infrastructure status for debug display

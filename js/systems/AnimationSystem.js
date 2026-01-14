@@ -73,25 +73,39 @@ export class AnimationSystem {
         const ports = [];
         const map = this.game.tileMap;
         const infraManager = this.game.infrastructureManager;
-        
-        if (!map || !infraManager) return ports;
+
+        if (!map || !infraManager) {
+            console.log('[BOATS] No map or infraManager available');
+            return ports;
+        }
 
         // Find all port buildings
+        let portsFound = 0;
         for (let y = 0; y < map.height; y++) {
             for (let x = 0; x < map.width; x++) {
                 const tile = map.getTile(x, y);
                 if (tile?.building?.type === 'port' && tile.building.mainTile) {
+                    portsFound++;
                     // Check if this port can operate boats
                     const portX = tile.building.originX ?? x;
                     const portY = tile.building.originY ?? y;
-                    
-                    if (infraManager.canPortOperateBoats(portX, portY)) {
+
+                    console.log('[BOATS] Found port at', portX, portY, '- checking connectivity...');
+                    const canOperate = infraManager.canPortOperateBoats(portX, portY);
+                    console.log('[BOATS] Port at', portX, portY, 'canOperate:', canOperate);
+
+                    if (canOperate) {
                         ports.push({ x: portX, y: portY });
                     }
                 }
             }
         }
+
+        if (portsFound > 0) {
+            console.log('[BOATS] Ports found:', portsFound, '- operational:', ports.length);
+        }
         return ports;
+    }
     }
 
     spawnBoat(operationalPorts) {
