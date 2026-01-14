@@ -314,7 +314,7 @@ export class PeopleBoat {
         this.targetLanding = targetLanding;
         this.peopleCount = peopleCount;
         this.sourceIsland = sourceIsland;
-        this.speed = 0.05;  // Slower than cargo boats
+        this.speed = 0.5;  // 10x faster  // Slower than cargo boats
         this.state = 'arriving';  // arriving, landed, leaving
         this.crowdSpawned = false;
         this.frame = 0;
@@ -466,7 +466,7 @@ export class Crowd {
         this.x = x;
         this.y = y;
         this.count = count;
-        this.speed = 0.02;  // Very slow movement
+        this.speed = 0.2;  // 10x faster  // Very slow movement
         this.frame = 0;
         this.remove = false;
         this.reachedCivilization = false;
