@@ -443,14 +443,14 @@ export class Game {
             // Update animations (vehicles, boats, etc.)
             if (this.animationSystem) {
                 this.animationSystem.update();
-
-                // Update immigration system (people boats and crowds)
-                if (this.immigrationSystem) {
-                    this.immigrationSystem.update();
-                }
             }
 
             this.population = totalPop;
+        }
+
+        // Update immigration system (people boats and crowds) - OUTSIDE developmentManager block
+        if (this.immigrationSystem) {
+            this.immigrationSystem.update();
         }
 
         // Simulate
