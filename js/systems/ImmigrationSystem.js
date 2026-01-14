@@ -36,6 +36,17 @@ export class ImmigrationSystem {
         // Spawn new people boats periodically
         this.spawnTimer++;
         if (this.spawnTimer >= this.spawnInterval) {
+    update() {
+        // Spawn new people boats periodically
+        this.spawnTimer++;
+        
+        // Debug: log every 300 ticks
+        if (this.spawnTimer % 300 === 0) {
+            const map = this.game.tileMap;
+            console.log(`[IMMIGRATION] Timer tick ${this.spawnTimer}, sourceIslands: ${map?.sourceIslands?.length || 'none'}, boats: ${this.peopleBoats.length}`);
+        }
+        
+        if (this.spawnTimer >= this.spawnInterval) {
             this.spawnTimer = 0;
             this.trySpawnPeopleBoat();
         }
@@ -52,18 +63,20 @@ export class ImmigrationSystem {
     }
 
     trySpawnPeopleBoat() {
-        if (this.peopleBoats.length >= this.maxPeopleBoats) return;
-
-        const map = this.game.tileMap;
-        if (!map || !map.sourceIslands || map.sourceIslands.length === 0) {
-            console.log('[IMMIGRATION] No source islands available');
+        console.log('[IMMIGRATION] Attempting to spawn people boat...');
+        
+        if (this.peopleBoats.length >= this.maxPeopleBoats) {
+            console.log('[IMMIGRATION] Max boats reached:', this.peopleBoats.length);
             return;
         }
 
-        // Random chance to spawn
-        if (Math.random() > 0.4) return;
-
-        // Pick a random source island
+        const map = this.game.tileMap;
+        console.log('[IMMIGRATION] Map exists:', !!map, 'sourceIslands:', map?.sourceIslands);
+        
+        if (!map || !map.sourceIslands || map.sourceIslands.length === 0) {
+            console.log('[IMMIGRATION] No source islands available - map.sourceIslands is:', map?.sourceIslands);
+            return;
+        }
         const sourceIsland = map.sourceIslands[Math.floor(Math.random() * map.sourceIslands.length)];
 
         // Find a water tile near the source island to spawn the boat
@@ -498,157 +511,3 @@ export class Crowd {
 
         // Check if next tile is passable
         const map = this.game.tileMap;
-        if (!map) return;
-
-        const nextX = this.x + (dx / dist) * this.speed;
-        const nextY = this.y + (dy / dist) * this.speed;
-        const terrain = map.getTerrainAt(Math.floor(nextX), Math.floor(nextY));
-
-        // Can walk on grass, sand, forest, dirt
-        // TERRAIN: SAND=2, GRASS=4, DIRT=5, FOREST=6
-        if (terrain === 2 || terrain === 4 || terrain === 5 || terrain === 6) {
-            this.x = nextX;
-            this.y = nextY;
-        } else {
-            // Try to go around obstacle
-            const altDx = dy;  // Perpendicular
-            const altDy = -dx;
-            const altNextX = this.x + (altDx / dist) * this.speed;
-            const altNextY = this.y + (altDy / dist) * this.speed;
-            const altTerrain = map.getTerrainAt(Math.floor(altNextX), Math.floor(altNextY));
-
-            if (altTerrain === 2 || altTerrain === 4 || altTerrain === 5 || altTerrain === 6) {
-                this.x = altNextX;
-                this.y = altNextY;
-            }
-        }
-    }
-
-    checkForestStatus() {
-        const map = this.game.tileMap;
-        if (!map) return;
-
-        const terrain = map.getTerrainAt(Math.floor(this.x), Math.floor(this.y));
-        this.inForest = (terrain === 6);  // TERRAIN.FOREST = 6
-    }
-
-    checkCivilization() {
-        const map = this.game.tileMap;
-        if (!map) return;
-
-        // Check tiles around current position
-        const checkRadius = 2;
-        for (let dy = -checkRadius; dy <= checkRadius; dy++) {
-            for (let dx = -checkRadius; dx <= checkRadius; dx++) {
-                const tx = Math.floor(this.x) + dx;
-                const ty = Math.floor(this.y) + dy;
-
-                if (tx < 0 || tx >= map.width || ty < 0 || ty >= map.height) continue;
-
-                const tile = map.getTile(tx, ty);
-                const terrain = map.getTerrainAt(tx, ty);
-
-                // Reached civilization if near a building or palace
-                if (tile?.building || terrain === 9) {
-                    this.reachedCivilization = true;
-                    return;
-                }
-            }
-        }
-    }
-
-    shouldSplit() {
-        // Can split if:
-        // - More than 20 people
-        // - Random chance
-        // - Not on cooldown
-        return this.count > 20 && 
-               this.splitCooldown === 0 && 
-               Math.random() < 0.005;  // 0.5% chance per frame
-    }
-
-    split() {
-        // Split off a portion of the crowd
-        const splitCount = Math.floor(this.count * (0.2 + Math.random() * 0.3));  // 20-50%
-        if (splitCount < 5) return null;
-
-        this.count -= splitCount;
-        this.splitCooldown = 300;  // 5 seconds cooldown
-
-        // New crowd spawns slightly offset
-        const offsetX = (Math.random() - 0.5) * 2;
-        const offsetY = (Math.random() - 0.5) * 2;
-
-        console.log(`[IMMIGRATION] Crowd split: ${splitCount} broke off, ${this.count} remain`);
-
-        return new Crowd(this.game, this.x + offsetX, this.y + offsetY, splitCount);
-    }
-
-    render(ctx, offsetX, offsetY, tileSize) {
-        const screenX = (this.x * tileSize) + offsetX;
-        const screenY = (this.y * tileSize) + offsetY;
-
-        // Don't render if off screen
-        if (screenX < -tileSize * 2 || screenX > ctx.canvas.width + tileSize * 2 ||
-            screenY < -tileSize * 2 || screenY > ctx.canvas.height + tileSize * 2) {
-            return;
-        }
-
-        ctx.save();
-
-        // If in forest, make translucent (hiding)
-        if (this.inForest) {
-            ctx.globalAlpha = 0.4;
-        }
-
-        // Draw crowd as cluster of dots
-        const clusterSize = Math.min(8, Math.ceil(Math.sqrt(this.count)));
-        ctx.fillStyle = '#8D6E63';  // Brown/tan color for people
-
-        for (let i = 0; i < clusterSize; i++) {
-            for (let j = 0; j < clusterSize; j++) {
-                if (i * clusterSize + j >= Math.min(this.count, 64)) break;
-
-                const px = screenX + (i - clusterSize/2) * 4 + Math.sin(this.frame * 0.05 + i) * 1;
-                const py = screenY + (j - clusterSize/2) * 4 + Math.cos(this.frame * 0.05 + j) * 1;
-
-                ctx.beginPath();
-                ctx.arc(px, py, 2.5, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        ctx.restore();
-
-        // Draw count marker (always visible, even when hiding)
-        ctx.save();
-        ctx.font = 'bold 12px Arial';
-        ctx.textAlign = 'center';
-
-        // Background pill
-        const text = this.count.toString();
-        const textWidth = ctx.measureText(text).width;
-
-        // Different color if hiding in forest
-        ctx.fillStyle = this.inForest ? 'rgba(76, 175, 80, 0.8)' : 'rgba(0, 0, 0, 0.7)';
-        ctx.beginPath();
-        ctx.roundRect(screenX - textWidth/2 - 5, screenY - tileSize * 0.7, textWidth + 10, 16, 8);
-        ctx.fill();
-
-        // Count text
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillText(text, screenX, screenY - tileSize * 0.7 + 12);
-
-        // Forest icon if hiding
-        if (this.inForest) {
-            ctx.font = '10px Arial';
-            ctx.fillText('🌲', screenX + textWidth/2 + 8, screenY - tileSize * 0.7 + 11);
-        }
-
-        ctx.restore();
-    }
-}
-
-window.ImmigrationSystem = ImmigrationSystem;
-window.PeopleBoat = PeopleBoat;
-window.Crowd = Crowd;
