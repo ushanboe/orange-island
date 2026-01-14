@@ -26,7 +26,7 @@ export const BUILDINGS = {
             maxPopulation: 200,  // At full development (high-rises)
             happiness: 2
         },
-        canBuildOn: ['grass', 'dirt']
+        canBuildOn: ['grass', 'dirt', 'forest']
     },
     commercial: {
         id: 'commercial',
@@ -41,7 +41,7 @@ export const BUILDINGS = {
             taxIncome: 5,
             jobs: 5
         },
-        canBuildOn: ['grass', 'dirt']
+        canBuildOn: ['grass', 'dirt', 'forest']
     },
     industrial: {
         id: 'industrial',
@@ -57,7 +57,7 @@ export const BUILDINGS = {
             pollution: 2,
             production: 5
         },
-        canBuildOn: ['grass', 'dirt']
+        canBuildOn: ['grass', 'dirt', 'forest']
     },
 
     // === INFRASTRUCTURE ===
@@ -124,7 +124,7 @@ export const BUILDINGS = {
             pollution: 10,
             jobs: 20
         },
-        canBuildOn: ['grass', 'dirt']
+        canBuildOn: ['grass', 'dirt', 'forest']
     },
     nuclearPlant: {
         id: 'nuclearPlant',
@@ -142,7 +142,7 @@ export const BUILDINGS = {
             jobs: 50,
             meltdownRisk: 1
         },
-        canBuildOn: ['grass', 'dirt']
+        canBuildOn: ['grass', 'dirt', 'forest']
     },
     powerLine: {
         id: 'powerLine',
@@ -196,7 +196,7 @@ export const BUILDINGS = {
             income: 100,
             requiresOil: 20
         },
-        canBuildOn: ['grass', 'dirt']
+        canBuildOn: ['grass', 'dirt', 'forest']
     },
     gasStation: {
         id: 'gasStation',
@@ -212,7 +212,7 @@ export const BUILDINGS = {
             jobs: 3,
             income: 10
         },
-        canBuildOn: ['grass', 'dirt'],
+        canBuildOn: ['grass', 'dirt', 'forest'],
         requiresRoadAccess: true
     },
 
@@ -231,7 +231,7 @@ export const BUILDINGS = {
             happiness: -2,
             tourism: 5
         },
-        canBuildOn: ['grass', 'dirt']
+        canBuildOn: ['grass', 'dirt', 'forest']
     },
     tower: {
         id: 'tower',
@@ -247,7 +247,7 @@ export const BUILDINGS = {
             taxIncome: 50,
             happiness: -5
         },
-        canBuildOn: ['grass', 'dirt']
+        canBuildOn: ['grass', 'dirt', 'forest']
     },
     golfCourse: {
         id: 'golfCourse',
