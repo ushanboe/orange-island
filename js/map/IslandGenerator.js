@@ -3,11 +3,10 @@ import { TileMap, TERRAIN } from './TileMap.js';
 
 /**
  * IslandGenerator - Creates procedural island terrain
- * Now generates: Main island (center) + 2 source islands (left/right edges)
+ * Generates: Main island (center) + 2 source islands (far left/right edges, random Y)
  */
 export class IslandGenerator {
     constructor(widthOrTileMap, heightOrRandom, random) {
-        // Support both: (width, height, random) and (tileMap, random)
         if (typeof widthOrTileMap === 'number') {
             this.map = new TileMap(widthOrTileMap, heightOrRandom);
             this.random = random || new Random();
@@ -17,29 +16,28 @@ export class IslandGenerator {
         }
     }
 
-    // Main generation method
     generate() {
         console.log('Generating islands...');
 
-        // Step 1: Create height map using simplex-like noise
+        // Step 1: Create height map
         const heightMap = this.generateHeightMap();
 
         // Step 2: Apply main island mask (center)
         this.applyMainIslandMask(heightMap);
 
-        // Step 3: Add source islands (left and right)
+        // Step 3: Add source islands (far left and right edges, random Y)
         this.addSourceIslands(heightMap);
 
         // Step 4: Convert height to tiles
         this.heightToTiles(heightMap);
 
-        // Step 5: Add beaches along coastlines
+        // Step 5: Add beaches
         this.addBeaches();
 
         // Step 6: Add forests
         this.addForests();
 
-        // Step 7: Place the palace (center of main island)
+        // Step 7: Place the palace
         this.placePalace();
 
         // Step 8: Mark source islands for boat spawning
@@ -49,7 +47,6 @@ export class IslandGenerator {
         return this.map;
     }
 
-    // Generate height map using value noise
     generateHeightMap() {
         const width = this.map.width;
         const height = this.map.height;
@@ -79,7 +76,6 @@ export class IslandGenerator {
         return heightMap;
     }
 
-    // Simple value noise (seeded)
     noise2D(x, y) {
         const xi = Math.floor(x);
         const yi = Math.floor(y);
@@ -106,14 +102,12 @@ export class IslandGenerator {
         return ((h ^ (h >> 16)) & 0xFFFFFF) / 0xFFFFFF;
     }
 
-    // Apply main island mask (center of map)
     applyMainIslandMask(heightMap) {
         const width = this.map.width;
         const height = this.map.height;
         const centerX = width / 2;
         const centerY = height / 2;
-        // Main island takes up about 60% of the map width
-        const maxRadius = Math.min(width, height) * 0.35;
+        const maxRadius = Math.min(width, height) * 0.32;  // Slightly smaller main island
 
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
@@ -139,33 +133,38 @@ export class IslandGenerator {
         }
     }
 
-    // Add source islands on left and right edges
     addSourceIslands(heightMap) {
         const width = this.map.width;
         const height = this.map.height;
 
-        // Left source island - positioned at left edge, middle height
+        // Random Y positions for each island (keep away from very top/bottom)
+        const minY = height * 0.15;
+        const maxY = height * 0.85;
+        const leftY = minY + this.random.float() * (maxY - minY);
+        const rightY = minY + this.random.float() * (maxY - minY);
+
+        // Left source island - at the FAR left edge
         const leftIsland = {
-            centerX: 12,  // Near left edge
-            centerY: height / 2,
-            radiusX: 10,
-            radiusY: 15,
+            centerX: 6,  // Very close to left edge
+            centerY: leftY,
+            radiusX: 5,  // Smaller island
+            radiusY: 8,
             name: 'left'
         };
 
-        // Right source island - positioned at right edge, middle height
+        // Right source island - at the FAR right edge
         const rightIsland = {
-            centerX: width - 12,  // Near right edge
-            centerY: height / 2,
-            radiusX: 10,
-            radiusY: 15,
+            centerX: width - 6,  // Very close to right edge
+            centerY: rightY,
+            radiusX: 5,
+            radiusY: 8,
             name: 'right'
         };
 
-        // Store island info for later use
         this.sourceIslands = [leftIsland, rightIsland];
 
-        // Add each source island to the height map
+        console.log(`Source islands: Left at (${leftIsland.centerX}, ${Math.floor(leftY)}), Right at (${rightIsland.centerX}, ${Math.floor(rightY)})`);
+
         [leftIsland, rightIsland].forEach(island => {
             this.addIslandToHeightMap(heightMap, island);
         });
@@ -177,27 +176,23 @@ export class IslandGenerator {
 
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                // Elliptical distance
                 const dx = (x - island.centerX) / island.radiusX;
                 const dy = (y - island.centerY) / island.radiusY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
 
-                if (dist < 1.2) {
+                if (dist < 1.3) {
                     let islandHeight;
-                    if (dist < 0.6) {
-                        islandHeight = 0.5;  // Solid land
-                    } else if (dist < 1.0) {
-                        // Gradual falloff
-                        islandHeight = 0.5 * (1 - (dist - 0.6) / 0.4);
+                    if (dist < 0.5) {
+                        islandHeight = 0.5;
+                    } else if (dist < 0.9) {
+                        islandHeight = 0.5 * (1 - (dist - 0.5) / 0.4);
                     } else {
-                        islandHeight = 0.3 * (1 - (dist - 1.0) / 0.2);  // Beach
+                        islandHeight = 0.32 * (1 - (dist - 0.9) / 0.4);
                     }
 
-                    // Add noise for natural coastline
-                    const noise = this.noise2D(x * 0.15, y * 0.15) * 0.1;
+                    const noise = this.noise2D(x * 0.2, y * 0.2) * 0.08;
                     islandHeight = Math.max(0, islandHeight + noise);
 
-                    // Combine with existing height (take max)
                     const idx = y * width + x;
                     heightMap[idx] = Math.max(heightMap[idx], islandHeight);
                 }
@@ -205,7 +200,6 @@ export class IslandGenerator {
         }
     }
 
-    // Convert height values to tile types
     heightToTiles(heightMap) {
         const width = this.map.width;
         const height = this.map.height;
@@ -234,7 +228,6 @@ export class IslandGenerator {
         }
     }
 
-    // Add beaches along coastlines
     addBeaches() {
         const width = this.map.width;
         const height = this.map.height;
@@ -255,7 +248,6 @@ export class IslandGenerator {
         changes.forEach(([x, y, tile]) => this.map.setTile(x, y, tile));
     }
 
-    // Add forests to grass areas
     addForests() {
         const width = this.map.width;
         const height = this.map.height;
@@ -272,7 +264,6 @@ export class IslandGenerator {
         }
     }
 
-    // Place the palace near center of main island
     placePalace() {
         const centerX = Math.floor(this.map.width / 2);
         const centerY = Math.floor(this.map.height / 2);
@@ -298,28 +289,23 @@ export class IslandGenerator {
         }
     }
 
-    // Mark source islands in the map metadata for boat spawning
     markSourceIslands() {
         if (!this.sourceIslands) return;
 
-        // Store source island data in the map for later use
         this.map.sourceIslands = this.sourceIslands.map(island => {
-            // Find beach tiles on this island for boat spawning
             const beachTiles = [];
             const width = this.map.width;
             const height = this.map.height;
 
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
-                    const dx = (x - island.centerX) / island.radiusX;
-                    const dy = (y - island.centerY) / island.radiusY;
+                    const dx = (x - island.centerX) / (island.radiusX * 1.5);
+                    const dy = (y - island.centerY) / (island.radiusY * 1.5);
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
-                    // Check if this is a beach tile on this island
-                    if (dist < 1.3) {
+                    if (dist < 1.5) {
                         const terrain = this.map.getTerrainAt(x, y);
                         if (terrain === TERRAIN.SAND || terrain === TERRAIN.GRASS) {
-                            // Check if adjacent to water (coastal)
                             if (this.map.isCoastal(x, y)) {
                                 beachTiles.push({ x, y });
                             }
@@ -328,7 +314,7 @@ export class IslandGenerator {
                 }
             }
 
-            console.log(`Source island "${island.name}" has ${beachTiles.length} beach tiles`);
+            console.log(`Source island "${island.name}" at (${island.centerX}, ${Math.floor(island.centerY)}) has ${beachTiles.length} beach tiles`);
 
             return {
                 name: island.name,
