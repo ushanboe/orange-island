@@ -608,6 +608,9 @@ export class GameCanvas {
         const endTileY = Math.min(tileMap.height,
             Math.ceil((this.canvas.height - this.offsetY) / this.tileSize));
 
+        // Reset debug counter each frame
+        this._resLogCount = 0;
+        
         // Draw terrain and buildings
         for (let y = startTileY; y < endTileY; y++) {
             for (let x = startTileX; x < endTileX; x++) {
@@ -623,11 +626,19 @@ export class GameCanvas {
 
                 // Draw building if present
                 if (tile.building) {
-                    // Debug: log residential allotment buildings
-                    if (tile.building.type === 'residential_allotment' && Math.random() < 0.1) {
-                        console.log(`[GameCanvas] Found residential_allotment at (${x},${y})`, tile.building);
+                    // Debug: ALWAYS log residential allotment buildings (first 5 per frame)
+                    if (tile.building.type === 'residential_allotment') {
+                        if (!this._resLogCount) this._resLogCount = 0;
+                        if (this._resLogCount < 5) {
+                            console.log(`[RENDER] Found residential_allotment at (${x},${y}), calling drawBuilding...`);
+                            this._resLogCount++;
+                        }
                     }
-                    this.drawBuilding(ctx, tile.building, screenX, screenY, x, y);
+                    try {
+                        this.drawBuilding(ctx, tile.building, screenX, screenY, x, y);
+                    } catch (e) {
+                        console.error(`[RENDER] Error in drawBuilding at (${x},${y}):`, e);
+                    }
                 }
             }
         }
@@ -699,7 +710,7 @@ export class GameCanvas {
     drawBuilding(ctx, building, screenX, screenY, tileX, tileY) {
         // Debug: log all building draws for residential
         if (building.type === 'residential_allotment') {
-            console.log(`[GameCanvas] drawBuilding: residential_allotment at (${tileX},${tileY})`);
+            console.log(`[DRAW] drawBuilding called for residential_allotment at (${tileX},${tileY})`);
         }
         // Special handling for residential allotments (3x3 zones)
         if (building.type === 'residential_allotment') {
@@ -802,7 +813,7 @@ export class GameCanvas {
 
     drawResidentialAllotment(ctx, building, screenX, screenY, tileX, tileY) {
         // Debug: log when this is called
-        console.log(`[GameCanvas] drawResidentialAllotment called at (${tileX},${tileY})`, building);
+        console.log(`[DRAW] drawResidentialAllotment ENTERED at (${tileX},${tileY})`, building);
         
         // Get cell data from the residential manager
         const resManager = this.game.residentialManager;
