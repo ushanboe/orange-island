@@ -403,6 +403,8 @@ export class Game {
     }
 
     tick() {
+        // Debug tick
+        if (this.month === 1 && this.year % 2 === 0) console.log("[TICK] Year", this.year);
         // Advance time
         this.month++;
         if (this.month > 12) {
