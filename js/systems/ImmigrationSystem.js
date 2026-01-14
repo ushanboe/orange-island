@@ -244,15 +244,19 @@ export class ImmigrationSystem {
     spawnCrowdFromBoat(boat) {
         if (this.crowds.length >= this.maxCrowds) return;
 
+        // Spawn crowd on the beach (targetLanding), not in water where boat is
+        const landX = boat.targetLanding ? boat.targetLanding.x : boat.x;
+        const landY = boat.targetLanding ? boat.targetLanding.y : boat.y;
+
         const crowd = new Crowd(
             this.game,
-            boat.x,
-            boat.y,
+            landX,
+            landY,
             boat.peopleCount
         );
 
         this.crowds.push(crowd);
-        console.log(`[IMMIGRATION] Crowd of ${boat.peopleCount} landed at (${Math.floor(boat.x)}, ${Math.floor(boat.y)})`);
+        console.log(`[IMMIGRATION] Crowd of ${boat.peopleCount} landed on beach at (${Math.floor(landX)}, ${Math.floor(landY)})`);
     }
 
     updateCrowds() {
@@ -626,9 +630,9 @@ export class Crowd {
         // - More than 20 people
         // - Random chance
         // - Not on cooldown
-        return this.count > 20 && 
+        return this.count > 15 && 
                this.splitCooldown === 0 && 
-               Math.random() < 0.005;  // 0.5% chance per frame
+               Math.random() < 0.02;  // 0.5% chance per frame
     }
 
     split() {
@@ -637,7 +641,7 @@ export class Crowd {
         if (splitCount < 5) return null;
 
         this.count -= splitCount;
-        this.splitCooldown = 300;  // 5 seconds cooldown
+        this.splitCooldown = 60;  // 1 second cooldown
 
         // New crowd spawns slightly offset
         const offsetX = (Math.random() - 0.5) * 2;
