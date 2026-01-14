@@ -105,6 +105,8 @@ export class TariffSystem {
                     count++;
                 }
             }
+        }
+        return count;
     }
 
     findRandomPort() {
