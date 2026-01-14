@@ -1,6 +1,7 @@
 
 // ToolManager - Handles tool selection and building placement
 import { BUILDINGS, getBuilding, canAfford, canBuildOn, BUILDING_CATEGORIES } from './Buildings.js';
+import { TERRAIN } from '../map/TileMap.js';
 
 export class ToolManager {
     constructor(game) {
@@ -92,9 +93,12 @@ export class ToolManager {
             return { valid: false, reason: 'Tile already occupied' };
         }
 
-        // Bulldozer needs something to demolish
-        if (this.selectedTool === 'bulldozer' && !tile.building) {
-            return { valid: false, reason: 'Nothing to demolish' };
+        // Bulldozer needs something to demolish (building or forest)
+        if (this.selectedTool === 'bulldozer') {
+            const isForest = tile.terrain === TERRAIN.FOREST;
+            if (!tile.building && !isForest) {
+                return { valid: false, reason: 'Nothing to demolish' };
+            }
         }
 
         // Check if can afford
@@ -201,14 +205,34 @@ export class ToolManager {
         if (this.selectedTool === 'bulldozer') {
             const tile = tileMap.getTile(tileX, tileY);
             const oldBuilding = tile.building;
-            tileMap.setBuilding(tileX, tileY, null);
+            const wasForest = tile.terrain === TERRAIN.FOREST;
+
+            // Clear building if present
+            if (oldBuilding) {
+                tileMap.setBuilding(tileX, tileY, null);
+            }
+
+            // Clear forest and replace with grass
+            if (wasForest) {
+                tile.terrain = TERRAIN.GRASS;
+            }
+
             this.game.treasury -= building.cost;
-            this.game.events.emit('buildingDemolished', {
-                tileX, tileY,
-                building: oldBuilding,
-                cost: building.cost
-            });
-            this.game.kingTweet(`Demolished! Sad! But sometimes you gotta tear it down to build it better! 🚜`);
+
+            if (oldBuilding) {
+                this.game.events.emit('buildingDemolished', {
+                    tileX, tileY,
+                    building: oldBuilding,
+                    cost: building.cost
+                });
+                this.game.kingTweet(`Demolished! Sad! But sometimes you gotta tear it down to build it better! 🚜`);
+            } else if (wasForest) {
+                this.game.events.emit('forestCleared', {
+                    tileX, tileY,
+                    cost: building.cost
+                });
+                this.game.kingTweet(`Cleared that forest! Making room for GREATNESS! 🌲➡️🏗️`);
+            }
             return true;
         }
 
