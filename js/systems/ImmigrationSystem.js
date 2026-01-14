@@ -405,43 +405,52 @@ export class PeopleBoat {
         ctx.translate(0, bob);
 
         // Draw immigrant boat with sail
-        const scale = 1.2;
+        const scale = 1.5;  // Bigger boat
         ctx.scale(scale, scale);
 
         // Boat hull (wooden brown)
         ctx.fillStyle = '#8B4513';
         ctx.beginPath();
-        ctx.moveTo(-tileSize * 0.35, tileSize * 0.05);
-        ctx.lineTo(-tileSize * 0.25, tileSize * 0.18);
-        ctx.lineTo(tileSize * 0.25, tileSize * 0.18);
-        ctx.lineTo(tileSize * 0.35, tileSize * 0.05);
-        ctx.lineTo(tileSize * 0.28, -tileSize * 0.02);
-        ctx.lineTo(-tileSize * 0.28, -tileSize * 0.02);
+        ctx.moveTo(-tileSize * 0.35, tileSize * 0.08);
+        ctx.lineTo(-tileSize * 0.25, tileSize * 0.2);
+        ctx.lineTo(tileSize * 0.3, tileSize * 0.2);
+        ctx.lineTo(tileSize * 0.4, tileSize * 0.08);
+        ctx.lineTo(tileSize * 0.3, -tileSize * 0.02);
+        ctx.lineTo(-tileSize * 0.25, -tileSize * 0.02);
         ctx.closePath();
         ctx.fill();
         ctx.strokeStyle = '#5D3A1A';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Mast
-        ctx.strokeStyle = '#4A3728';
-        ctx.lineWidth = 2;
+        // Mast (taller)
+        ctx.strokeStyle = '#3E2723';
+        ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(0, tileSize * 0.05);
-        ctx.lineTo(0, -tileSize * 0.35);
+        ctx.lineTo(0, -tileSize * 0.5);
         ctx.stroke();
 
-        // Sail (white/cream colored, triangular)
-        ctx.fillStyle = '#F5F5DC';
+        // Main sail (bright white, larger triangle)
+        ctx.fillStyle = '#FFFFFF';
         ctx.beginPath();
-        ctx.moveTo(0, -tileSize * 0.33);
-        ctx.lineTo(tileSize * 0.22, tileSize * 0.0);
-        ctx.lineTo(0, tileSize * 0.02);
+        ctx.moveTo(tileSize * 0.02, -tileSize * 0.48);
+        ctx.lineTo(tileSize * 0.3, tileSize * 0.0);
+        ctx.lineTo(tileSize * 0.02, tileSize * 0.02);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = '#D4D4AA';
+        ctx.strokeStyle = '#CCCCCC';
         ctx.lineWidth = 1;
         ctx.stroke();
+
+        // Red flag at top of mast
+        ctx.fillStyle = '#E53935';
+        ctx.beginPath();
+        ctx.moveTo(0, -tileSize * 0.5);
+        ctx.lineTo(tileSize * 0.12, -tileSize * 0.45);
+        ctx.lineTo(0, -tileSize * 0.4);
+        ctx.closePath();
+        ctx.fill();
 
         // People silhouettes on deck
         ctx.fillStyle = '#212121';
