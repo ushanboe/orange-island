@@ -58,7 +58,7 @@ export class ToolManager {
         const isAllotmentBuilding = building.isAllotment && building.size > 1;
         
         // Check if can build on this terrain (skip for residential allotments)
-        if (!isResidentialAllotment && !canBuildOn(this.selectedTool, tileType)) {
+        if (!isAllotmentBuilding && !canBuildOn(this.selectedTool, tileType)) {
             if (isResidential) console.log(`[ToolManager] ❌ Cannot build on terrain: ${tileType} (terrain code: ${tile.terrain})`);
             return { valid: false, reason: `Cannot build on ${tileType}` };
         }

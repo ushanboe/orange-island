@@ -405,15 +405,19 @@ export class Game {
             // Add residential allotment population
             if (this.residentialManager) {
                 const resStats = this.residentialManager.update();
+                if (resStats && resStats.totalPopulation) {
+                    totalPop += resStats.totalPopulation;
+                }
             }
             
             if (this.commercialManager) {
                 const comStats = this.commercialManager.update();
+                // Commercial provides jobs, not population
             }
             
             if (this.industrialManager) {
                 const indStats = this.industrialManager.update();
-                totalPop += resStats.totalPopulation;
+                // Industrial provides jobs, not population
             }
 
             this.population = totalPop;
