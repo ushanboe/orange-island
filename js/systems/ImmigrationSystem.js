@@ -11,10 +11,7 @@ export class ImmigrationSystem {
         this.maxPeopleBoats = 5;
         this.maxCrowds = 20;
         this.spawnTimer = 0;
-        this.spawnInterval = 18;  // Game ticks between spawn attempts (adjustable via F2)
-        this.spawnChance = 0.8;   // 80% chance per spawn attempt (adjustable via F2)
-        this.boatSpeed = 1.0;     // Boat movement speed (adjustable via F2)
-        this.crowdSpeed = 0.4;    // Crowd movement speed (adjustable via F2)
+        this.spawnInterval = 18;   // Ticks between spawn attempts (1.5 years)
 
         // Immigration tweets for the king
         this.immigrationTweets = [
