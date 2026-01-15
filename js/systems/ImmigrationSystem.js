@@ -38,17 +38,20 @@ export class ImmigrationSystem {
     update() {
         // Debug: log first call
         if (!this._debugLogged) {
+            console.log("[IMMIGRATION] update() called for first time!");
             this._debugLogged = true;
         }
         
         // Debug: log every 100 ticks
         if (this.spawnTimer % 10 === 0) {
             const map = this.game.tileMap;
+            console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}/${this.spawnInterval}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
         }
         
         // Debug: log spawn attempts
         if (this.spawnTimer % 300 === 0 && this.spawnTimer > 0) {
             const map = this.game.tileMap;
+            console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
         }
         // Spawn new people boats periodically
         this.spawnTimer++;
@@ -69,31 +72,40 @@ export class ImmigrationSystem {
     }
 
     trySpawnPeopleBoat() {
+        console.log("[IMMIGRATION] Attempting spawn...");
         if (this.peopleBoats.length >= this.maxPeopleBoats) return;
 
         const map = this.game.tileMap;
+        console.log("[IMMIGRATION] map:", !!map, "sourceIslands:", map?.sourceIslands?.length);
         if (!map || !map.sourceIslands || map.sourceIslands.length === 0) {
+            console.log('[IMMIGRATION] No source islands available');
             return;
         }
 
         // Random chance to spawn
         const roll = Math.random();
         if (roll > 0.8) {
+            console.log(`[IMMIGRATION] Random check failed: ${roll.toFixed(2)} > 0.8`);;
             return;
         }
+        console.log(`[IMMIGRATION] Random check passed: ${roll.toFixed(2)} <= 0.8`);;
 
         // Pick a random source island
         const sourceIsland = map.sourceIslands[Math.floor(Math.random() * map.sourceIslands.length)];
 
         // Find a water tile near the source island to spawn the boat
         const spawnPoint = this.findWaterNearIsland(sourceIsland);
+        console.log(`[IMMIGRATION] findWaterNearIsland result:`, spawnPoint);
         if (!spawnPoint) {
+            console.log('[IMMIGRATION] Could not find water spawn point');
             return;
         }
 
         // Find landing spot far from civilization on main island
         const landingSpot = this.findRemoteLandingSpot(sourceIsland.name);
+        console.log(`[IMMIGRATION] findRemoteLandingSpot result for ${sourceIsland.name}:`, landingSpot);
         if (!landingSpot) {
+            console.log('[IMMIGRATION] Could not find remote landing spot');
             return;
         }
 
@@ -109,6 +121,7 @@ export class ImmigrationSystem {
         );
 
         this.peopleBoats.push(boat);
+        console.log(`[IMMIGRATION] People boat spawned from ${sourceIsland.name} with ${peopleCount} people`);
 
         // King tweet about boats
         if (Math.random() < 0.5) {
@@ -135,12 +148,14 @@ export class ImmigrationSystem {
                     const terrain = map.getTerrainAt(x, y);
                     // TERRAIN.DEEP_WATER = 0, TERRAIN.WATER = 1
                     if (terrain === 0 || terrain === 1) {
+                        console.log(`[IMMIGRATION] Found water spawn at (${x}, ${y}), terrain: ${terrain}`);
                         return { x: x + 0.5, y: y + 0.5 };  // Center of tile
                     }
                 }
             }
         }
 
+        console.log('[IMMIGRATION] No water found near island:', island.name);
         return null;
     }
 
@@ -208,6 +223,7 @@ export class ImmigrationSystem {
         const topCount = Math.max(1, Math.floor(bestBeaches.length * 0.3));
         const chosen = bestBeaches[Math.floor(Math.random() * topCount)];
         
+        console.log(`[IMMIGRATION] Chose beach at (${chosen.x}, ${chosen.y}) - side: ${preferLeftSide ? 'left' : 'right'}, priority: ${chosen.priority}`);
         return chosen;
     }
 
@@ -267,6 +283,7 @@ export class ImmigrationSystem {
         const landX = boat.targetLanding ? boat.targetLanding.x : boat.x;
         const landY = boat.targetLanding ? boat.targetLanding.y : boat.y;
 
+        console.log(`[IMMIGRATION] Spawning crowd at (${landX}, ${landY}) with ${boat.peopleCount} people`);
         const crowd = new Crowd(
             this.game,
             landX,
@@ -275,6 +292,7 @@ export class ImmigrationSystem {
         );
 
         this.crowds.push(crowd);
+        console.log(`[IMMIGRATION] Crowd of ${boat.peopleCount} landed on beach at (${Math.floor(landX)}, ${Math.floor(landY)})`);
     }
 
     updateCrowds() {
@@ -293,6 +311,7 @@ export class ImmigrationSystem {
             if (crowd.reachedCivilization) {
                 // Add to visitors count (not population - they're visitors until integrated)
                 this.game.visitors = (this.game.visitors || 0) + crowd.count;
+                console.log(`[IMMIGRATION] ${crowd.count} visitors arrived! Total visitors: ${this.game.visitors}`);
                 crowd.remove = true;
 
                 // King tweet about immigrants arriving
@@ -350,6 +369,7 @@ export class PeopleBoat {
         // Ensure minimum speed so boats don't get stuck
         this.speed = Math.max(this.speed, 0.3);
         
+        console.log(`[BOAT] Distance: ${distance.toFixed(1)}, Speed: ${this.speed.toFixed(3)} (will arrive in ~${targetMonths} months)`);
         
         this.state = 'arriving';  // arriving, landed, leaving
         this.crowdSpawned = false;
@@ -386,6 +406,7 @@ export class PeopleBoat {
             
             // WATER=0, DEEP_WATER=1 - if next tile is NOT water, we've reached shore
             if (nextTerrain !== 0 && nextTerrain !== 1) {
+                console.log(`[IMMIGRATION] Boat reached shore at (${Math.floor(this.x)}, ${Math.floor(this.y)})`);
                 this.state = 'landed';
                 return;
             }
@@ -412,12 +433,14 @@ export class PeopleBoat {
             // Remove when reaching left edge
             if (this.x <= 0) {
                 this.remove = true;
+                console.log('[IMMIGRATION] Boat left via left edge');
             }
         } else {
             this.x += this.speed * 1.5;
             // Remove when reaching right edge
             if (this.x >= mapWidth) {
                 this.remove = true;
+                console.log('[IMMIGRATION] Boat left via right edge');
             }
         }
     }
@@ -650,6 +673,7 @@ export class Crowd {
     checkCivilization() {
         // Debug: log position periodically
         if (Math.random() < 0.01) {
+            console.log(`[CROWD] Checking civilization at (${Math.floor(this.x)},${Math.floor(this.y)}), count: ${this.count}`);
         }
         const map = this.game.tileMap;
         if (!map) return;
@@ -668,6 +692,7 @@ export class Crowd {
 
                 // Reached civilization if near a building or palace
                 if (tile?.building || terrain === 9) {
+                    console.log(`[CROWD] Reached civilization at (${tx},${ty})! Building: ${tile?.building}, Terrain: ${terrain}`);
                     this.reachedCivilization = true;
                     return;
                 }
@@ -697,6 +722,7 @@ export class Crowd {
         const offsetX = (Math.random() - 0.5) * 3;
         const offsetY = (Math.random() - 0.5) * 3;
 
+        console.log(`[IMMIGRATION] Crowd split: ${splitCount} broke off, ${this.count} remain`);
 
         const newCrowd = new Crowd(this.game, this.x + offsetX, this.y + offsetY, splitCount);
         // Make the new crowd go in a DIFFERENT direction
