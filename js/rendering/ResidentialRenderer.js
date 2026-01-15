@@ -13,6 +13,7 @@ export class ResidentialRenderer {
     renderCell(x, y, tileSize, cellData, cameraX, cameraY) {
         // Only check for cellData - cell can be null for empty lots
         if (!cellData) return;
+        console.log(`[ResidentialRenderer] renderCell at (${x},${y})`, cellData);
 
         const screenX = x * tileSize + cameraX;
         const screenY = y * tileSize + cameraY;

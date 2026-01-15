@@ -116,6 +116,7 @@ export class ToolManager {
 
         // For larger buildings, check all tiles
         if (building.size > 1) {
+            console.log(`[ToolManager] Multi-tile building check:`, {
                 id: building.id,
                 size: building.size,
                 isAllotment: building.isAllotment
@@ -178,12 +179,14 @@ export class ToolManager {
 
     // Place building at tile position
     placeAt(tileX, tileY) {
+        console.log(`[ToolManager] placeAt called at (${tileX}, ${tileY})`);
         let check = this.canPlaceAt(tileX, tileY);
 
         // Special handling for power lines - try to find adjacent spot if clicking on building
         if (!check.valid && check.redirectable && this.selectedTool === 'powerLine') {
             const adjacent = this.findNearestEmptyAdjacent(tileX, tileY);
             if (adjacent) {
+                console.log(`[ToolManager] Redirecting power line to adjacent tile (${adjacent.x}, ${adjacent.y})`);
                 tileX = adjacent.x;
                 tileY = adjacent.y;
                 check = this.canPlaceAt(tileX, tileY);
@@ -358,7 +361,9 @@ export class ToolManager {
 
     // Handle pointer down (start placement)
     onPointerDown(tileX, tileY) {
+        console.log('[ToolManager] onPointerDown called:', { tileX, tileY, selectedTool: this.selectedTool });
         if (!this.selectedTool) {
+            console.log('[ToolManager] No tool selected, returning early');
             return;
         }
 
@@ -374,6 +379,7 @@ export class ToolManager {
 
     // Handle pointer move (drag placement)
     onPointerMove(tileX, tileY) {
+        console.log('[ToolManager] onPointerMove:', { 
             tileX, tileY, 
             isPlacing: this.isPlacing, 
             dragBuilding: this.dragBuilding,
@@ -382,9 +388,11 @@ export class ToolManager {
         });
 
         if (!this.isPlacing || !this.dragBuilding) {
+            console.log('[ToolManager] Drag placement blocked - isPlacing:', this.isPlacing, 'dragBuilding:', this.dragBuilding);
             return;
         }
         if (!this.selectedTool) {
+            console.log('[ToolManager] No tool selected during drag');
             return;
         }
 
@@ -392,9 +400,11 @@ export class ToolManager {
         if (this.lastPlacedTile &&
             this.lastPlacedTile.x === tileX &&
             this.lastPlacedTile.y === tileY) {
+            console.log('[ToolManager] Same tile, skipping');
             return;
         }
 
+        console.log('[ToolManager] Drag placing at:', tileX, tileY);
         this.placeAt(tileX, tileY);
     }
 

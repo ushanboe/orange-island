@@ -16,9 +16,6 @@ import { InfrastructureManager } from '../systems/InfrastructureManager.js';
 import { AnimationSystem } from '../systems/AnimationSystem.js';
 import { ImmigrationSystem } from '../systems/ImmigrationSystem.js';
 import { DebugPanel } from '../ui/DebugPanel.js';
-import { AdminSettings } from '../ui/AdminSettings.js';
-import { SaveSystem } from '../systems/SaveSystem.js';
-import { StartMenu } from '../ui/StartMenu.js';
 
 export class Game {
     constructor() {
@@ -70,18 +67,13 @@ export class Game {
 
         // Timing
         this.lastUpdate = 0;
-        this.tickInterval = 25000;  // 25 seconds per game tick (5 min per year) - adjustable via F2 admin panel
+        this.tickInterval = 4000;  // 4 seconds per game tick (50% slower)
         this.lastTick = 0;
 
         // King's tweets
         this.tweetQueue = [];
         this.currentTweet = null;
         this.tweetElement = null;
-        
-        // Save system
-        this.saveSystem = null;
-        this.autoSaveInterval = 60000; // Auto-save every 60 seconds
-        this.lastAutoSave = 0;
     }
 
     async init() {
@@ -104,13 +96,6 @@ export class Game {
         this.infrastructureManager = new InfrastructureManager(this);
         this.animationSystem = new AnimationSystem(this);
         this.immigrationSystem = new ImmigrationSystem(this);
-        
-        // Save system
-        this.saveSystem = new SaveSystem(this);
-        
-        // Admin settings panel (F2 to toggle)
-        this.adminSettings = new AdminSettings(this);
-        this.adminSettings.loadSettings();  // Load saved settings
         console.log("[INIT] ImmigrationSystem created:", !!this.immigrationSystem);
 
         // Initialize canvas (after managers so it can access them for rendering)
@@ -338,12 +323,6 @@ export class Game {
         if (!this.paused && now - this.lastTick >= this.tickInterval) {
             this.tick();
             this.lastTick = now;
-            
-            // Auto-save every minute
-            if (now - this.lastAutoSave >= this.autoSaveInterval) {
-                this.save(true); // silent save
-                this.lastAutoSave = now;
-            }
         }
 
         // Update tariff system (boats, etc.)
@@ -474,6 +453,7 @@ export class Game {
         }
 
         // Update immigration system (people boats and crowds) - OUTSIDE developmentManager block
+        console.log("[DEBUG] About to check immigrationSystem:", !!this.immigrationSystem);
         if (this.immigrationSystem) {
             this.immigrationSystem.update();
         }
@@ -644,6 +624,7 @@ export class Game {
         document.getElementById('treasury').textContent = `$${this.treasury.toLocaleString()}`;
         // Debug visitors
         if (this.month % 5 === 0) {
+            console.log(`[UI DEBUG] Population: ${this.population}, Visitors: ${this.visitors}, Display: ${this.population + (this.visitors ? ' (+' + this.visitors + ' visitors)' : '')}`);
         }
         document.getElementById('population').textContent = this.population + (this.visitors ? ` (+${this.visitors} visitors)` : '');
         document.getElementById('date').textContent = `Year ${this.year}, Month ${this.month}`;
@@ -658,41 +639,50 @@ export class Game {
         document.getElementById('king-mood').textContent = moodEmojis[this.kingMoodText] || '👑';
     }
 
-    // Save game (slot 1 is used for auto-save)
-    save(silent = false, slot = 1) {
-        if (this.saveSystem) {
-            const result = this.saveSystem.saveGame(slot, slot === 1 ? 'Auto-Save' : `Save ${slot}`);
-            if (!silent && result.success) {
-                this.kingTweet("Game SAVED! The best save ever! 💾");
-            }
-            return result.success;
-        }
-        return false;
+    // Save game
+    save() {
+        const saveData = {
+            treasury: this.treasury,
+            population: this.population,
+            month: this.month,
+            year: this.year,
+            kingEgo: this.kingEgo,
+            taxRate: this.taxRate,
+            tariffRate: this.tariffRate,
+            tileMap: this.tileMap.serialize(),
+            development: this.developmentManager?.serialize() || {}
+        };
+        localStorage.setItem('islandKingdom_save', JSON.stringify(saveData));
+        this.kingTweet("Game SAVED! The best save ever! 💾");
     }
 
-    // Load game from specific slot
-    load(slot = 1) {
-        if (this.saveSystem) {
-            const success = this.saveSystem.loadGame(slot);
-            if (success) {
-                this.kingTweet("Game LOADED! We're BACK! 🎮");
-            } else {
-                this.kingTweet("No save found! Sad! 😢");
-            }
-            return success;
+    // Load game
+    load() {
+        const saveStr = localStorage.getItem('islandKingdom_save');
+        if (!saveStr) {
+            this.kingTweet("No save found! Sad! 😢");
+            return false;
         }
-        return false;
-    }
-    
-    // Check if saved game exists
-    hasSavedGame() {
-        return this.saveSystem && this.saveSystem.hasSavedGame();
-    }
-    
-    // Delete saved game from specific slot
-    deleteSave(slot = 1) {
-        if (this.saveSystem) {
-            this.saveSystem.deleteSave(slot);
+
+        try {
+            const saveData = JSON.parse(saveStr);
+            this.treasury = saveData.treasury;
+            this.population = saveData.population;
+            this.month = saveData.month;
+            this.year = saveData.year;
+            this.kingEgo = saveData.kingEgo;
+            this.taxRate = saveData.taxRate;
+            this.tariffRate = saveData.tariffRate;
+            this.tileMap = TileMap.deserialize(saveData.tileMap);
+            if (saveData.development) {
+                this.developmentManager.deserialize(saveData.development);
+            }
+            this.updateUI();
+            this.kingTweet("Game LOADED! We're BACK! 🎮");
+            return true;
+        } catch (e) {
+            console.error('Load failed:', e);
+            return false;
         }
     }
 

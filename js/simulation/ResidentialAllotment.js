@@ -17,13 +17,13 @@ export const RESIDENTIAL_PHASES = {
 // Population per phase
 export const PHASE_POPULATION = {
     0: 0,
-    1: 12,     // 1-3 houses @ 4 persons each
-    2: 24,     // 4-6 houses @ 4 persons each
-    3: 36,     // 9 houses @ 4 persons each
-    4: 120,    // 3 apartments @ 10 units @ 4 persons = 40 each
-    5: 240,    // 6 apartments @ 40 each
-    6: 320,    // 8 apartments @ 40 each
-    7: 400     // 2 high-rises @ 50 units @ 4 persons = 200 each
+    1: 6,      // 1-3 houses @ 2 each
+    2: 12,     // 4-6 houses @ 2 each
+    3: 18,     // 9 houses @ 2 each
+    4: 36,     // 3 apartments @ 12 each
+    5: 72,     // 6 apartments @ 12 each
+    6: 96,     // 8 apartments @ 12 each
+    7: 200     // 2 high-rises @ 100 each
 };
 
 // Building icons for rendering
@@ -56,11 +56,14 @@ export class ResidentialAllotmentManager {
 
     // Create a new 3x3 residential allotment
     createAllotment(x, y) {
+        console.log(`[ResidentialAllotment] createAllotment called at (${x}, ${y})`);
 
         // Ensure we're placing at valid position
         if (!this.canPlaceAllotment(x, y)) {
+            console.log(`[ResidentialAllotment] ❌ createAllotment: canPlaceAllotment returned false`);
             return false;
         }
+        console.log(`[ResidentialAllotment] ✅ createAllotment: canPlaceAllotment passed`);
 
         const key = `${x},${y}`;
 
@@ -106,11 +109,13 @@ export class ResidentialAllotmentManager {
             }
         }
 
+        console.log(`[ResidentialAllotment] ✅ createAllotment: Allotment created successfully at (${x}, ${y})`);
         return true;
     }
 
     // Check if we can place a 3x3 allotment
     canPlaceAllotment(x, y) {
+        console.log(`[ResidentialAllotment] Checking placement at (${x}, ${y})`);
         for (let dy = 0; dy < 3; dy++) {
             for (let dx = 0; dx < 3; dx++) {
                 const checkX = x + dx;
@@ -118,9 +123,11 @@ export class ResidentialAllotmentManager {
                 const tile = this.map.getTile(checkX, checkY);
 
                 if (!tile) {
+                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) is null/undefined (out of bounds?)`);
                     return false;
                 }
                 if (tile.building) {
+                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) has building:`, tile.building);
                     return false;
                 }
 
@@ -128,10 +135,13 @@ export class ResidentialAllotmentManager {
                 const terrain = tile.terrain;
                 if (terrain === TERRAIN.WATER || terrain === TERRAIN.DEEP_WATER ||
                     terrain === TERRAIN.MOUNTAIN || terrain === TERRAIN.ROCK) {
+                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) has unbuildable terrain: ${terrain}`);
                     return false;
                 }
+                console.log(`  ✓ Tile at (${checkX}, ${checkY}) OK (terrain: ${terrain})`);
             }
         }
+        console.log(`  ✅ All 9 tiles valid for placement`);
         return true;
     }
 
@@ -156,6 +166,7 @@ export class ResidentialAllotmentManager {
         // Debug logging every 10 ticks
         if (this.game.month % 10 === 0 && this.allotments.size > 0) {
             const sample = Array.from(this.allotments.values())[0];
+            console.log(`[RESIDENTIAL] Allotments: ${this.allotments.size}, TotalPop: ${totalPopulation}, Sample phase: ${sample.phase}, hasRoad: ${sample.hasRoad}, hasPower: ${sample.hasPower}, progress: ${sample.progress?.toFixed(1)}`);
         }
 
         return { totalPopulation };
@@ -464,6 +475,7 @@ export class ResidentialAllotmentManager {
         const tile = this.map.getTile(x, y);
         if (!tile?.building?.allotmentKey) {
             // Only log occasionally to avoid spam
+            if (Math.random() < 0.001) console.log(`[ResidentialAllotment] getCellRenderData(${x},${y}): no allotmentKey`, tile?.building);
             return null;
         }
 
@@ -508,98 +520,4 @@ export class ResidentialAllotmentManager {
             }
         }
     }
-
-    // Create allotment from saved data
-    createAllotmentFromSave(x, y, cellsData, totalPopulation) {
-        const key = `${x},${y}`;
-        
-        // Create allotment data from saved state
-        const allotment = {
-            x: x,
-            y: y,
-            phase: 0,
-            progress: 0,
-            housesBuilt: 0,
-            apartmentsBuilt: 0,
-            hasHighrises: false,
-            population: totalPopulation || 0,
-            cells: [
-                [null, null, null],
-                [null, null, null],
-                [null, null, null]
-            ],
-            createdAt: Date.now()
-        };
-        
-        // Restore cell data
-        if (cellsData) {
-            for (const cell of cellsData) {
-                if (cell.localX >= 0 && cell.localX < 3 && cell.localY >= 0 && cell.localY < 3) {
-                    allotment.cells[cell.localY][cell.localX] = {
-                        devLevel: cell.devLevel || 0,
-                        progress: cell.progress || 0,
-                        population: cell.population || 0,
-                        hasRoadAccess: cell.hasRoadAccess || false,
-                        hasPower: cell.hasPower || false
-                    };
-                }
-            }
-        }
-        
-        // Count houses and apartments
-        for (let row = 0; row < 3; row++) {
-            for (let col = 0; col < 3; col++) {
-                const cell = allotment.cells[row][col];
-                if (cell) {
-                    if (cell.devLevel >= 1 && cell.devLevel <= 3) {
-                        allotment.housesBuilt++;
-                    } else if (cell.devLevel >= 4 && cell.devLevel <= 6) {
-                        allotment.apartmentsBuilt++;
-                    } else if (cell.devLevel >= 7) {
-                        allotment.hasHighrises = true;
-                    }
-                }
-            }
-        }
-        
-        // Determine phase based on buildings
-        if (allotment.hasHighrises) {
-            allotment.phase = 7;
-        } else if (allotment.apartmentsBuilt >= 8) {
-            allotment.phase = 6;
-        } else if (allotment.apartmentsBuilt >= 4) {
-            allotment.phase = 5;
-        } else if (allotment.apartmentsBuilt >= 1) {
-            allotment.phase = 4;
-        } else if (allotment.housesBuilt >= 9) {
-            allotment.phase = 3;
-        } else if (allotment.housesBuilt >= 4) {
-            allotment.phase = 2;
-        } else if (allotment.housesBuilt >= 1) {
-            allotment.phase = 1;
-        }
-        
-        this.allotments.set(key, allotment);
-        
-        // Mark tiles
-        for (let dy = 0; dy < 3; dy++) {
-            for (let dx = 0; dx < 3; dx++) {
-                const tile = this.map.getTile(x + dx, y + dy);
-                if (tile) {
-                    tile.building = {
-                        type: 'residential_allotment',
-                        allotmentKey: key,
-                        cellX: dx,
-                        cellY: dy,
-                        mainTile: (dx === 0 && dy === 0),
-                        originX: x,
-                        originY: y
-                    };
-                }
-            }
-        }
-        
-        return allotment;
-    }
-
 }

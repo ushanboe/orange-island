@@ -71,10 +71,13 @@ export class IndustrialAllotmentManager {
     }
 
     createAllotment(x, y) {
+        console.log(`[IndustrialAllotment] createAllotment called at (${x}, ${y})`);
 
         if (!this.canPlaceAllotment(x, y)) {
+            console.log(`[IndustrialAllotment] ❌ createAllotment: canPlaceAllotment returned false`);
             return false;
         }
+        console.log(`[IndustrialAllotment] ✅ createAllotment: canPlaceAllotment passed`);
 
         const key = `${x},${y}`;
 
@@ -117,10 +120,12 @@ export class IndustrialAllotmentManager {
             }
         }
 
+        console.log(`[IndustrialAllotment] ✅ createAllotment: Allotment created successfully at (${x}, ${y})`);
         return true;
     }
 
     canPlaceAllotment(x, y) {
+        console.log(`[IndustrialAllotment] Checking placement at (${x}, ${y})`);
         for (let dy = 0; dy < 3; dy++) {
             for (let dx = 0; dx < 3; dx++) {
                 const checkX = x + dx;
@@ -128,19 +133,24 @@ export class IndustrialAllotmentManager {
                 const tile = this.map.getTile(checkX, checkY);
 
                 if (!tile) {
+                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) is null/undefined`);
                     return false;
                 }
                 if (tile.building) {
+                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) has building:`, tile.building);
                     return false;
                 }
 
                 const terrain = tile.terrain;
                 if (terrain === TERRAIN.WATER || terrain === TERRAIN.DEEP_WATER ||
                     terrain === TERRAIN.MOUNTAIN || terrain === TERRAIN.ROCK) {
+                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) has unbuildable terrain: ${terrain}`);
                     return false;
                 }
+                console.log(`  ✓ Tile at (${checkX}, ${checkY}) OK (terrain: ${terrain})`);
             }
         }
+        console.log(`  ✅ All 9 tiles valid for placement`);
         return true;
     }
 
@@ -469,85 +479,4 @@ export class IndustrialAllotmentManager {
             }
         }
     }
-
-    // Create allotment from saved data
-    createAllotmentFromSave(x, y, cellsData) {
-        const key = `${x},${y}`;
-        
-        const allotment = {
-            x: x,
-            y: y,
-            phase: 0,
-            progress: 0,
-            workshopsBuilt: 0,
-            factoriesBuilt: 0,
-            hasHeavyIndustry: false,
-            jobs: 0,
-            pollution: 0,
-            cells: [
-                [null, null, null],
-                [null, null, null],
-                [null, null, null]
-            ],
-            createdAt: Date.now()
-        };
-        
-        // Restore cell data
-        if (cellsData) {
-            for (const cell of cellsData) {
-                if (cell.localX >= 0 && cell.localX < 3 && cell.localY >= 0 && cell.localY < 3) {
-                    allotment.cells[cell.localY][cell.localX] = {
-                        devLevel: cell.devLevel || 0,
-                        progress: cell.progress || 0,
-                        hasRoadAccess: cell.hasRoadAccess || false,
-                        hasPower: cell.hasPower || false
-                    };
-                }
-            }
-        }
-        
-        // Count buildings and determine phase
-        for (let row = 0; row < 3; row++) {
-            for (let col = 0; col < 3; col++) {
-                const cell = allotment.cells[row][col];
-                if (cell && cell.devLevel >= 1) {
-                    if (cell.devLevel <= 3) allotment.workshopsBuilt++;
-                    else if (cell.devLevel <= 6) allotment.factoriesBuilt++;
-                    else allotment.hasHeavyIndustry = true;
-                }
-            }
-        }
-        
-        // Determine phase
-        if (allotment.hasHeavyIndustry) allotment.phase = 7;
-        else if (allotment.factoriesBuilt >= 6) allotment.phase = 6;
-        else if (allotment.factoriesBuilt >= 3) allotment.phase = 5;
-        else if (allotment.factoriesBuilt >= 1) allotment.phase = 4;
-        else if (allotment.workshopsBuilt >= 9) allotment.phase = 3;
-        else if (allotment.workshopsBuilt >= 4) allotment.phase = 2;
-        else if (allotment.workshopsBuilt >= 1) allotment.phase = 1;
-        
-        this.allotments.set(key, allotment);
-        
-        // Mark tiles
-        for (let dy = 0; dy < 3; dy++) {
-            for (let dx = 0; dx < 3; dx++) {
-                const tile = this.map.getTile(x + dx, y + dy);
-                if (tile) {
-                    tile.building = {
-                        type: 'industrial_allotment',
-                        allotmentKey: key,
-                        cellX: dx,
-                        cellY: dy,
-                        mainTile: (dx === 0 && dy === 0),
-                        originX: x,
-                        originY: y
-                    };
-                }
-            }
-        }
-        
-        return allotment;
-    }
-
 }
