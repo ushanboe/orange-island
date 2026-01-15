@@ -360,13 +360,19 @@ export class InfrastructureManager {
         console.log('[INFRA] Port:', portX, portY);
         console.log('[INFRA] Connection data:', conn);
 
-        // Port just needs road access to operate
+        // Port needs road access to operate
         if (!conn?.hasRoad) {
             console.log('[INFRA] ❌ Port has no road connection');
             return false;
         }
 
-        console.log('[INFRA] ✅ Port has road - BOATS OK!');
+        // Port needs power to operate
+        if (!conn?.hasPower) {
+            console.log('[INFRA] ❌ Port has no power connection');
+            return false;
+        }
+
+        console.log('[INFRA] ✅ Port has road + power - BOATS OK!');
         return true;
     }
     getStatus() {
