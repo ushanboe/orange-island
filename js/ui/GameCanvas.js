@@ -627,8 +627,8 @@ export class GameCanvas {
                 const screenY = y * this.tileSize + this.offsetY;
 
 
-                // Skip terrain for non-main tiles of service buildings (they're drawn by main tile)
-                const serviceTypes = ['policeStation', 'fireStation', 'hospital', 'school'];
+                // Skip terrain for non-main tiles of multi-tile buildings (service buildings and port) (they're drawn by main tile)
+                const serviceTypes = ['policeStation', 'fireStation', 'hospital', 'school', 'port'];
                 if (tile.building && serviceTypes.includes(tile.building.type) && tile.building.mainTile === false) {
                     continue; // Skip this tile entirely, main tile renders the full 3x3
                 }
