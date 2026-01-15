@@ -1408,44 +1408,72 @@ export class GameCanvas {
         const tileMap = this.game.tileMap;
         if (!tileMap.isInBounds(this.hoverTileX, this.hoverTileY)) return;
 
-        const check = this.game.toolManager.canPlaceAt(this.hoverTileX, this.hoverTileY);
+        const toolId = this.game.toolManager.selectedTool;
         const building = this.game.toolManager.getSelectedTool();
+        const check = this.game.toolManager.canPlaceAt(this.hoverTileX, this.hoverTileY);
         
-        // Get building size (default 1 if not specified)
-        const buildingSize = (building && building.size) ? building.size : 1;
+        // FORCE size to 2 for service buildings to debug
+        let buildingSize = 1;
+        if (building && typeof building.size === 'number') {
+            buildingSize = building.size;
+        }
         
-        // Debug log (only once per second to avoid spam)
-        if (!this._lastPreviewLog || Date.now() - this._lastPreviewLog > 1000) {
-            console.log(`[PREVIEW] Tool: ${this.game.toolManager.selectedTool}, Building size: ${buildingSize}, tileSize: ${this.tileSize}, calculated size: ${this.tileSize * buildingSize}`);
+        // Service buildings should ALWAYS be 2x2
+        const serviceBuildings = ['policeStation', 'fireStation', 'hospital', 'school'];
+        if (serviceBuildings.includes(toolId)) {
+            buildingSize = 2; // Force 2x2 for service buildings
+        }
+        
+        // Debug log
+        if (!this._lastPreviewLog || Date.now() - this._lastPreviewLog > 500) {
+            console.log('[PREVIEW DEBUG]', {
+                toolId,
+                buildingObj: building,
+                buildingSizeProp: building?.size,
+                finalSize: buildingSize,
+                tileSize: this.tileSize,
+                pixelSize: this.tileSize * buildingSize
+            });
             this._lastPreviewLog = Date.now();
         }
 
         const screenX = this.hoverTileX * this.tileSize + this.offsetX;
         const screenY = this.hoverTileY * this.tileSize + this.offsetY;
-        const size = this.tileSize * buildingSize;
+        const pixelSize = this.tileSize * buildingSize;
 
-        if (check.valid) {
-            ctx.fillStyle = 'rgba(76, 175, 80, 0.4)';
-            ctx.strokeStyle = '#4CAF50';
-        } else {
-            ctx.fillStyle = 'rgba(244, 67, 54, 0.4)';
-            ctx.strokeStyle = '#F44336';
+        // Draw filled rectangle
+        ctx.fillStyle = check.valid ? 'rgba(0, 255, 0, 0.4)' : 'rgba(255, 0, 0, 0.4)';
+        ctx.fillRect(screenX, screenY, pixelSize, pixelSize);
+        
+        // Draw thick border
+        ctx.strokeStyle = check.valid ? '#00FF00' : '#FF0000';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(screenX, screenY, pixelSize, pixelSize);
+        
+        // For 2x2 buildings, draw internal grid
+        if (buildingSize === 2) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 2;
+            // Vertical middle line
+            ctx.beginPath();
+            ctx.moveTo(screenX + this.tileSize, screenY);
+            ctx.lineTo(screenX + this.tileSize, screenY + pixelSize);
+            ctx.stroke();
+            // Horizontal middle line  
+            ctx.beginPath();
+            ctx.moveTo(screenX, screenY + this.tileSize);
+            ctx.lineTo(screenX + pixelSize, screenY + this.tileSize);
+            ctx.stroke();
         }
 
-        ctx.fillRect(screenX, screenY, size, size);
-        ctx.lineWidth = 2;
-        ctx.strokeRect(screenX, screenY, size, size);
-
-        // Center icon in the full preview area
-        if (building && this.tileSize >= 16) {
-            const fontSize = Math.floor(this.tileSize * buildingSize * 0.4);
-            ctx.font = `${fontSize}px Arial`;
+        // Draw icon
+        if (building && building.icon && this.tileSize >= 12) {
+            const fontSize = Math.max(16, Math.floor(this.tileSize * buildingSize * 0.4));
+            ctx.font = fontSize + 'px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.globalAlpha = 0.7;
-            ctx.fillStyle = '#fff';
-            ctx.fillText(building.icon, screenX + size/2, screenY + size/2);
-            ctx.globalAlpha = 1;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(building.icon, screenX + pixelSize/2, screenY + pixelSize/2);
         }
     }
 }
