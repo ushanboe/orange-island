@@ -138,14 +138,44 @@ export class Boat {
             return;
         }
 
-        const dx = this.targetPort.x - this.x;
-        const dy = this.targetPort.y - this.y;
+        // Find docking position - a water tile adjacent to the port
+        // Port is 2x2 built on beach, so find water tile nearby
+        const portX = this.targetPort.x;
+        const portY = this.targetPort.y;
+
+        // Default dock position (will be updated if we find water)
+        let dockX = portX + 1;
+        let dockY = portY + 1;
+
+        // Check positions around the 2x2 port for water (prefer south/east as ports face water)
+        const dockingSpots = [
+            { x: portX + 1, y: portY + 2 },   // Below center
+            { x: portX, y: portY + 2 },       // Below left
+            { x: portX + 2, y: portY + 1 },   // Right of bottom
+            { x: portX + 2, y: portY },       // Right of top
+            { x: portX - 1, y: portY + 1 },   // Left of bottom
+            { x: portX - 1, y: portY },       // Left of top
+            { x: portX + 1, y: portY - 1 },   // Above right
+            { x: portX, y: portY - 1 },       // Above left
+        ];
+
+        for (const spot of dockingSpots) {
+            if (this.isWater(spot.x, spot.y)) {
+                dockX = spot.x + 0.5;  // Center of tile
+                dockY = spot.y + 0.5;
+                break;
+            }
+        }
+
+        const dx = dockX - this.x;
+        const dy = dockY - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist < 0.5) {
+        // Dock when within 1.5 tiles of docking position
+        if (dist < 1.5) {
             this.state = 'docked';
-            this.x = this.targetPort.x;
-            this.y = this.targetPort.y;
+            this.x = dockX;
+            this.y = dockY;
             this.onDocked();
             return;
         }
