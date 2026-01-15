@@ -1395,11 +1395,13 @@ export class GameCanvas {
     // ==================== PLACEMENT PREVIEW ====================
 
     drawPlacementPreview(ctx) {
-        // DEBUG v89 - log every call
-        const _toolId = this.game.toolManager?.selectedTool || 'none';
-        const _building = this.game.toolManager?.getSelectedTool();
-        const _size = _building?.size || 'undefined';
-        console.log('[PREVIEW v89] toolId=' + _toolId + ', building.size=' + _size);
+        // DEBUG v90 - comprehensive debug (only log once per second)
+        if (!this._lastPreviewLog || Date.now() - this._lastPreviewLog > 1000) {
+            this._lastPreviewLog = Date.now();
+            const _toolId = this.game.toolManager?.selectedTool || 'none';
+            const _building = this.game.toolManager?.getSelectedTool();
+            console.log('[PREVIEW v90] toolId=' + _toolId + ', building.size=' + (_building?.size || 'undef') + ', tileSize=' + this.tileSize);
+        }
 
         if (!this.game.toolManager || !this.game.toolManager.selectedTool) return;
         if (this.hoverTileX < 0 || this.hoverTileY < 0) return;
@@ -1426,6 +1428,11 @@ export class GameCanvas {
         
         // Draw semi-transparent overlay for entire area
         ctx.fillStyle = check.valid ? 'rgba(0, 200, 0, 0.6)' : 'rgba(200, 0, 0, 0.6)';
+        // DEBUG v90 - log actual draw values (once per second)
+        if (!this._lastDrawLog || Date.now() - this._lastDrawLog > 1000) {
+            this._lastDrawLog = Date.now();
+            console.log('[DRAW v90] screenX=' + screenX + ', screenY=' + screenY + ', totalSize=' + totalSize + ', tileSize=' + this.tileSize + ', buildingSize=' + buildingSize);
+        }
         ctx.fillRect(screenX, screenY, totalSize, totalSize);
         
         // Draw thick border
