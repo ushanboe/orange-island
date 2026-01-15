@@ -16,6 +16,7 @@ import { InfrastructureManager } from '../systems/InfrastructureManager.js';
 import { AnimationSystem } from '../systems/AnimationSystem.js';
 import { ImmigrationSystem } from '../systems/ImmigrationSystem.js';
 import { DebugPanel } from '../ui/DebugPanel.js';
+import { AdminSettings } from '../ui/AdminSettings.js';
 
 export class Game {
     constructor() {
@@ -112,6 +113,7 @@ export class Game {
         this.tariffSystem = new TariffSystem(this);
         this.tariffUI = new TariffUI(this);
         this.debugPanel = new DebugPanel(this);
+        this.adminSettings = new AdminSettings(this);
 
         // Add tariff button to toolbar
         this.addTariffButton();
