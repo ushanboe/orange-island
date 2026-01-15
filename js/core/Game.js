@@ -17,6 +17,8 @@ import { AnimationSystem } from '../systems/AnimationSystem.js';
 import { ImmigrationSystem } from '../systems/ImmigrationSystem.js';
 import { DebugPanel } from '../ui/DebugPanel.js';
 import { AdminSettings } from '../ui/AdminSettings.js';
+import { SaveSystem } from '../systems/SaveSystem.js';
+import { StartMenu } from '../ui/StartMenu.js';
 
 export class Game {
     constructor() {
@@ -114,6 +116,7 @@ export class Game {
         this.tariffUI = new TariffUI(this);
         this.debugPanel = new DebugPanel(this);
         this.adminSettings = new AdminSettings(this);
+        this.saveSystem = new SaveSystem(this);
 
         // Add tariff button to toolbar
         this.addTariffButton();
@@ -133,7 +136,30 @@ export class Game {
         console.log('✅ Game initialized!');
 
         // Start game loop
-        this.start();
+        this.showStartMenu();
+    }
+
+
+    showStartMenu() {
+        const savedGames = this.saveSystem.getSavedGames();
+        const startMenu = new StartMenu(this);
+        
+        startMenu.onNewGame = () => {
+            console.log('[GAME] Starting new game...');
+            this.start();
+        };
+        
+        startMenu.onLoadGame = (slot) => {
+            console.log('[GAME] Loading game from slot', slot);
+            if (this.saveSystem.loadGame(slot)) {
+                this.start();
+            } else {
+                this.kingTweet("Failed to load! Starting new game... 😢");
+                this.start();
+            }
+        };
+        
+        startMenu.show(savedGames);
     }
 
     setupEvents() {
