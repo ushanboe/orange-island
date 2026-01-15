@@ -163,6 +163,12 @@ export class ResidentialAllotmentManager {
             totalPopulation += allotment.population;
         }
 
+        // Debug logging every 10 ticks
+        if (this.game.month % 10 === 0 && this.allotments.size > 0) {
+            const sample = Array.from(this.allotments.values())[0];
+            console.log(`[RESIDENTIAL] Allotments: ${this.allotments.size}, TotalPop: ${totalPopulation}, Sample phase: ${sample.phase}, hasRoad: ${sample.hasRoad}, hasPower: ${sample.hasPower}, progress: ${sample.progress?.toFixed(1)}`);
+        }
+
         return { totalPopulation };
     }
 
