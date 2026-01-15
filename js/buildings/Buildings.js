@@ -7,6 +7,7 @@ export const BUILDING_CATEGORIES = {
     POWER: 'power',
     ENERGY: 'energy',
     SPECIAL: 'special',
+    SERVICES: 'services',
     DEMOLISH: 'demolish'
 };
 
@@ -269,6 +270,77 @@ export const BUILDINGS = {
     },
 
     // === DEMOLISH ===
+
+    // === SERVICES ===
+    policeStation: {
+        id: 'policeStation',
+        name: 'Police Station',
+        description: 'Law and order! Reduces crime!',
+        category: BUILDING_CATEGORIES.SERVICES,
+        cost: 1500,
+        size: 3,
+        color: '#1565C0',  // Blue
+        icon: '🚔',
+        isServiceBuilding: true,
+        effects: {
+            crime: -20,
+            safety: 15,
+            jobs: 25
+        },
+        canBuildOn: ['grass', 'dirt', 'forest']
+    },
+    fireStation: {
+        id: 'fireStation',
+        name: 'Fire Station',
+        description: 'Brave firefighters ready to serve!',
+        category: BUILDING_CATEGORIES.SERVICES,
+        cost: 1200,
+        size: 3,
+        color: '#D32F2F',  // Red
+        icon: '🚒',
+        isServiceBuilding: true,
+        effects: {
+            fireRisk: -25,
+            safety: 10,
+            jobs: 20
+        },
+        canBuildOn: ['grass', 'dirt', 'forest']
+    },
+    hospital: {
+        id: 'hospital',
+        name: 'Hospital',
+        description: 'Healthcare for the people!',
+        category: BUILDING_CATEGORIES.SERVICES,
+        cost: 2500,
+        size: 3,
+        color: '#FFFFFF',  // White
+        icon: '🏥',
+        isServiceBuilding: true,
+        effects: {
+            health: 30,
+            happiness: 10,
+            jobs: 50
+        },
+        canBuildOn: ['grass', 'dirt', 'forest']
+    },
+    school: {
+        id: 'school',
+        name: 'School',
+        description: 'Education for the future!',
+        category: BUILDING_CATEGORIES.SERVICES,
+        cost: 1000,
+        size: 3,
+        color: '#FFA000',  // Amber
+        icon: '🏫',
+        isServiceBuilding: true,
+        effects: {
+            education: 20,
+            happiness: 5,
+            jobs: 30
+        },
+        canBuildOn: ['grass', 'dirt', 'forest']
+    },
+
     bulldozer: {
         id: 'bulldozer',
         name: 'Bulldozer',

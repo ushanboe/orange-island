@@ -4,6 +4,7 @@ import { ResidentialRenderer } from '../rendering/ResidentialRenderer.js';
 import { CommercialRenderer } from '../rendering/CommercialRenderer.js';
 import { IndustrialRenderer } from '../rendering/IndustrialRenderer.js';
 import { BUILDINGS } from '../buildings/Buildings.js';
+import { ServiceBuildingRenderer } from '../rendering/ServiceBuildingRenderer.js';
 import { ZONE_VISUALS, DEV_LEVELS } from '../simulation/Development.js';
 
 
@@ -123,6 +124,7 @@ export class GameCanvas {
         this.residentialRenderer = new ResidentialRenderer(this.canvas, this.ctx);
         this.commercialRenderer = new CommercialRenderer(this.canvas, this.ctx);
         this.industrialRenderer = new IndustrialRenderer(this.canvas, this.ctx);
+        this.serviceBuildingRenderer = new ServiceBuildingRenderer(this.canvas, this.ctx);
 
         this.tileSize = 32;
         this.minTileSize = 8;
@@ -624,6 +626,13 @@ export class GameCanvas {
                 const screenX = x * this.tileSize + this.offsetX;
                 const screenY = y * this.tileSize + this.offsetY;
 
+
+                // Skip terrain for non-main tiles of service buildings (they're drawn by main tile)
+                const serviceTypes = ['policeStation', 'fireStation', 'hospital', 'school'];
+                if (tile.building && serviceTypes.includes(tile.building.type) && tile.building.mainTile === false) {
+                    continue; // Skip this tile entirely, main tile renders the full 3x3
+                }
+
                 // Draw terrain
                 ctx.fillStyle = TERRAIN_COLORS[tile.terrain] || '#000';
                 ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
@@ -763,6 +772,21 @@ export class GameCanvas {
             this.drawIndustrialAllotment(ctx, building, screenX, screenY, tileX, tileY);
             return;
         }
+
+        // Special handling for service buildings (3x3)
+        const serviceBuildings = ['policeStation', 'fireStation', 'hospital', 'school'];
+        if (serviceBuildings.includes(building.type)) {
+            // Only render from main tile
+            if (building.mainTile !== false) {
+                this.serviceBuildingRenderer.renderBuilding(
+                    tileX, tileY, this.tileSize, building.type,
+                    this.cameraX, this.cameraY, true
+                );
+            }
+            // Non-main tiles don't draw anything (renderer handles full 3x3)
+            return;
+        }
+
 
         const buildingDef = BUILDINGS[building.type];
         if (!buildingDef) return;

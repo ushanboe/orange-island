@@ -25,6 +25,7 @@ export class Toolbar {
                 <button class="cat-btn" data-category="power" title="Power">⚡</button>
                 <button class="cat-btn" data-category="energy" title="Oil & Energy">🛢️</button>
                 <button class="cat-btn" data-category="special" title="Monuments">👑</button>
+                <button class="cat-btn" data-category="services" title="Services">🏥</button>
                 <button class="cat-btn" data-category="demolish" title="Demolish">🚜</button>
             </div>
             <div class="toolbar-tools" id="toolbar-tools"></div>
