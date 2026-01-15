@@ -626,9 +626,17 @@ export class GameCanvas {
                 const screenX = x * this.tileSize + this.offsetX;
                 const screenY = y * this.tileSize + this.offsetY;
 
-                // Draw terrain
-                ctx.fillStyle = TERRAIN_COLORS[tile.terrain] || '#000';
-                ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+                // Check if this tile is part of a service building (non-main tile)
+                // If so, skip terrain drawing - the main tile will draw the full building
+                const isServiceBuildingTile = tile.building && 
+                    (tile.building.type === 'policeStation' || tile.building.type === 'fireStation' ||
+                     tile.building.type === 'hospital' || tile.building.type === 'school');
+
+                // Draw terrain (skip for service building tiles - they're drawn by main tile)
+                if (!isServiceBuildingTile) {
+                    ctx.fillStyle = TERRAIN_COLORS[tile.terrain] || '#000';
+                    ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+                }
 
                 // Draw building if present
                 if (tile.building) {
