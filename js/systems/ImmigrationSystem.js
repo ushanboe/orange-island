@@ -14,7 +14,7 @@ export class ImmigrationSystem {
         this.peopleBoats = [];      // Boats carrying immigrants
         this.crowds = [];           // Landed immigrant groups
         this.maxPeopleBoats = 5;
-        this.maxCrowds = 20;
+        this.maxCrowds = 50;  // Increased to prevent people not appearing after boat landing
 
         // Per-island spawn tracking
         // Each source island spawns a boat every ~12 months independently
@@ -329,7 +329,13 @@ export class ImmigrationSystem {
     }
 
     spawnCrowdFromBoat(boat) {
-        if (this.crowds.length >= this.maxCrowds) return;
+        if (this.crowds.length >= this.maxCrowds) {
+            console.warn(`[IMMIGRATION] Cannot spawn crowd - maxCrowds limit (${this.maxCrowds}) reached!`);
+            // Still add to population even if we can't show the crowd visually
+            this.game.population = (this.game.population || 0) + boat.peopleCount;
+            console.log(`[IMMIGRATION] Added ${boat.peopleCount} directly to population due to crowd limit`);
+            return;
+        }
 
         // Spawn crowd on the beach (targetLanding), not in water where boat is
         const landX = boat.targetLanding ? boat.targetLanding.x : boat.x;
@@ -361,9 +367,9 @@ export class ImmigrationSystem {
 
             // Check if crowd reached civilization
             if (crowd.reachedCivilization) {
-                // Add to visitors count (not population - they're visitors until integrated)
-                this.game.visitors = (this.game.visitors || 0) + crowd.count;
-                console.log(`[IMMIGRATION] ${crowd.count} visitors arrived! Total visitors: ${this.game.visitors}`);
+                // Add directly to population when they reach civilization
+                this.game.population = (this.game.population || 0) + crowd.count;
+                console.log(`[IMMIGRATION] ${crowd.count} immigrants integrated into population! Total: ${this.game.population}`);
                 crowd.remove = true;
 
                 // King tweet about immigrants arriving
@@ -422,6 +428,8 @@ export class PeopleBoat {
         this.game = game;
         this.x = startX;
         this.y = startY;
+        this.startX = startX;  // Remember spawn position for return trip
+        this.startY = startY;
         this.targetLanding = targetLanding;
         this.peopleCount = peopleCount;
         this.sourceIsland = sourceIsland;
@@ -430,6 +438,10 @@ export class PeopleBoat {
         this.crowdSpawned = false;
         this.frame = 0;
         this.remove = false;
+
+        // Navigation - for avoiding islands
+        this.avoidanceAngle = 0;
+        this.avoidanceFrames = 0;
     }
 
     update() {
@@ -438,8 +450,64 @@ export class PeopleBoat {
         if (this.state === 'arriving') {
             this.moveTowardsTarget();
         } else if (this.state === 'leaving') {
-            this.moveAway();
+            this.moveBackToSource();
         }
+    }
+
+    /**
+     * Check if a position is water (safe to navigate)
+     */
+    isWater(x, y) {
+        const map = this.game.tileMap || this.game.map;
+        if (!map) return true;
+
+        const tileX = Math.floor(x);
+        const tileY = Math.floor(y);
+
+        // Out of bounds is considered water (ocean)
+        if (tileX < 0 || tileY < 0 || tileX >= map.width || tileY >= map.height) {
+            return true;
+        }
+
+        const terrain = map.getTerrainAt(tileX, tileY);
+        // WATER=0, DEEP_WATER=1 are safe
+        return terrain === 0 || terrain === 1;
+    }
+
+    /**
+     * Check if path ahead is clear for several tiles
+     */
+    isPathClear(fromX, fromY, dirX, dirY, distance = 3) {
+        for (let i = 1; i <= distance; i++) {
+            const checkX = fromX + dirX * i;
+            const checkY = fromY + dirY * i;
+            if (!this.isWater(checkX, checkY)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Find a clear direction to navigate around obstacles
+     */
+    findClearDirection(targetDirX, targetDirY) {
+        // Try angles from -90 to +90 degrees from target direction
+        const angles = [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180];
+        const baseAngle = Math.atan2(targetDirY, targetDirX);
+
+        for (const offsetDeg of angles) {
+            const angle = baseAngle + (offsetDeg * Math.PI / 180);
+            const dirX = Math.cos(angle);
+            const dirY = Math.sin(angle);
+
+            if (this.isPathClear(this.x, this.y, dirX, dirY, 4)) {
+                return { dirX, dirY, angle: offsetDeg };
+            }
+        }
+
+        // No clear path found, return original direction
+        return { dirX: targetDirX, dirY: targetDirY, angle: 0 };
     }
 
     moveTowardsTarget() {
@@ -455,10 +523,12 @@ export class PeopleBoat {
         // Check if we're about to hit land - stop at water's edge
         const map = this.game.tileMap;
         if (map) {
-            const nextX = this.x + (dx / dist) * this.speed;
-            const nextY = this.y + (dy / dist) * this.speed;
+            const targetDirX = dx / dist;
+            const targetDirY = dy / dist;
+            const nextX = this.x + targetDirX * this.speed;
+            const nextY = this.y + targetDirY * this.speed;
             const nextTerrain = map.getTerrainAt(Math.floor(nextX), Math.floor(nextY));
-            
+
             // WATER=0, DEEP_WATER=1 - if next tile is NOT water, we've reached shore
             if (nextTerrain !== 0 && nextTerrain !== 1) {
                 console.log(`[IMMIGRATION] Boat reached shore at (${Math.floor(this.x)}, ${Math.floor(this.y)})`);
@@ -473,30 +543,140 @@ export class PeopleBoat {
             return;
         }
 
-        this.x += (dx / dist) * this.speed;
-        this.y += (dy / dist) * this.speed;
-    }
+        // Normalize direction to target
+        const targetDirX = dx / dist;
+        const targetDirY = dy / dist;
 
-    moveAway() {
-        // Move back toward source island
-        const map = this.game.tileMap;
-        const mapWidth = map?.width || 128;
-        
-        // Move toward the edge
-        if (this.sourceIsland === 'left') {
-            this.x -= this.speed * 1.5;
-            // Remove when reaching left edge
-            if (this.x <= 0) {
-                this.remove = true;
-                console.log('[IMMIGRATION] Boat left via left edge');
+        // Check if direct path is clear
+        let moveDirX = targetDirX;
+        let moveDirY = targetDirY;
+
+        // If we're in avoidance mode, continue for a bit
+        if (this.avoidanceFrames > 0) {
+            this.avoidanceFrames--;
+            const angle = this.avoidanceAngle;
+            moveDirX = Math.cos(angle);
+            moveDirY = Math.sin(angle);
+
+            // Check if we can now head towards target
+            if (this.avoidanceFrames % 10 === 0 && this.isPathClear(this.x, this.y, targetDirX, targetDirY, 5)) {
+                this.avoidanceFrames = 0;
             }
         } else {
-            this.x += this.speed * 1.5;
-            // Remove when reaching right edge
-            if (this.x >= mapWidth) {
-                this.remove = true;
-                console.log('[IMMIGRATION] Boat left via right edge');
+            // Check if path ahead is blocked
+            if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
+                const clearDir = this.findClearDirection(targetDirX, targetDirY);
+                moveDirX = clearDir.dirX;
+                moveDirY = clearDir.dirY;
+
+                // Set avoidance mode for smoother navigation
+                if (clearDir.angle !== 0) {
+                    this.avoidanceAngle = Math.atan2(moveDirY, moveDirX);
+                    this.avoidanceFrames = 30;
+                }
             }
+        }
+
+        // Move in the chosen direction
+        const nextX = this.x + moveDirX * this.speed;
+        const nextY = this.y + moveDirY * this.speed;
+
+        // Final safety check - don't move into land
+        if (this.isWater(nextX, nextY)) {
+            this.x = nextX;
+            this.y = nextY;
+        }
+    }
+
+    /**
+     * Move back to source island instead of just disappearing
+     */
+    moveBackToSource() {
+        // Target is the original spawn position (near source island)
+        const targetX = this.startX;
+        const targetY = this.startY;
+
+        const dx = targetX - this.x;
+        const dy = targetY - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Use faster speed for return trip
+        const returnSpeed = this.speed * 2;
+
+        // If we've reached the source island area, remove the boat
+        if (dist < 2) {
+            console.log(`[IMMIGRATION] Empty boat returned to ${this.sourceIsland} island`);
+            this.remove = true;
+            return;
+        }
+
+        // Normalize direction to target
+        const targetDirX = dx / dist;
+        const targetDirY = dy / dist;
+
+        // Check if direct path is clear
+        let moveDirX = targetDirX;
+        let moveDirY = targetDirY;
+
+        // If we're in avoidance mode, continue for a bit
+        if (this.avoidanceFrames > 0) {
+            this.avoidanceFrames--;
+            const angle = this.avoidanceAngle;
+            moveDirX = Math.cos(angle);
+            moveDirY = Math.sin(angle);
+
+            // Check if we can now head towards target
+            if (this.avoidanceFrames % 10 === 0 && this.isPathClear(this.x, this.y, targetDirX, targetDirY, 5)) {
+                this.avoidanceFrames = 0;
+            }
+        } else {
+            // Check if path ahead is blocked
+            if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
+                const clearDir = this.findClearDirection(targetDirX, targetDirY);
+                moveDirX = clearDir.dirX;
+                moveDirY = clearDir.dirY;
+
+                // Set avoidance mode for smoother navigation
+                if (clearDir.angle !== 0) {
+                    this.avoidanceAngle = Math.atan2(moveDirY, moveDirX);
+                    this.avoidanceFrames = 30;
+                }
+            }
+        }
+
+        // Move in the chosen direction
+        const nextX = this.x + moveDirX * returnSpeed;
+        const nextY = this.y + moveDirY * returnSpeed;
+
+        // Final safety check - don't move into land
+        if (this.isWater(nextX, nextY)) {
+            this.x = nextX;
+            this.y = nextY;
+        } else {
+            // Emergency: try to find any water tile nearby
+            const emergencyAngles = [90, -90, 180, 45, -45, 135, -135];
+            const baseAngle = Math.atan2(moveDirY, moveDirX);
+            for (const offset of emergencyAngles) {
+                const angle = baseAngle + (offset * Math.PI / 180);
+                const emergX = this.x + Math.cos(angle) * returnSpeed;
+                const emergY = this.y + Math.sin(angle) * returnSpeed;
+                if (this.isWater(emergX, emergY)) {
+                    this.x = emergX;
+                    this.y = emergY;
+                    this.avoidanceAngle = angle;
+                    this.avoidanceFrames = 60;
+                    break;
+                }
+            }
+        }
+
+        // Safety: if boat gets stuck or goes too far, remove it
+        const map = this.game.tileMap || this.game.map;
+        const mapWidth = map?.width || 128;
+        const mapHeight = map?.height || 128;
+        if (this.x < -5 || this.x > mapWidth + 5 || this.y < -5 || this.y > mapHeight + 5) {
+            console.log(`[IMMIGRATION] Boat exited map bounds, removing`);
+            this.remove = true;
         }
     }
 
@@ -511,10 +691,10 @@ export class PeopleBoat {
         }
 
         ctx.save();
-        
+
         // Bobbing animation
         const bob = Math.sin(this.frame * 0.08) * 2;
-        
+
         // Draw boat as emoji - simple and guaranteed to show
         ctx.font = '32px Arial';
         ctx.textAlign = 'center';
@@ -543,8 +723,19 @@ export class PeopleBoat {
 
             ctx.restore();
         }
+
+        // Draw "returning" indicator when leaving
+        if (this.state === 'leaving') {
+            ctx.save();
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fillText('↩️', screenX + tileSize/2, screenY - 10);
+            ctx.restore();
+        }
     }
 }
+
 
 
 /**

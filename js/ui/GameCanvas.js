@@ -794,6 +794,16 @@ export class GameCanvas {
             return;
         }
 
+        // Special handling for port (2x2) with LED indicator
+        if (building.type === 'port') {
+            // Only render from main tile
+            if (building.mainTile !== false) {
+                this.drawPort(ctx, screenX, screenY, this.tileSize, tileX, tileY);
+            }
+            return;
+        }
+
+
 
         const buildingDef = BUILDINGS[building.type];
         if (!buildingDef) return;
@@ -1412,7 +1422,134 @@ export class GameCanvas {
         }
     }
 
-    // ==================== PLACEMENT PREVIEW ====================
+    
+    // ==================== PORT WITH LED INDICATOR ====================
+
+    drawPort(ctx, x, y, size, tileX, tileY) {
+        const fullSize = size * 2; // 2x2 building
+
+        // Check if port has power and road access
+        let hasRoad = false;
+        let hasPower = false;
+        if (this.game && this.game.infrastructureManager) {
+            hasRoad = this.game.infrastructureManager.hasRoadAccess(tileX, tileY);
+            hasPower = this.game.infrastructureManager.hasPower(tileX, tileY);
+        }
+        const isActive = hasRoad && hasPower;
+
+        // Background - dock/pier color
+        ctx.fillStyle = '#5D4E37';  // Dark wood
+        ctx.fillRect(x + 1, y + 1, fullSize - 2, fullSize - 2);
+
+        // Water area (bottom portion)
+        ctx.fillStyle = '#1E90FF';
+        ctx.fillRect(x + 2, y + fullSize * 0.6, fullSize - 4, fullSize * 0.38);
+
+        // Animated water ripples
+        const rippleOffset = Math.sin(this.animTime / 200) * 2;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + 5, y + fullSize * 0.7 + rippleOffset);
+        ctx.quadraticCurveTo(x + fullSize/2, y + fullSize * 0.75 - rippleOffset, x + fullSize - 5, y + fullSize * 0.7 + rippleOffset);
+        ctx.stroke();
+
+        // Dock planks
+        ctx.fillStyle = '#8B7355';
+        for (let i = 0; i < 4; i++) {
+            ctx.fillRect(x + 3, y + 3 + i * (fullSize * 0.12), fullSize - 6, fullSize * 0.08);
+        }
+
+        // Dock posts
+        ctx.fillStyle = '#4A3728';
+        ctx.fillRect(x + 4, y + 2, 4, fullSize * 0.5);
+        ctx.fillRect(x + fullSize - 8, y + 2, 4, fullSize * 0.5);
+
+        // Crane/loading structure
+        ctx.fillStyle = '#696969';
+        ctx.fillRect(x + fullSize * 0.35, y + 4, 6, fullSize * 0.4);
+        ctx.fillRect(x + fullSize * 0.35 - 8, y + 4, 22, 4);
+
+        // Crane hook
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + fullSize * 0.35 + 10, y + 8);
+        ctx.lineTo(x + fullSize * 0.35 + 10, y + fullSize * 0.35);
+        ctx.stroke();
+
+        // Anchor icon in center
+        ctx.font = `${Math.floor(fullSize * 0.35)}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⚓', x + fullSize * 0.7, y + fullSize * 0.35);
+
+        // LED Indicator (like service buildings)
+        const ledX = x + fullSize - 12;
+        const ledY = y + 6;
+        const ledRadius = 5;
+
+        // LED glow effect
+        if (isActive) {
+            // Green glow
+            const gradient = ctx.createRadialGradient(ledX, ledY, 0, ledX, ledY, ledRadius * 2);
+            gradient.addColorStop(0, 'rgba(0, 255, 0, 0.8)');
+            gradient.addColorStop(1, 'rgba(0, 255, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(ledX, ledY, ledRadius * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // LED body - green
+            ctx.fillStyle = '#00FF00';
+            ctx.beginPath();
+            ctx.arc(ledX, ledY, ledRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // LED highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.beginPath();
+            ctx.arc(ledX - 1, ledY - 1, ledRadius * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            // Red glow (pulsing when inactive)
+            const pulse = 0.5 + 0.5 * Math.sin(this.animTime / 300);
+            const gradient = ctx.createRadialGradient(ledX, ledY, 0, ledX, ledY, ledRadius * 2);
+            gradient.addColorStop(0, `rgba(255, 0, 0, ${0.6 * pulse})`);
+            gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(ledX, ledY, ledRadius * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // LED body - red
+            ctx.fillStyle = '#FF0000';
+            ctx.beginPath();
+            ctx.arc(ledX, ledY, ledRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // LED highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.beginPath();
+            ctx.arc(ledX - 1, ledY - 1, ledRadius * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Status text (small)
+        if (fullSize >= 40) {
+            ctx.font = 'bold 8px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = isActive ? '#00AA00' : '#AA0000';
+            ctx.fillText(isActive ? 'OPEN' : 'CLOSED', x + 4, y + fullSize - 4);
+        }
+
+        // Border
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + 1, y + 1, fullSize - 2, fullSize - 2);
+    }
+
+// ==================== PLACEMENT PREVIEW ====================
 
     drawPlacementPreview(ctx) {
         if (!this.game.toolManager || !this.game.toolManager.selectedTool) return;
@@ -1428,25 +1565,65 @@ export class GameCanvas {
         const screenY = this.hoverTileY * this.tileSize + this.offsetY;
         const size = this.tileSize * (building ? building.size : 1);
 
+        // Pulsing animation for better visibility
+        const pulse = 0.7 + 0.3 * Math.sin(this.animTime / 150);
+
         if (check.valid) {
-            ctx.fillStyle = 'rgba(76, 175, 80, 0.4)';
-            ctx.strokeStyle = '#4CAF50';
+            // Valid placement - green with pulsing border
+            ctx.fillStyle = 'rgba(76, 175, 80, 0.3)';
+            ctx.fillRect(screenX, screenY, size, size);
+
+            // Thick green border
+            ctx.strokeStyle = `rgba(76, 175, 80, ${pulse})`;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(screenX + 2, screenY + 2, size - 4, size - 4);
         } else {
-            ctx.fillStyle = 'rgba(244, 67, 54, 0.4)';
-            ctx.strokeStyle = '#F44336';
+            // Invalid placement - red with very visible pulsing border
+            ctx.fillStyle = 'rgba(244, 67, 54, 0.35)';
+            ctx.fillRect(screenX, screenY, size, size);
+
+            // Outer dark border for contrast
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.lineWidth = 6;
+            ctx.strokeRect(screenX, screenY, size, size);
+
+            // Inner bright red pulsing border
+            ctx.strokeStyle = `rgba(255, 50, 50, ${pulse})`;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(screenX + 2, screenY + 2, size - 4, size - 4);
+
+            // Corner markers for extra visibility
+            ctx.fillStyle = '#FF0000';
+            const cornerSize = Math.max(6, size * 0.15);
+            // Top-left
+            ctx.fillRect(screenX, screenY, cornerSize, 4);
+            ctx.fillRect(screenX, screenY, 4, cornerSize);
+            // Top-right
+            ctx.fillRect(screenX + size - cornerSize, screenY, cornerSize, 4);
+            ctx.fillRect(screenX + size - 4, screenY, 4, cornerSize);
+            // Bottom-left
+            ctx.fillRect(screenX, screenY + size - 4, cornerSize, 4);
+            ctx.fillRect(screenX, screenY + size - cornerSize, 4, cornerSize);
+            // Bottom-right
+            ctx.fillRect(screenX + size - cornerSize, screenY + size - 4, cornerSize, 4);
+            ctx.fillRect(screenX + size - 4, screenY + size - cornerSize, 4, cornerSize);
         }
 
-        ctx.fillRect(screenX, screenY, size, size);
-        ctx.lineWidth = 2;
-        ctx.strokeRect(screenX, screenY, size, size);
-
+        // Draw building icon
         if (building && this.tileSize >= 16) {
             ctx.font = `${Math.floor(this.tileSize * 0.6)}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.globalAlpha = 0.7;
+            ctx.globalAlpha = 0.8;
             ctx.fillStyle = '#fff';
+            // Add shadow for better visibility
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 1;
             ctx.fillText(building.icon, screenX + this.tileSize/2, screenY + this.tileSize/2);
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
             ctx.globalAlpha = 1;
         }
     }

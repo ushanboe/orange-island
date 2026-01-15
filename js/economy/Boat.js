@@ -21,6 +21,10 @@ export class Boat {
         this.direction = 'left'; // left, right, up, down
         this.spawnDirection = null; // Will be set based on spawn position
         this.flagColor = null;
+
+        // Navigation - for avoiding islands
+        this.avoidanceAngle = 0;
+        this.avoidanceFrames = 0;
     }
 
     generateCargo() {
@@ -72,6 +76,62 @@ export class Boat {
         this.frame++;
     }
 
+    /**
+     * Check if a position is water (safe to navigate)
+     */
+    isWater(x, y) {
+        const map = this.game.tileMap || this.game.map;
+        if (!map) return true;
+
+        const tileX = Math.floor(x);
+        const tileY = Math.floor(y);
+
+        // Out of bounds is considered water (ocean)
+        if (tileX < 0 || tileY < 0 || tileX >= map.width || tileY >= map.height) {
+            return true;
+        }
+
+        const terrain = map.getTerrainAt(tileX, tileY);
+        // WATER=0, DEEP_WATER=1 are safe
+        return terrain === 0 || terrain === 1;
+    }
+
+    /**
+     * Check if path ahead is clear for several tiles
+     */
+    isPathClear(fromX, fromY, dirX, dirY, distance = 3) {
+        for (let i = 1; i <= distance; i++) {
+            const checkX = fromX + dirX * i;
+            const checkY = fromY + dirY * i;
+            if (!this.isWater(checkX, checkY)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Find a clear direction to navigate around obstacles
+     */
+    findClearDirection(targetDirX, targetDirY) {
+        // Try angles from -90 to +90 degrees from target direction
+        const angles = [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180];
+        const baseAngle = Math.atan2(targetDirY, targetDirX);
+
+        for (const offsetDeg of angles) {
+            const angle = baseAngle + (offsetDeg * Math.PI / 180);
+            const dirX = Math.cos(angle);
+            const dirY = Math.sin(angle);
+
+            if (this.isPathClear(this.x, this.y, dirX, dirY, 4)) {
+                return { dirX, dirY, angle: offsetDeg };
+            }
+        }
+
+        // No clear path found, return original direction
+        return { dirX: targetDirX, dirY: targetDirY, angle: 0 };
+    }
+
     moveTowardsTarget() {
         if (!this.targetPort) {
             this.state = 'leaving';
@@ -90,42 +150,135 @@ export class Boat {
             return;
         }
 
-        // Move towards port
-        this.x += (dx / dist) * this.speed;
-        this.y += (dy / dist) * this.speed;
+        // Normalize direction to target
+        const targetDirX = dx / dist;
+        const targetDirY = dy / dist;
+
+        // Check if direct path is clear
+        let moveDirX = targetDirX;
+        let moveDirY = targetDirY;
+
+        // If we're in avoidance mode, continue for a bit
+        if (this.avoidanceFrames > 0) {
+            this.avoidanceFrames--;
+            const angle = this.avoidanceAngle;
+            moveDirX = Math.cos(angle);
+            moveDirY = Math.sin(angle);
+
+            // Check if we can now head towards target
+            if (this.avoidanceFrames % 10 === 0 && this.isPathClear(this.x, this.y, targetDirX, targetDirY, 5)) {
+                this.avoidanceFrames = 0;
+            }
+        } else {
+            // Check if path ahead is blocked
+            if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
+                const clearDir = this.findClearDirection(targetDirX, targetDirY);
+                moveDirX = clearDir.dirX;
+                moveDirY = clearDir.dirY;
+
+                // Set avoidance mode for smoother navigation
+                if (clearDir.angle !== 0) {
+                    this.avoidanceAngle = Math.atan2(moveDirY, moveDirX);
+                    this.avoidanceFrames = 30; // Continue this direction for 30 frames
+                }
+            }
+        }
+
+        // Move in the chosen direction
+        const nextX = this.x + moveDirX * this.speed;
+        const nextY = this.y + moveDirY * this.speed;
+
+        // Final safety check - don't move into land
+        if (this.isWater(nextX, nextY)) {
+            this.x = nextX;
+            this.y = nextY;
+        } else {
+            // Emergency: try to find any water tile nearby
+            const emergencyAngles = [90, -90, 180, 45, -45, 135, -135];
+            const baseAngle = Math.atan2(moveDirY, moveDirX);
+            for (const offset of emergencyAngles) {
+                const angle = baseAngle + (offset * Math.PI / 180);
+                const emergX = this.x + Math.cos(angle) * this.speed;
+                const emergY = this.y + Math.sin(angle) * this.speed;
+                if (this.isWater(emergX, emergY)) {
+                    this.x = emergX;
+                    this.y = emergY;
+                    this.avoidanceAngle = angle;
+                    this.avoidanceFrames = 60;
+                    break;
+                }
+            }
+        }
 
         // Update direction for sprite
-        if (Math.abs(dx) > Math.abs(dy)) {
-            this.direction = dx > 0 ? 'right' : 'left';
+        if (Math.abs(moveDirX) > Math.abs(moveDirY)) {
+            this.direction = moveDirX > 0 ? 'right' : 'left';
         } else {
-            this.direction = dy > 0 ? 'down' : 'up';
+            this.direction = moveDirY > 0 ? 'down' : 'up';
         }
     }
 
     moveAway() {
-        // Move back towards the edge we came from
+        // Move back towards the edge we came from, avoiding islands
         const speed = this.speed * 1.5;
-        const mapWidth = this.game.map?.width || 64;
-        const mapHeight = this.game.map?.height || 64;
+        const mapWidth = this.game.map?.width || this.game.tileMap?.width || 64;
+        const mapHeight = this.game.map?.height || this.game.tileMap?.height || 64;
+
+        let targetX, targetY;
 
         switch(this.spawnDirection) {
             case 'right':
-                this.x += speed;
-                if (this.x > mapWidth + 3) this.remove = true;
+                targetX = mapWidth + 5;
+                targetY = this.y;
                 break;
             case 'top':
-                this.y -= speed;
-                if (this.y < -3) this.remove = true;
+                targetX = this.x;
+                targetY = -5;
                 break;
             case 'bottom':
-                this.y += speed;
-                if (this.y > mapHeight + 3) this.remove = true;
+                targetX = this.x;
+                targetY = mapHeight + 5;
                 break;
             case 'left':
             default:
-                this.x -= speed;
-                if (this.x < -3) this.remove = true;
+                targetX = -5;
+                targetY = this.y;
                 break;
+        }
+
+        const dx = targetX - this.x;
+        const dy = targetY - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 1) {
+            this.remove = true;
+            return;
+        }
+
+        const targetDirX = dx / dist;
+        const targetDirY = dy / dist;
+
+        // Use same navigation logic as arriving
+        let moveDirX = targetDirX;
+        let moveDirY = targetDirY;
+
+        if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
+            const clearDir = this.findClearDirection(targetDirX, targetDirY);
+            moveDirX = clearDir.dirX;
+            moveDirY = clearDir.dirY;
+        }
+
+        const nextX = this.x + moveDirX * speed;
+        const nextY = this.y + moveDirY * speed;
+
+        if (this.isWater(nextX, nextY)) {
+            this.x = nextX;
+            this.y = nextY;
+        }
+
+        // Check if reached edge
+        if (this.x < -3 || this.x > mapWidth + 3 || this.y < -3 || this.y > mapHeight + 3) {
+            this.remove = true;
         }
     }
 

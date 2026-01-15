@@ -654,7 +654,15 @@ export class Game {
 
     updateUI() {
         // Update header stats
-        document.getElementById('treasury').textContent = `$${this.treasury.toLocaleString()}`;
+        // Display treasury with clear negative formatting
+        const treasuryEl = document.getElementById('treasury');
+        if (this.treasury < 0) {
+            treasuryEl.textContent = `-$${Math.abs(this.treasury).toLocaleString()}`;
+            treasuryEl.style.color = '#FF4444';  // Red for negative
+        } else {
+            treasuryEl.textContent = `$${this.treasury.toLocaleString()}`;
+            treasuryEl.style.color = '';  // Default color
+        }
         // Debug visitors
         if (this.month % 5 === 0) {
             console.log(`[UI DEBUG] Population: ${this.population}, Visitors: ${this.visitors}, Display: ${this.population + (this.visitors ? ' (+' + this.visitors + ' visitors)' : '')}`);
