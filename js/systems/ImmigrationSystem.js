@@ -176,6 +176,7 @@ export class ImmigrationSystem {
 
         this.peopleBoats.push(boat);
         console.log(`[IMMIGRATION] ✅ Boat spawned from ${sourceIsland.name} with ${peopleCount} people`);
+        console.log(`[IMMIGRATION] Spawn: (${spawnPoint.x}, ${spawnPoint.y}) -> Landing: (${landingSpot.x}, ${landingSpot.y})`);
 
         // King tweet about boats
         if (Math.random() < 0.5) {
@@ -236,8 +237,24 @@ export class ImmigrationSystem {
 
                     // Main island beaches are within ~50 tiles of center
                     if (distFromCenter < 50 && distFromCenter > 15) {
-                        // Check if beach is on the correct HORIZONTAL side (left or right)
-                        const isOnPreferredSide = preferLeftSide ? (x < centerX - 10) : (x > centerX + 10);
+                        // Check if beach is on the coast FACING the source island
+                        // For boats from 'left', we want beaches with water to the WEST (left)
+                        // For boats from 'right', we want beaches with water to the EAST (right)
+                        let isOnPreferredCoast = false;
+
+                        // Check adjacent tiles for water to determine which coast this beach is on
+                        const hasWaterWest = x > 0 && (map.getTerrainAt(x - 1, y) === 0 || map.getTerrainAt(x - 1, y) === 1);
+                        const hasWaterEast = x < map.width - 1 && (map.getTerrainAt(x + 1, y) === 0 || map.getTerrainAt(x + 1, y) === 1);
+
+                        if (preferLeftSide && hasWaterWest) {
+                            // Boat from left, beach has water to the west - good!
+                            isOnPreferredCoast = true;
+                        } else if (!preferLeftSide && hasWaterEast) {
+                            // Boat from right, beach has water to the east - good!
+                            isOnPreferredCoast = true;
+                        }
+
+                        const isOnPreferredSide = isOnPreferredCoast;
 
                         // ALSO check that beach is not at extreme top or bottom
                         // Prefer beaches in the middle 60% of Y range (20% to 80%)
@@ -519,6 +536,11 @@ export class PeopleBoat {
         const dx = this.targetLanding.x - this.x;
         const dy = this.targetLanding.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Debug logging (occasional)
+        if (this.frame % 300 === 0) {
+            console.log(`[PEOPLE_BOAT] From ${this.sourceIsland}: pos(${this.x.toFixed(1)}, ${this.y.toFixed(1)}) -> target(${this.targetLanding.x}, ${this.targetLanding.y}), dist: ${dist.toFixed(1)}, avoidance: ${this.avoidanceFrames}`);
+        }
 
         // Check if we're about to hit land - stop at water's edge
         const map = this.game.tileMap;
