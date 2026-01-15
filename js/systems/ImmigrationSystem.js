@@ -678,9 +678,9 @@ export class Crowd {
         // - More than 20 people
         // - Random chance
         // - Not on cooldown
-        return this.count > 15 && 
+        return this.count > 10 && 
                this.splitCooldown === 0 && 
-               Math.random() < 0.02;  // 0.5% chance per frame
+               Math.random() < 0.10;  // 10% chance per frame - more splitting!
     }
 
     split() {

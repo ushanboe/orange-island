@@ -622,7 +622,7 @@ export class Game {
     updateUI() {
         // Update header stats
         document.getElementById('treasury').textContent = `$${this.treasury.toLocaleString()}`;
-        document.getElementById('population').textContent = this.population;
+        document.getElementById('population').textContent = this.population + (this.visitors ? ` (+${this.visitors} visitors)` : '');
         document.getElementById('date').textContent = `Year ${this.year}, Month ${this.month}`;
 
         // Update king mood emoji
