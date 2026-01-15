@@ -16,6 +16,7 @@ import { InfrastructureManager } from '../systems/InfrastructureManager.js';
 import { AnimationSystem } from '../systems/AnimationSystem.js';
 import { ImmigrationSystem } from '../systems/ImmigrationSystem.js';
 import { DebugPanel } from '../ui/DebugPanel.js';
+import { AdminSettings } from '../ui/AdminSettings.js';
 
 export class Game {
     constructor() {
@@ -67,7 +68,7 @@ export class Game {
 
         // Timing
         this.lastUpdate = 0;
-        this.tickInterval = 4000;  // 4 seconds per game tick (50% slower)
+        this.tickInterval = 80000;  // 80 seconds per game tick (16 min per year) - adjustable via F2 admin panel
         this.lastTick = 0;
 
         // King's tweets
@@ -96,6 +97,10 @@ export class Game {
         this.infrastructureManager = new InfrastructureManager(this);
         this.animationSystem = new AnimationSystem(this);
         this.immigrationSystem = new ImmigrationSystem(this);
+        
+        // Admin settings panel (F2 to toggle)
+        this.adminSettings = new AdminSettings(this);
+        this.adminSettings.loadSettings();  // Load saved settings
         console.log("[INIT] ImmigrationSystem created:", !!this.immigrationSystem);
 
         // Initialize canvas (after managers so it can access them for rendering)

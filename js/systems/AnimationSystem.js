@@ -10,7 +10,9 @@ export class AnimationSystem {
         this.smokeParticles = [];
         this.maxVehicles = 50;
         this.maxBoats = 10;
-        this.boatCheckInterval = 60;  // Check every 60 ticks
+        this.boatCheckInterval = 60;  // Check every 60 frames (adjustable via F2)
+        this.boatSpawnChance = 0.1;   // 10% chance per check (adjustable via F2)
+        this.boatSpeed = 0.015;       // Boat speed (adjustable via F2)
         this.boatCheckCounter = 0;
     }
 
@@ -64,7 +66,7 @@ export class AnimationSystem {
         // Spawn boats for operational ports
         const desiredBoats = Math.min(this.maxBoats, operationalPorts.length * 2);
         
-        if (this.boats.length < desiredBoats && Math.random() < 0.1) {
+        if (this.boats.length < desiredBoats && Math.random() < this.boatSpawnChance) {
             this.spawnBoat(operationalPorts);
         }
     }
@@ -127,7 +129,7 @@ export class AnimationSystem {
             icon: types[Math.floor(Math.random() * types.length)],
             targetPort: port,
             state: 'arriving',  // arriving, docked, departing
-            speed: 0.01 + Math.random() * 0.01,
+            speed: this.boatSpeed + Math.random() * 0.01,
             lifetime: 0,
             maxLifetime: 800 + Math.random() * 400,
             dockTime: 0,

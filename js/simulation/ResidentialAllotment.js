@@ -17,13 +17,13 @@ export const RESIDENTIAL_PHASES = {
 // Population per phase
 export const PHASE_POPULATION = {
     0: 0,
-    1: 6,      // 1-3 houses @ 2 each
-    2: 12,     // 4-6 houses @ 2 each
-    3: 18,     // 9 houses @ 2 each
-    4: 36,     // 3 apartments @ 12 each
-    5: 72,     // 6 apartments @ 12 each
-    6: 96,     // 8 apartments @ 12 each
-    7: 200     // 2 high-rises @ 100 each
+    1: 12,     // 1-3 houses @ 4 persons each
+    2: 24,     // 4-6 houses @ 4 persons each
+    3: 36,     // 9 houses @ 4 persons each
+    4: 120,    // 3 apartments @ 10 units @ 4 persons = 40 each
+    5: 240,    // 6 apartments @ 40 each
+    6: 320,    // 8 apartments @ 40 each
+    7: 400     // 2 high-rises @ 50 units @ 4 persons = 200 each
 };
 
 // Building icons for rendering
