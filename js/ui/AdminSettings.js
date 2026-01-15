@@ -10,7 +10,7 @@ export class AdminSettings {
         // Default settings (can be overridden)
         this.settings = {
             // Game timeline: 80 seconds per tick = 16 minutes per year
-            tickInterval: 80000,  // milliseconds per game tick (1 month)
+            tickInterval: 25000,  // milliseconds per game tick (1 month)
             
             // Cargo boats
             cargoBoatSpawnInterval: 60,  // animation frames between spawn checks
@@ -280,7 +280,7 @@ export class AdminSettings {
     
     resetDefaults() {
         this.settings = {
-            tickInterval: 80000,  // 80 seconds per month = 16 min per year
+            tickInterval: 25000,  // 25 seconds per month = 5 min per year
             cargoBoatSpawnInterval: 60,
             cargoBoatSpawnChance: 0.1,
             cargoBoatSpeed: 0.015,

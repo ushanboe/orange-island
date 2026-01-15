@@ -68,7 +68,7 @@ export class Game {
 
         // Timing
         this.lastUpdate = 0;
-        this.tickInterval = 80000;  // 80 seconds per game tick (16 min per year) - adjustable via F2 admin panel
+        this.tickInterval = 25000;  // 25 seconds per game tick (5 min per year) - adjustable via F2 admin panel
         this.lastTick = 0;
 
         // King's tweets
