@@ -632,14 +632,7 @@ export class GameCanvas {
 
                 // Draw building if present
                 if (tile.building) {
-                    // Debug: ALWAYS log residential allotment buildings (first 5 per frame)
-                    if (tile.building.type === 'residential_allotment') {
-                        if (!this._resLogCount) this._resLogCount = 0;
-                        if (this._resLogCount < 5) {
-                            console.log(`[RENDER] Found residential_allotment at (${x},${y}), calling drawBuilding...`);
-                            this._resLogCount++;
-                        }
-                    }
+                    // Residential allotment rendering (debug removed)
                     try {
                         this.drawBuilding(ctx, tile.building, screenX, screenY, x, y);
                     } catch (e) {
@@ -1412,63 +1405,72 @@ export class GameCanvas {
         const building = this.game.toolManager.getSelectedTool();
         const check = this.game.toolManager.canPlaceAt(this.hoverTileX, this.hoverTileY);
         
-        // Determine building size - force 2 for service buildings
-        let buildingSize = 1;
+        // Get building size from building definition
+        let buildingSize = (building && building.size) ? building.size : 1;
+        
+        // Service buildings are 3x3
         const serviceBuildings = ['policeStation', 'fireStation', 'hospital', 'school'];
         if (serviceBuildings.includes(toolId)) {
-            buildingSize = 2;
-        } else if (building && typeof building.size === 'number') {
-            buildingSize = building.size;
+            buildingSize = 3;
         }
 
         const screenX = this.hoverTileX * this.tileSize + this.offsetX;
         const screenY = this.hoverTileY * this.tileSize + this.offsetY;
-        const pixelSize = this.tileSize * buildingSize;
+        const totalSize = this.tileSize * buildingSize;
 
-        // Save context state
         ctx.save();
         
-        // Draw each tile of the preview separately to ensure coverage
-        for (let dy = 0; dy < buildingSize; dy++) {
-            for (let dx = 0; dx < buildingSize; dx++) {
-                const tileScreenX = screenX + dx * this.tileSize;
-                const tileScreenY = screenY + dy * this.tileSize;
-                
-                // Fill each tile
-                ctx.fillStyle = check.valid ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)';
-                ctx.fillRect(tileScreenX, tileScreenY, this.tileSize, this.tileSize);
-                
-                // Border each tile
-                ctx.strokeStyle = check.valid ? '#00FF00' : '#FF0000';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(tileScreenX, tileScreenY, this.tileSize, this.tileSize);
+        // Draw semi-transparent overlay for entire area
+        ctx.fillStyle = check.valid ? 'rgba(0, 200, 0, 0.6)' : 'rgba(200, 0, 0, 0.6)';
+        ctx.fillRect(screenX, screenY, totalSize, totalSize);
+        
+        // Draw thick border
+        ctx.strokeStyle = check.valid ? '#00FF00' : '#FF0000';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(screenX + 2, screenY + 2, totalSize - 4, totalSize - 4);
+        
+        // Draw grid lines for multi-tile buildings
+        if (buildingSize > 1) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.lineWidth = 1;
+            for (let i = 1; i < buildingSize; i++) {
+                // Vertical lines
+                ctx.beginPath();
+                ctx.moveTo(screenX + i * this.tileSize, screenY);
+                ctx.lineTo(screenX + i * this.tileSize, screenY + totalSize);
+                ctx.stroke();
+                // Horizontal lines
+                ctx.beginPath();
+                ctx.moveTo(screenX, screenY + i * this.tileSize);
+                ctx.lineTo(screenX + totalSize, screenY + i * this.tileSize);
+                ctx.stroke();
             }
         }
-        
-        // Draw outer border around entire preview
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(screenX, screenY, pixelSize, pixelSize);
 
-        // Draw icon centered
-        if (building && building.icon && this.tileSize >= 12) {
-            const fontSize = Math.max(20, Math.floor(pixelSize * 0.4));
+        // Draw building icon centered
+        if (building && building.icon) {
+            const fontSize = Math.max(24, Math.floor(totalSize * 0.5));
             ctx.font = fontSize + 'px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = '#FFFFFF';
             ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 2;
-            ctx.strokeText(building.icon, screenX + pixelSize/2, screenY + pixelSize/2);
-            ctx.fillText(building.icon, screenX + pixelSize/2, screenY + pixelSize/2);
+            ctx.lineWidth = 3;
+            ctx.strokeText(building.icon, screenX + totalSize/2, screenY + totalSize/2);
+            ctx.fillText(building.icon, screenX + totalSize/2, screenY + totalSize/2);
         }
         
-        // Draw debug text showing size on canvas
-        ctx.font = '14px monospace';
+        // Size label
+        ctx.font = 'bold 12px Arial';
         ctx.fillStyle = '#FFFF00';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
         ctx.textAlign = 'left';
-        ctx.fillText(buildingSize + 'x' + buildingSize + ' (' + pixelSize + 'px)', screenX, screenY - 5);
+        const label = buildingSize + 'x' + buildingSize;
+        ctx.strokeText(label, screenX + 4, screenY - 6);
+        ctx.fillText(label, screenX + 4, screenY - 6);
         
         ctx.restore();
     }
+}
 }

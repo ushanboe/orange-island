@@ -227,7 +227,7 @@ export const BUILDINGS = {
         description: 'Law and order! The best police, believe me!',
         category: BUILDING_CATEGORIES.SERVICES,
         cost: 1500,
-        size: 2,
+        size: 3,
         color: '#1565C0',  // Blue
         icon: '🚔',
         isServiceBuilding: true,
@@ -246,7 +246,7 @@ export const BUILDINGS = {
         description: 'Fighting fires! Heroes, all of them!',
         category: BUILDING_CATEGORIES.SERVICES,
         cost: 1500,
-        size: 2,
+        size: 3,
         color: '#D32F2F',  // Red
         icon: '🚒',
         isServiceBuilding: true,
@@ -265,7 +265,7 @@ export const BUILDINGS = {
         description: 'The best healthcare! Tremendous doctors!',
         category: BUILDING_CATEGORIES.SERVICES,
         cost: 2000,
-        size: 2,
+        size: 3,
         color: '#FFFFFF',  // White
         icon: '🏥',
         isServiceBuilding: true,
@@ -284,7 +284,7 @@ export const BUILDINGS = {
         description: 'Education! Making our kids smart!',
         category: BUILDING_CATEGORIES.SERVICES,
         cost: 1000,
-        size: 2,
+        size: 3,
         color: '#FDD835',  // Yellow
         icon: '🏫',
         isServiceBuilding: true,
