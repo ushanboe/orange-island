@@ -1412,68 +1412,63 @@ export class GameCanvas {
         const building = this.game.toolManager.getSelectedTool();
         const check = this.game.toolManager.canPlaceAt(this.hoverTileX, this.hoverTileY);
         
-        // FORCE size to 2 for service buildings to debug
+        // Determine building size - force 2 for service buildings
         let buildingSize = 1;
-        if (building && typeof building.size === 'number') {
-            buildingSize = building.size;
-        }
-        
-        // Service buildings should ALWAYS be 2x2
         const serviceBuildings = ['policeStation', 'fireStation', 'hospital', 'school'];
         if (serviceBuildings.includes(toolId)) {
-            buildingSize = 2; // Force 2x2 for service buildings
-        }
-        
-        // Debug log
-        if (!this._lastPreviewLog || Date.now() - this._lastPreviewLog > 500) {
-            console.log('[PREVIEW DEBUG]', {
-                toolId,
-                buildingObj: building,
-                buildingSizeProp: building?.size,
-                finalSize: buildingSize,
-                tileSize: this.tileSize,
-                pixelSize: this.tileSize * buildingSize
-            });
-            this._lastPreviewLog = Date.now();
+            buildingSize = 2;
+        } else if (building && typeof building.size === 'number') {
+            buildingSize = building.size;
         }
 
         const screenX = this.hoverTileX * this.tileSize + this.offsetX;
         const screenY = this.hoverTileY * this.tileSize + this.offsetY;
         const pixelSize = this.tileSize * buildingSize;
 
-        // Draw filled rectangle
-        ctx.fillStyle = check.valid ? 'rgba(0, 255, 0, 0.4)' : 'rgba(255, 0, 0, 0.4)';
-        ctx.fillRect(screenX, screenY, pixelSize, pixelSize);
+        // Save context state
+        ctx.save();
         
-        // Draw thick border
-        ctx.strokeStyle = check.valid ? '#00FF00' : '#FF0000';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(screenX, screenY, pixelSize, pixelSize);
-        
-        // For 2x2 buildings, draw internal grid
-        if (buildingSize === 2) {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.lineWidth = 2;
-            // Vertical middle line
-            ctx.beginPath();
-            ctx.moveTo(screenX + this.tileSize, screenY);
-            ctx.lineTo(screenX + this.tileSize, screenY + pixelSize);
-            ctx.stroke();
-            // Horizontal middle line  
-            ctx.beginPath();
-            ctx.moveTo(screenX, screenY + this.tileSize);
-            ctx.lineTo(screenX + pixelSize, screenY + this.tileSize);
-            ctx.stroke();
+        // Draw each tile of the preview separately to ensure coverage
+        for (let dy = 0; dy < buildingSize; dy++) {
+            for (let dx = 0; dx < buildingSize; dx++) {
+                const tileScreenX = screenX + dx * this.tileSize;
+                const tileScreenY = screenY + dy * this.tileSize;
+                
+                // Fill each tile
+                ctx.fillStyle = check.valid ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)';
+                ctx.fillRect(tileScreenX, tileScreenY, this.tileSize, this.tileSize);
+                
+                // Border each tile
+                ctx.strokeStyle = check.valid ? '#00FF00' : '#FF0000';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(tileScreenX, tileScreenY, this.tileSize, this.tileSize);
+            }
         }
+        
+        // Draw outer border around entire preview
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(screenX, screenY, pixelSize, pixelSize);
 
-        // Draw icon
+        // Draw icon centered
         if (building && building.icon && this.tileSize >= 12) {
-            const fontSize = Math.max(16, Math.floor(this.tileSize * buildingSize * 0.4));
+            const fontSize = Math.max(20, Math.floor(pixelSize * 0.4));
             ctx.font = fontSize + 'px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = '#FFFFFF';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeText(building.icon, screenX + pixelSize/2, screenY + pixelSize/2);
             ctx.fillText(building.icon, screenX + pixelSize/2, screenY + pixelSize/2);
         }
+        
+        // Draw debug text showing size on canvas
+        ctx.font = '14px monospace';
+        ctx.fillStyle = '#FFFF00';
+        ctx.textAlign = 'left';
+        ctx.fillText(buildingSize + 'x' + buildingSize + ' (' + pixelSize + 'px)', screenX, screenY - 5);
+        
+        ctx.restore();
     }
 }
