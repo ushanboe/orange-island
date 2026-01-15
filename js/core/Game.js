@@ -622,6 +622,10 @@ export class Game {
     updateUI() {
         // Update header stats
         document.getElementById('treasury').textContent = `$${this.treasury.toLocaleString()}`;
+        // Debug visitors
+        if (this.month % 5 === 0) {
+            console.log(`[UI DEBUG] Population: ${this.population}, Visitors: ${this.visitors}, Display: ${this.population + (this.visitors ? ' (+' + this.visitors + ' visitors)' : '')}`);
+        }
         document.getElementById('population').textContent = this.population + (this.visitors ? ` (+${this.visitors} visitors)` : '');
         document.getElementById('date').textContent = `Year ${this.year}, Month ${this.month}`;
 
