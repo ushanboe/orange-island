@@ -665,6 +665,9 @@ export class Crowd {
     }
 
     checkCivilization() {
+        // Guard: skip if already reached civilization
+        if (this.reachedCivilization) return;
+
         // Debug: log position periodically
         if (Math.random() < 0.01) {
             console.log(`[CROWD] Checking civilization at (${Math.floor(this.x)},${Math.floor(this.y)}), count: ${this.count}`);
