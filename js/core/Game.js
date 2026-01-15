@@ -358,6 +358,11 @@ export class Game {
             this.tariffSystem.update();
         }
 
+        // Animate immigration boats and crowds at 60fps
+        if (this.immigrationSystem) {
+            this.immigrationSystem.animate();
+        }
+
         // Render
         this.canvas.render();
 

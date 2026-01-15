@@ -39,33 +39,33 @@ export class ImmigrationSystem {
             this._debugLogged = true;
         }
         
-        // Debug: log every 100 ticks
+        // Debug: log every 10 ticks
         if (this.spawnTimer % 10 === 0) {
             const map = this.game.tileMap;
             console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}/${this.spawnInterval}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
         }
         
-        // Debug: log spawn attempts
-        if (this.spawnTimer % 300 === 0 && this.spawnTimer > 0) {
-            const map = this.game.tileMap;
-            console.log(`[IMMIGRATION] Timer: ${this.spawnTimer}, sourceIslands: ${map?.sourceIslands?.length || "none"}, boats: ${this.peopleBoats.length}`);
-        }
-        // Spawn new people boats periodically
+        // Spawn new people boats periodically (called from tick - once per game month)
         this.spawnTimer++;
         if (this.spawnTimer >= this.spawnInterval) {
             this.spawnTimer = 0;
             this.trySpawnPeopleBoat();
         }
 
-        // Update all people boats
-        this.updatePeopleBoats();
-
-        // Update all crowds
-        this.updateCrowds();
-
         // Clean up removed entities
         this.peopleBoats = this.peopleBoats.filter(b => !b.remove);
         this.crowds = this.crowds.filter(c => !c.remove);
+    }
+
+    /**
+     * Animate boats and crowds - called from animation loop at 60fps
+     */
+    animate() {
+        // Update all people boats (movement)
+        this.updatePeopleBoats();
+
+        // Update all crowds (movement)
+        this.updateCrowds();
     }
 
     trySpawnPeopleBoat() {
