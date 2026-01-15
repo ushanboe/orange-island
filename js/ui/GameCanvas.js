@@ -1416,7 +1416,7 @@ export class GameCanvas {
         
         // Debug log (only once per second to avoid spam)
         if (!this._lastPreviewLog || Date.now() - this._lastPreviewLog > 1000) {
-            console.log(`[PREVIEW] Tool: ${this.game.toolManager.selectedTool}, Building size: ${buildingSize}`);
+            console.log(`[PREVIEW] Tool: ${this.game.toolManager.selectedTool}, Building size: ${buildingSize}, tileSize: ${this.tileSize}, calculated size: ${this.tileSize * buildingSize}`);
             this._lastPreviewLog = Date.now();
         }
 

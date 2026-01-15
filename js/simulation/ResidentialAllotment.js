@@ -520,4 +520,98 @@ export class ResidentialAllotmentManager {
             }
         }
     }
+
+    // Create allotment from saved data
+    createAllotmentFromSave(x, y, cellsData, totalPopulation) {
+        const key = `${x},${y}`;
+        
+        // Create allotment data from saved state
+        const allotment = {
+            x: x,
+            y: y,
+            phase: 0,
+            progress: 0,
+            housesBuilt: 0,
+            apartmentsBuilt: 0,
+            hasHighrises: false,
+            population: totalPopulation || 0,
+            cells: [
+                [null, null, null],
+                [null, null, null],
+                [null, null, null]
+            ],
+            createdAt: Date.now()
+        };
+        
+        // Restore cell data
+        if (cellsData) {
+            for (const cell of cellsData) {
+                if (cell.localX >= 0 && cell.localX < 3 && cell.localY >= 0 && cell.localY < 3) {
+                    allotment.cells[cell.localY][cell.localX] = {
+                        devLevel: cell.devLevel || 0,
+                        progress: cell.progress || 0,
+                        population: cell.population || 0,
+                        hasRoadAccess: cell.hasRoadAccess || false,
+                        hasPower: cell.hasPower || false
+                    };
+                }
+            }
+        }
+        
+        // Count houses and apartments
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 3; col++) {
+                const cell = allotment.cells[row][col];
+                if (cell) {
+                    if (cell.devLevel >= 1 && cell.devLevel <= 3) {
+                        allotment.housesBuilt++;
+                    } else if (cell.devLevel >= 4 && cell.devLevel <= 6) {
+                        allotment.apartmentsBuilt++;
+                    } else if (cell.devLevel >= 7) {
+                        allotment.hasHighrises = true;
+                    }
+                }
+            }
+        }
+        
+        // Determine phase based on buildings
+        if (allotment.hasHighrises) {
+            allotment.phase = 7;
+        } else if (allotment.apartmentsBuilt >= 8) {
+            allotment.phase = 6;
+        } else if (allotment.apartmentsBuilt >= 4) {
+            allotment.phase = 5;
+        } else if (allotment.apartmentsBuilt >= 1) {
+            allotment.phase = 4;
+        } else if (allotment.housesBuilt >= 9) {
+            allotment.phase = 3;
+        } else if (allotment.housesBuilt >= 4) {
+            allotment.phase = 2;
+        } else if (allotment.housesBuilt >= 1) {
+            allotment.phase = 1;
+        }
+        
+        this.allotments.set(key, allotment);
+        
+        // Mark tiles
+        for (let dy = 0; dy < 3; dy++) {
+            for (let dx = 0; dx < 3; dx++) {
+                const tile = this.map.getTile(x + dx, y + dy);
+                if (tile) {
+                    tile.building = {
+                        type: 'residential_allotment',
+                        allotmentKey: key,
+                        cellX: dx,
+                        cellY: dy,
+                        mainTile: (dx === 0 && dy === 0),
+                        originX: x,
+                        originY: y
+                    };
+                }
+            }
+        }
+        
+        return allotment;
+    }
+
 }

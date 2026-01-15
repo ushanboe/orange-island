@@ -17,6 +17,8 @@ import { AnimationSystem } from '../systems/AnimationSystem.js';
 import { ImmigrationSystem } from '../systems/ImmigrationSystem.js';
 import { DebugPanel } from '../ui/DebugPanel.js';
 import { AdminSettings } from '../ui/AdminSettings.js';
+import { SaveSystem } from '../systems/SaveSystem.js';
+import { StartMenu } from '../ui/StartMenu.js';
 
 export class Game {
     constructor() {
@@ -75,6 +77,11 @@ export class Game {
         this.tweetQueue = [];
         this.currentTweet = null;
         this.tweetElement = null;
+        
+        // Save system
+        this.saveSystem = null;
+        this.autoSaveInterval = 60000; // Auto-save every 60 seconds
+        this.lastAutoSave = 0;
     }
 
     async init() {
@@ -97,6 +104,9 @@ export class Game {
         this.infrastructureManager = new InfrastructureManager(this);
         this.animationSystem = new AnimationSystem(this);
         this.immigrationSystem = new ImmigrationSystem(this);
+        
+        // Save system
+        this.saveSystem = new SaveSystem(this);
         
         // Admin settings panel (F2 to toggle)
         this.adminSettings = new AdminSettings(this);
@@ -328,6 +338,12 @@ export class Game {
         if (!this.paused && now - this.lastTick >= this.tickInterval) {
             this.tick();
             this.lastTick = now;
+            
+            // Auto-save every minute
+            if (now - this.lastAutoSave >= this.autoSaveInterval) {
+                this.save(true); // silent save
+                this.lastAutoSave = now;
+            }
         }
 
         // Update tariff system (boats, etc.)
@@ -645,49 +661,40 @@ export class Game {
     }
 
     // Save game
-    save() {
-        const saveData = {
-            treasury: this.treasury,
-            population: this.population,
-            month: this.month,
-            year: this.year,
-            kingEgo: this.kingEgo,
-            taxRate: this.taxRate,
-            tariffRate: this.tariffRate,
-            tileMap: this.tileMap.serialize(),
-            development: this.developmentManager?.serialize() || {}
-        };
-        localStorage.setItem('islandKingdom_save', JSON.stringify(saveData));
-        this.kingTweet("Game SAVED! The best save ever! 💾");
+    save(silent = false) {
+        if (this.saveSystem) {
+            const success = this.saveSystem.saveGame();
+            if (!silent && success) {
+                this.kingTweet("Game SAVED! The best save ever! 💾");
+            }
+            return success;
+        }
+        return false;
     }
 
     // Load game
     load() {
-        const saveStr = localStorage.getItem('islandKingdom_save');
-        if (!saveStr) {
-            this.kingTweet("No save found! Sad! 😢");
-            return false;
-        }
-
-        try {
-            const saveData = JSON.parse(saveStr);
-            this.treasury = saveData.treasury;
-            this.population = saveData.population;
-            this.month = saveData.month;
-            this.year = saveData.year;
-            this.kingEgo = saveData.kingEgo;
-            this.taxRate = saveData.taxRate;
-            this.tariffRate = saveData.tariffRate;
-            this.tileMap = TileMap.deserialize(saveData.tileMap);
-            if (saveData.development) {
-                this.developmentManager.deserialize(saveData.development);
+        if (this.saveSystem) {
+            const success = this.saveSystem.loadGame();
+            if (success) {
+                this.kingTweet("Game LOADED! We're BACK! 🎮");
+            } else {
+                this.kingTweet("No save found! Sad! 😢");
             }
-            this.updateUI();
-            this.kingTweet("Game LOADED! We're BACK! 🎮");
-            return true;
-        } catch (e) {
-            console.error('Load failed:', e);
-            return false;
+            return success;
+        }
+        return false;
+    }
+    
+    // Check if saved game exists
+    hasSavedGame() {
+        return this.saveSystem && this.saveSystem.hasSavedGame();
+    }
+    
+    // Delete saved game
+    deleteSave() {
+        if (this.saveSystem) {
+            this.saveSystem.deleteSave();
         }
     }
 

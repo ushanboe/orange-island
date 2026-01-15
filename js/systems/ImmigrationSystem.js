@@ -351,7 +351,26 @@ export class PeopleBoat {
         this.targetLanding = targetLanding;
         this.peopleCount = peopleCount;
         this.sourceIsland = sourceIsland;
-        this.speed = this.immigrationSystem?.boatSpeed || 1.0;  // Doubled for slower tick rate
+        
+        // Calculate dynamic speed so boat arrives in exactly 3 game months (3 ticks)
+        // Distance from spawn to target landing
+        const dx = targetLanding.x - startX;
+        const dy = targetLanding.y - startY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Speed = distance / (3 months * frames per month)
+        // Game runs at ~60fps, and we want arrival in 3 game ticks
+        // Each game tick happens every ~60 frames (1 second at 60fps)
+        // So we need to cover the distance in 3 * 60 = 180 frames
+        const framesPerMonth = 60;  // Approximate frames per game tick/month
+        const targetMonths = 3;
+        this.speed = distance / (targetMonths * framesPerMonth);
+        
+        // Ensure minimum speed so boats don't get stuck
+        this.speed = Math.max(this.speed, 0.1);
+        
+        console.log(`[BOAT] Distance: ${distance.toFixed(1)}, Speed: ${this.speed.toFixed(3)} (will arrive in ~${targetMonths} months)`);
+        
         this.state = 'arriving';  // arriving, landed, leaving
         this.crowdSpawned = false;
         this.frame = 0;
