@@ -3,7 +3,6 @@ import { TERRAIN_COLORS } from '../map/TileMap.js';
 import { ResidentialRenderer } from '../rendering/ResidentialRenderer.js';
 import { CommercialRenderer } from '../rendering/CommercialRenderer.js';
 import { IndustrialRenderer } from '../rendering/IndustrialRenderer.js';
-import { ServiceBuildingRenderer } from '../rendering/ServiceBuildingRenderer.js';
 import { BUILDINGS } from '../buildings/Buildings.js';
 import { ZONE_VISUALS, DEV_LEVELS } from '../simulation/Development.js';
 
@@ -124,7 +123,6 @@ export class GameCanvas {
         this.residentialRenderer = new ResidentialRenderer(this.canvas, this.ctx);
         this.commercialRenderer = new CommercialRenderer(this.canvas, this.ctx);
         this.industrialRenderer = new IndustrialRenderer(this.canvas, this.ctx);
-        this.serviceBuildingRenderer = new ServiceBuildingRenderer(this.canvas, this.ctx);
 
         this.tileSize = 32;
         this.minTileSize = 8;
@@ -221,6 +219,7 @@ export class GameCanvas {
 
         const { tileX, tileY } = this.screenToTile(x, y);
         
+        console.log('[GameCanvas] onPointerDown:', { 
             tileX, tileY, 
             hasToolManager: !!this.game.toolManager,
             selectedTool: this.game.toolManager?.selectedTool 
@@ -228,6 +227,7 @@ export class GameCanvas {
 
         if (this.game.toolManager && this.game.toolManager.selectedTool) {
             this.isDragging = true;
+            console.log('[GameCanvas] Calling toolManager.onPointerDown');
             this.game.toolManager.onPointerDown(tileX, tileY);
         } else {
             this.isPanning = true;
@@ -624,21 +624,20 @@ export class GameCanvas {
                 const screenX = x * this.tileSize + this.offsetX;
                 const screenY = y * this.tileSize + this.offsetY;
 
-                // Check if this tile is part of a service building (non-main tile)
-                // If so, skip terrain drawing - the main tile will draw the full building
-                const isServiceBuildingTile = tile.building && 
-                    (tile.building.type === 'policeStation' || tile.building.type === 'fireStation' ||
-                     tile.building.type === 'hospital' || tile.building.type === 'school');
-
-                // Draw terrain (skip for service building tiles - they're drawn by main tile)
-                if (!isServiceBuildingTile) {
-                    ctx.fillStyle = TERRAIN_COLORS[tile.terrain] || '#000';
-                    ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
-                }
+                // Draw terrain
+                ctx.fillStyle = TERRAIN_COLORS[tile.terrain] || '#000';
+                ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
 
                 // Draw building if present
                 if (tile.building) {
-                    
+                    // Debug: ALWAYS log residential allotment buildings (first 5 per frame)
+                    if (tile.building.type === 'residential_allotment') {
+                        if (!this._resLogCount) this._resLogCount = 0;
+                        if (this._resLogCount < 5) {
+                            console.log(`[RENDER] Found residential_allotment at (${x},${y}), calling drawBuilding...`);
+                            this._resLogCount++;
+                        }
+                    }
                     try {
                         this.drawBuilding(ctx, tile.building, screenX, screenY, x, y);
                     } catch (e) {
@@ -765,34 +764,6 @@ export class GameCanvas {
             return;
         }
 
-        // Service buildings (3x3)
-        if (building.type === 'policeStation' || building.type === 'fireStation' ||
-            building.type === 'hospital' || building.type === 'school') {
-            // Skip non-main tiles - main tile draws the full 3x3 building
-            if (building.mainTile === false) return;
-
-            // Main tile - draw the full 3x3 building graphic
-            if (this.serviceBuildingRenderer) {
-                // DEBUG: Log once per building type per frame
-                if (!this._debuggedServiceBuildings) this._debuggedServiceBuildings = {};
-                if (!this._debuggedServiceBuildings[building.type]) {
-                    this._debuggedServiceBuildings[building.type] = true;
-                    setTimeout(() => { this._debuggedServiceBuildings[building.type] = false; }, 1000);
-                }
-                this.serviceBuildingRenderer.renderBuilding(
-                    tileX, tileY,
-                    this.tileSize,
-                    building.type,
-                    this.offsetX,
-                    this.offsetY,
-                    true
-                );
-            } else {
-                console.warn('[SERVICE] No serviceBuildingRenderer!');
-            }
-            return;
-        }
-
         const buildingDef = BUILDINGS[building.type];
         if (!buildingDef) return;
 
@@ -888,6 +859,7 @@ export class GameCanvas {
 
     drawResidentialAllotment(ctx, building, screenX, screenY, tileX, tileY) {
         // Debug: log when this is called
+        console.log(`[DRAW] drawResidentialAllotment ENTERED at (${tileX},${tileY})`, building);
         
         // Get cell data from the residential manager
         const resManager = this.game.residentialManager;
@@ -1412,91 +1384,39 @@ export class GameCanvas {
     // ==================== PLACEMENT PREVIEW ====================
 
     drawPlacementPreview(ctx) {
-        // DEBUG v90 - comprehensive debug (only log once per second)
-        if (!this._lastPreviewLog || Date.now() - this._lastPreviewLog > 1000) {
-            this._lastPreviewLog = Date.now();
-            const _toolId = this.game.toolManager?.selectedTool || 'none';
-            const _building = this.game.toolManager?.getSelectedTool();
-        }
-
         if (!this.game.toolManager || !this.game.toolManager.selectedTool) return;
         if (this.hoverTileX < 0 || this.hoverTileY < 0) return;
 
         const tileMap = this.game.tileMap;
         if (!tileMap.isInBounds(this.hoverTileX, this.hoverTileY)) return;
 
-        const toolId = this.game.toolManager.selectedTool;
-        const building = this.game.toolManager.getSelectedTool();
         const check = this.game.toolManager.canPlaceAt(this.hoverTileX, this.hoverTileY);
-        
-        // Get building size - service buildings are 3x3
-        let buildingSize = (building && building.size) ? building.size : 1;
-        const serviceBuildings = ['policeStation', 'fireStation', 'hospital', 'school'];
-        if (serviceBuildings.includes(toolId)) {
-            buildingSize = 3;
-        }
+        const building = this.game.toolManager.getSelectedTool();
 
         const screenX = this.hoverTileX * this.tileSize + this.offsetX;
         const screenY = this.hoverTileY * this.tileSize + this.offsetY;
-        const totalSize = this.tileSize * buildingSize;
+        const size = this.tileSize * (building ? building.size : 1);
 
-        ctx.save();
-        
-        // V91 - BRIGHT MAGENTA to prove new code running
-        ctx.fillStyle = "#FF00FF";
-        ctx.fillRect(screenX - 10, screenY - 10, totalSize + 20, totalSize + 20);
-        // Draw semi-transparent overlay for entire area
-        ctx.fillStyle = check.valid ? 'rgba(0, 200, 0, 0.6)' : 'rgba(200, 0, 0, 0.6)';
-        // DEBUG v90 - log actual draw values (once per second)
-        if (!this._lastDrawLog || Date.now() - this._lastDrawLog > 1000) {
-            this._lastDrawLog = Date.now();
-        }
-        ctx.fillRect(screenX, screenY, totalSize, totalSize);
-        
-        // Draw thick border
-        ctx.strokeStyle = check.valid ? '#00FF00' : '#FF0000';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(screenX + 2, screenY + 2, totalSize - 4, totalSize - 4);
-        
-        // Draw grid lines for multi-tile buildings
-        if (buildingSize > 1) {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.lineWidth = 1;
-            for (let i = 1; i < buildingSize; i++) {
-                ctx.beginPath();
-                ctx.moveTo(screenX + i * this.tileSize, screenY);
-                ctx.lineTo(screenX + i * this.tileSize, screenY + totalSize);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(screenX, screenY + i * this.tileSize);
-                ctx.lineTo(screenX + totalSize, screenY + i * this.tileSize);
-                ctx.stroke();
-            }
+        if (check.valid) {
+            ctx.fillStyle = 'rgba(76, 175, 80, 0.4)';
+            ctx.strokeStyle = '#4CAF50';
+        } else {
+            ctx.fillStyle = 'rgba(244, 67, 54, 0.4)';
+            ctx.strokeStyle = '#F44336';
         }
 
-        // Draw building icon centered
-        if (building && building.icon) {
-            const fontSize = Math.max(24, Math.floor(totalSize * 0.5));
-            ctx.font = fontSize + 'px Arial';
+        ctx.fillRect(screenX, screenY, size, size);
+        ctx.lineWidth = 2;
+        ctx.strokeRect(screenX, screenY, size, size);
+
+        if (building && this.tileSize >= 16) {
+            ctx.font = `${Math.floor(this.tileSize * 0.6)}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#FFFFFF';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 3;
-            ctx.strokeText(building.icon, screenX + totalSize/2, screenY + totalSize/2);
-            ctx.fillText(building.icon, screenX + totalSize/2, screenY + totalSize/2);
+            ctx.globalAlpha = 0.7;
+            ctx.fillStyle = '#fff';
+            ctx.fillText(building.icon, screenX + this.tileSize/2, screenY + this.tileSize/2);
+            ctx.globalAlpha = 1;
         }
-        
-        // Size label
-        ctx.font = 'bold 12px Arial';
-        ctx.fillStyle = '#FFFF00';
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 2;
-        ctx.textAlign = 'left';
-        const label = buildingSize + 'x' + buildingSize;
-        ctx.strokeText(label, screenX + 4, screenY - 6);
-        ctx.fillText(label, screenX + 4, screenY - 6);
-        
-        ctx.restore();
     }
 }
