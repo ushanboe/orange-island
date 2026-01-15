@@ -18,6 +18,7 @@ import { ImmigrationSystem } from '../systems/ImmigrationSystem.js';
 import { DebugPanel } from '../ui/DebugPanel.js';
 import { AdminSettings } from '../ui/AdminSettings.js';
 import { SaveSystem } from '../systems/SaveSystem.js';
+import { PoliceSystem } from '../systems/PoliceSystem.js';
 import { StartMenu } from '../ui/StartMenu.js';
 
 export class Game {
@@ -99,6 +100,9 @@ export class Game {
         this.infrastructureManager = new InfrastructureManager(this);
         this.animationSystem = new AnimationSystem(this);
         this.immigrationSystem = new ImmigrationSystem(this);
+
+        // Initialize police enforcement system
+        this.policeSystem = new PoliceSystem(this);
         console.log("[INIT] ImmigrationSystem created:", !!this.immigrationSystem);
 
         // Initialize canvas (after managers so it can access them for rendering)
@@ -117,6 +121,17 @@ export class Game {
         this.debugPanel = new DebugPanel(this);
         this.adminSettings = new AdminSettings(this);
         this.saveSystem = new SaveSystem(this);
+
+        // Setup autosave every 60 seconds
+        this.autosaveInterval = setInterval(() => {
+            if (this.saveSystem && !this.paused) {
+                console.log('[AUTOSAVE] Saving game...');
+                const result = this.saveSystem.saveGame(null, 'Autosave');
+                if (result.success) {
+                    console.log(`[AUTOSAVE] Saved to slot ${result.slot}`);
+                }
+            }
+        }, 60000);  // 60 seconds
 
         // Add tariff button to toolbar
         this.addTariffButton();
@@ -363,6 +378,11 @@ export class Game {
             this.immigrationSystem.animate();
         }
 
+        // Animate police officers
+        if (this.policeSystem) {
+            this.policeSystem.animate();
+        }
+
         // Render
         this.canvas.render();
 
@@ -376,6 +396,12 @@ export class Game {
         if (this.immigrationSystem && this.canvas) {
             const ctx = this.canvas.ctx;
             this.immigrationSystem.render(ctx, this.canvas.offsetX, this.canvas.offsetY, this.canvas.tileSize);
+        }
+
+        // Render police officers and patrol indicators
+        if (this.policeSystem && this.canvas) {
+            const ctx = this.canvas.ctx;
+            this.policeSystem.render(ctx, this.canvas.offsetX, this.canvas.offsetY, this.canvas.tileSize);
         }
 
         // Render development animations
@@ -489,6 +515,11 @@ export class Game {
         console.log("[DEBUG] About to check immigrationSystem:", !!this.immigrationSystem);
         if (this.immigrationSystem) {
             this.immigrationSystem.update();
+        }
+
+        // Update police enforcement
+        if (this.policeSystem) {
+            this.policeSystem.update();
         }
 
         // Simulate
@@ -680,51 +711,120 @@ export class Game {
         document.getElementById('king-mood').textContent = moodEmojis[this.kingMoodText] || '👑';
     }
 
-    // Save game
-    save() {
-        const saveData = {
-            treasury: this.treasury,
-            population: this.population,
-            month: this.month,
-            year: this.year,
-            kingEgo: this.kingEgo,
-            taxRate: this.taxRate,
-            tariffRate: this.tariffRate,
-            tileMap: this.tileMap.serialize(),
-            development: this.developmentManager?.serialize() || {}
-        };
-        localStorage.setItem('islandKingdom_save', JSON.stringify(saveData));
-        this.kingTweet("Game SAVED! The best save ever! 💾");
+    // Save game using SaveSystem with multiple slots
+    save(slot = null) {
+        if (this.saveSystem) {
+            const result = this.saveSystem.saveGame(slot);
+            if (result.success) {
+                this.kingTweet(`Game SAVED to slot ${result.slot}! The best save ever! 💾`);
+            } else {
+                this.kingTweet("Save FAILED! Sad! 😢");
+            }
+            return result;
+        }
+        return { success: false, error: 'No save system' };
     }
 
-    // Load game
-    load() {
-        const saveStr = localStorage.getItem('islandKingdom_save');
-        if (!saveStr) {
-            this.kingTweet("No save found! Sad! 😢");
+    // Load game - shows slot selection dialog
+    load(slot = null) {
+        if (!this.saveSystem) {
+            this.kingTweet("No save system! Sad! 😢");
             return false;
         }
 
-        try {
-            const saveData = JSON.parse(saveStr);
-            this.treasury = saveData.treasury;
-            this.population = saveData.population;
-            this.month = saveData.month;
-            this.year = saveData.year;
-            this.kingEgo = saveData.kingEgo;
-            this.taxRate = saveData.taxRate;
-            this.tariffRate = saveData.tariffRate;
-            this.tileMap = TileMap.deserialize(saveData.tileMap);
-            if (saveData.development) {
-                this.developmentManager.deserialize(saveData.development);
-            }
-            this.updateUI();
-            this.kingTweet("Game LOADED! We're BACK! 🎮");
-            return true;
-        } catch (e) {
-            console.error('Load failed:', e);
+        const savedGames = this.saveSystem.getSavedGames();
+        if (savedGames.length === 0) {
+            this.kingTweet("No saves found! Sad! 😢");
             return false;
         }
+
+        // If slot specified, load directly
+        if (slot !== null) {
+            const result = this.saveSystem.loadGame(slot);
+            if (result) {
+                this.kingTweet("Game LOADED! We're BACK! 🎮");
+            } else {
+                this.kingTweet("Load FAILED! Sad! 😢");
+            }
+            return result;
+        }
+
+        // Otherwise show slot selection dialog
+        this.showLoadDialog(savedGames);
+        return true;
+    }
+
+    // Show load dialog for slot selection
+    showLoadDialog(savedGames) {
+        // Create modal overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'load-dialog-overlay';
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); display: flex; justify-content: center;
+            align-items: center; z-index: 10000;
+        `;
+
+        const dialog = document.createElement('div');
+        dialog.style.cssText = `
+            background: rgba(30,30,50,0.95); border-radius: 15px; padding: 30px;
+            min-width: 400px; max-height: 80vh; overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.2); color: white;
+        `;
+
+        dialog.innerHTML = `
+            <h2 style="margin: 0 0 20px 0; text-align: center;">📂 Load Game</h2>
+            <div id="load-slot-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            <button id="load-cancel" style="
+                margin-top: 15px; padding: 10px 20px; background: #757575;
+                color: white; border: none; border-radius: 5px; cursor: pointer;
+                width: 100%; font-size: 16px;
+            ">❌ Cancel</button>
+        `;
+
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        // Populate slots
+        const list = dialog.querySelector('#load-slot-list');
+        savedGames.forEach(save => {
+            const date = new Date(save.timestamp);
+            const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            const item = document.createElement('div');
+            item.style.cssText = `
+                background: rgba(255,255,255,0.1); border-radius: 10px; padding: 15px;
+                display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+            `;
+            item.innerHTML = `
+                <div>
+                    <div style="font-weight: bold;">${save.name}</div>
+                    <div style="font-size: 14px; opacity: 0.8;">👥 ${save.population} | 💰 $${save.treasury}</div>
+                    <div style="font-size: 12px; opacity: 0.5;">Year ${save.year}, Month ${save.month} • ${dateStr}</div>
+                </div>
+                <button class="load-btn" data-slot="${save.slot}" style="
+                    background: #4CAF50; color: white; border: none; border-radius: 5px;
+                    padding: 8px 15px; cursor: pointer;
+                ">▶️ Load</button>
+            `;
+            list.appendChild(item);
+        });
+
+        // Event handlers
+        list.querySelectorAll('.load-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const slot = parseInt(e.target.dataset.slot);
+                overlay.remove();
+                this.load(slot);
+            });
+        });
+
+        dialog.querySelector('#load-cancel').addEventListener('click', () => {
+            overlay.remove();
+        });
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
     }
 
     // Alias for tariff system compatibility

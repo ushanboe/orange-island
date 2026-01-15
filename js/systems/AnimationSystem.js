@@ -251,14 +251,23 @@ export class AnimationSystem {
         const startRoad = roads[Math.floor(Math.random() * roads.length)];
 
         // Determine vehicle type based on game state
-        const types = ['🚗', '🚙', '🚕'];
-        if (this.game.population > 50) types.push('🚌');
-        if (this.game.map?.countBuildings?.('industrial') > 0) types.push('🚚');
+        // Vehicle types with horizontal (side view) and vertical (top view) icons
+        const vehicleTypes = [
+            { h: '🚗', v: '🔵' },  // Car - blue dot for top view
+            { h: '🚙', v: '🟢' },  // SUV - green dot for top view  
+            { h: '🚕', v: '🟡' },  // Taxi - yellow dot for top view
+        ];
+        if (this.game.population > 50) vehicleTypes.push({ h: '🚌', v: '🟠' });  // Bus - orange
+        if (this.game.map?.countBuildings?.('industrial') > 0) vehicleTypes.push({ h: '🚚', v: '🟤' });  // Truck - brown
+
+        const selectedType = vehicleTypes[Math.floor(Math.random() * vehicleTypes.length)];
 
         const vehicle = {
             x: startRoad.x + 0.5,
             y: startRoad.y + 0.5,
-            icon: types[Math.floor(Math.random() * types.length)],
+            iconH: selectedType.h,  // Horizontal (side view) icon
+            iconV: selectedType.v,  // Vertical (top view) icon
+            icon: selectedType.h,   // Current icon (for compatibility)
             direction: Math.floor(Math.random() * 4), // 0=N, 1=E, 2=S, 3=W
             speed: 0.02 + Math.random() * 0.02,
             lifetime: 0,
@@ -449,7 +458,10 @@ export class AnimationSystem {
             const rotations = [0, Math.PI/2, Math.PI, -Math.PI/2];
             // ctx.rotate(rotations[v.direction]);
 
-            ctx.fillText(v.icon, 0, 0);
+            // Use horizontal icon for E/W movement, vertical icon for N/S movement
+            const isVertical = (v.direction === 0 || v.direction === 2);  // N or S
+            const icon = isVertical ? (v.iconV || v.icon) : (v.iconH || v.icon);
+            ctx.fillText(icon, 0, 0);
             ctx.restore();
         }
     }
