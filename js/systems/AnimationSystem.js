@@ -8,12 +8,24 @@ export class AnimationSystem {
         this.vehicles = [];
         this.boats = [];  // Trade boats
         this.smokeParticles = [];
-        this.maxVehicles = 50;
+        this.maxVehicles = 200;  // Increased for building-based spawning
         this.maxBoats = 10;
         this.boatCheckInterval = 60;  // Check every 60 frames (adjustable via F2)
         this.boatSpawnChance = 0.1;   // 10% chance per check (adjustable via F2)
         this.boatSpeed = 0.015;       // Boat speed (adjustable via F2)
         this.boatCheckCounter = 0;
+        this.vehicleCheckCounter = 0;
+        this.vehicleCheckInterval = 30;  // Check every 30 frames
+
+        // Vehicle type definitions
+        this.vehicleTypes = {
+            car: { icons: ['🚗', '🚙', '🚕'], speed: [0.02, 0.04] },
+            truck: { icons: ['🚚', '🚛'], speed: [0.015, 0.025] },
+            police: { icons: ['🚔', '🚓'], speed: [0.03, 0.05] },
+            fire: { icons: ['🚒'], speed: [0.025, 0.04] },
+            ambulance: { icons: ['🚑'], speed: [0.03, 0.05] },
+            bus: { icons: ['🚌'], speed: [0.015, 0.025] }
+        };
     }
 
     update(deltaTime) {
@@ -28,24 +40,164 @@ export class AnimationSystem {
         // Update smoke particles
         this.updateSmoke();
 
-        // Spawn new vehicles based on population
-        this.manageVehicles();
-        
+        // Manage vehicles based on buildings
+        this.vehicleCheckCounter++;
+        if (this.vehicleCheckCounter >= this.vehicleCheckInterval) {
+            this.vehicleCheckCounter = 0;
+            this.manageVehicles();
+        }
+
         // Manage boats based on port connectivity
         this.manageBoats();
     }
 
     // ==================== VEHICLE SYSTEM ====================
 
-    manageVehicles() {
-        // Calculate desired vehicle count based on population and commerce
-        const pop = this.game.population || 0;
-        const desiredVehicles = Math.min(this.maxVehicles, Math.floor(pop / 20) + 2);
+    /**
+     * Calculate desired vehicle counts based on buildings
+     * Returns object with vehicle type -> count mapping
+     */
+    calculateDesiredVehicles() {
+        const desired = {
+            car: 0,
+            truck: 0,
+            police: 0,
+            fire: 0,
+            ambulance: 0,
+            bus: 0
+        };
 
-        // Spawn vehicles if needed
-        if (this.vehicles.length < desiredVehicles && Math.random() < 0.02) {
-            this.spawnVehicle();
+        const residentialManager = this.game.residentialManager;
+        const commercialManager = this.game.commercialManager;
+        const map = this.game.tileMap;
+        const infraManager = this.game.infrastructureManager;
+
+        if (!map) return desired;
+
+        // Count vehicles from residential allotments based on phase
+        if (residentialManager) {
+            for (const allotment of residentialManager.allotments.values()) {
+                // Check if allotment has road and power
+                const hasRoad = infraManager ? infraManager.hasRoadAccess(allotment.x, allotment.y) : false;
+                const hasPower = infraManager ? infraManager.hasPower(allotment.x, allotment.y) : false;
+
+                if (!hasRoad || !hasPower) continue;  // No vehicles without infrastructure
+
+                const phase = allotment.phase;
+
+                // Phase 1-3: Houses (5 cars each)
+                if (phase >= 1 && phase <= 3) {
+                    desired.car += 5;
+                }
+                // Phase 4-6: Apartments (20 cars each)
+                else if (phase >= 4 && phase <= 6) {
+                    desired.car += 20;
+                }
+                // Phase 7: High-rise (35 cars each)
+                else if (phase >= 7) {
+                    desired.car += 35;
+                }
+            }
         }
+
+        // Count vehicles from commercial allotments (trucks)
+        if (commercialManager) {
+            for (const allotment of commercialManager.allotments.values()) {
+                const hasRoad = infraManager ? infraManager.hasRoadAccess(allotment.x, allotment.y) : false;
+                const hasPower = infraManager ? infraManager.hasPower(allotment.x, allotment.y) : false;
+
+                if (!hasRoad || !hasPower) continue;
+
+                // Commercial zones spawn 5 trucks
+                if (allotment.phase >= 1) {
+                    desired.truck += 5;
+                }
+            }
+        }
+
+        // Count vehicles from service buildings
+        for (let y = 0; y < map.height; y++) {
+            for (let x = 0; x < map.width; x++) {
+                const tile = map.getTile(x, y);
+                if (!tile?.building?.mainTile) continue;
+
+                const buildingType = tile.building.type;
+
+                // Check if service building has road and power
+                const hasRoad = infraManager ? infraManager.hasRoadAccess(x, y) : false;
+                const hasPower = infraManager ? infraManager.hasPower(x, y) : false;
+
+                if (!hasRoad || !hasPower) continue;
+
+                // Service buildings
+                switch (buildingType) {
+                    case 'policeStation':
+                        desired.police += 2;
+                        break;
+                    case 'fireStation':
+                        desired.fire += 2;
+                        break;
+                    case 'hospital':
+                        desired.ambulance += 2;
+                        break;
+                }
+            }
+        }
+
+        // Add buses based on population
+        const pop = this.game.population || 0;
+        if (pop > 100) {
+            desired.bus += Math.floor(pop / 100);
+        }
+
+        return desired;
+    }
+
+    /**
+     * Count current vehicles by type
+     */
+    countCurrentVehicles() {
+        const counts = {
+            car: 0,
+            truck: 0,
+            police: 0,
+            fire: 0,
+            ambulance: 0,
+            bus: 0
+        };
+
+        for (const v of this.vehicles) {
+            if (counts[v.type] !== undefined) {
+                counts[v.type]++;
+            }
+        }
+
+        return counts;
+    }
+
+    manageVehicles() {
+        const desired = this.calculateDesiredVehicles();
+        const current = this.countCurrentVehicles();
+
+        // Spawn vehicles if needed (limit spawning rate)
+        let spawned = 0;
+        const maxSpawnPerTick = 3;
+
+        for (const [type, desiredCount] of Object.entries(desired)) {
+            const currentCount = current[type] || 0;
+            const deficit = desiredCount - currentCount;
+
+            if (deficit > 0 && spawned < maxSpawnPerTick && this.vehicles.length < this.maxVehicles) {
+                // Spawn with some randomness
+                if (Math.random() < 0.3) {
+                    this.spawnVehicle(type);
+                    spawned++;
+                }
+            }
+        }
+
+        // Remove excess vehicles (let them expire naturally via lifetime)
+        // No forced removal - vehicles will despawn when their lifetime expires
     }
 
     // ==================== BOAT SYSTEM ====================
@@ -57,7 +209,7 @@ export class AnimationSystem {
 
         // Find all operational ports
         const operationalPorts = this.findOperationalPorts();
-        
+
         if (operationalPorts.length === 0) {
             // No operational ports - boats leave
             return;
@@ -65,7 +217,7 @@ export class AnimationSystem {
 
         // Spawn boats for operational ports
         const desiredBoats = Math.min(this.maxBoats, operationalPorts.length * 2);
-        
+
         if (this.boats.length < desiredBoats && Math.random() < this.boatSpawnChance) {
             this.spawnBoat(operationalPorts);
         }
@@ -77,24 +229,18 @@ export class AnimationSystem {
         const infraManager = this.game.infrastructureManager;
 
         if (!map || !infraManager) {
-            console.log('[BOATS] No map or infraManager available');
             return ports;
         }
 
         // Find all port buildings
-        let portsFound = 0;
         for (let y = 0; y < map.height; y++) {
             for (let x = 0; x < map.width; x++) {
                 const tile = map.getTile(x, y);
                 if (tile?.building?.type === 'port' && tile.building.mainTile) {
-                    portsFound++;
-                    // Check if this port can operate boats
                     const portX = tile.building.originX ?? x;
                     const portY = tile.building.originY ?? y;
 
-                    console.log('[BOATS] Found port at', portX, portY, '- checking connectivity...');
                     const canOperate = infraManager.canPortOperateBoats(portX, portY);
-                    console.log('[BOATS] Port at', portX, portY, 'canOperate:', canOperate);
 
                     if (canOperate) {
                         ports.push({ x: portX, y: portY });
@@ -103,9 +249,6 @@ export class AnimationSystem {
             }
         }
 
-        if (portsFound > 0) {
-            console.log('[BOATS] Ports found:', portsFound, '- operational:', ports.length);
-        }
         return ports;
     }
 
@@ -114,7 +257,7 @@ export class AnimationSystem {
 
         // Pick a random operational port
         const port = operationalPorts[Math.floor(Math.random() * operationalPorts.length)];
-        
+
         // Find water tiles near the port to spawn boat
         const waterTile = this.findWaterNearPort(port.x, port.y);
         if (!waterTile) return;
@@ -137,7 +280,7 @@ export class AnimationSystem {
         };
 
         this.boats.push(boat);
-        
+
         // Emit event for trade income
         this.game.events?.emit('boatArrived', { port, boat });
     }
@@ -151,11 +294,11 @@ export class AnimationSystem {
             for (let dy = -radius; dy <= radius; dy++) {
                 for (let dx = -radius; dx <= radius; dx++) {
                     if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
-                    
+
                     const x = portX + dx;
                     const y = portY + dy;
                     const tile = map.getTile(x, y);
-                    
+
                     // Check if it's deep water
                     if (tile && (tile.terrain === 0 || tile.terrain === 'deepwater' || tile.terrain === 'water')) {
                         return { x, y };
@@ -182,7 +325,7 @@ export class AnimationSystem {
                     // Move towards port
                     this.moveBoatTowardsPort(boat);
                     break;
-                    
+
                 case 'docked':
                     // Wait at port
                     boat.dockTime++;
@@ -193,7 +336,7 @@ export class AnimationSystem {
                         this.game.events?.emit('tradeCompleted', { boat, income: 50 });
                     }
                     break;
-                    
+
                 case 'departing':
                     // Move away from port
                     this.moveBoatAway(boat);
@@ -209,16 +352,16 @@ export class AnimationSystem {
     moveBoatTowardsPort(boat) {
         const targetX = boat.targetPort.x + 1;  // Center of 2x2 port
         const targetY = boat.targetPort.y + 1;
-        
+
         const dx = targetX - boat.x;
         const dy = targetY - boat.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (dist < 2) {
             boat.state = 'docked';
             return;
         }
-        
+
         boat.x += (dx / dist) * boat.speed;
         boat.y += (dy / dist) * boat.speed;
     }
@@ -226,11 +369,11 @@ export class AnimationSystem {
     moveBoatAway(boat) {
         const targetX = boat.targetPort.x + 1;
         const targetY = boat.targetPort.y + 1;
-        
+
         const dx = boat.x - targetX;
         const dy = boat.y - targetY;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (dist < 0.1) {
             // Pick a random direction away
             boat.x += (Math.random() - 0.5) * boat.speed;
@@ -245,24 +388,26 @@ export class AnimationSystem {
         return this.boats;
     }
 
-    spawnVehicle() {
+    spawnVehicle(type = 'car') {
         // Find a road to spawn on
         const roads = this.findRoads();
         if (roads.length === 0) return;
 
         const startRoad = roads[Math.floor(Math.random() * roads.length)];
 
-        // Determine vehicle type based on game state
-        const types = ['🚗', '🚙', '🚕'];
-        if (this.game.population > 50) types.push('🚌');
-        if (this.game.map?.countBuildings?.('industrial') > 0) types.push('🚚');
+        // Get vehicle type config
+        const typeConfig = this.vehicleTypes[type] || this.vehicleTypes.car;
+        const icon = typeConfig.icons[Math.floor(Math.random() * typeConfig.icons.length)];
+        const speedRange = typeConfig.speed;
+        const speed = speedRange[0] + Math.random() * (speedRange[1] - speedRange[0]);
 
         const vehicle = {
             x: startRoad.x + 0.5,
             y: startRoad.y + 0.5,
-            icon: types[Math.floor(Math.random() * types.length)],
+            type: type,
+            icon: icon,
             direction: Math.floor(Math.random() * 4), // 0=N, 1=E, 2=S, 3=W
-            speed: 0.02 + Math.random() * 0.02,
+            speed: speed,
             lifetime: 0,
             maxLifetime: 500 + Math.random() * 500
         };
@@ -272,7 +417,7 @@ export class AnimationSystem {
 
     findRoads() {
         const roads = [];
-        const map = this.game.map;
+        const map = this.game.tileMap;
         if (!map) return roads;
 
         for (let y = 0; y < map.height; y++) {
@@ -318,7 +463,7 @@ export class AnimationSystem {
             }
 
             // Remove if off map
-            const map = this.game.map;
+            const map = this.game.tileMap;
             if (map && (v.x < 0 || v.x >= map.width || v.y < 0 || v.y >= map.height)) {
                 this.vehicles.splice(i, 1);
             }
@@ -326,7 +471,7 @@ export class AnimationSystem {
     }
 
     chooseNextDirection(vehicle, tileX, tileY) {
-        const map = this.game.map;
+        const map = this.game.tileMap;
         if (!map) return;
 
         // Find connected roads
@@ -409,7 +554,7 @@ export class AnimationSystem {
 
     findBuildingsOfType(type) {
         const buildings = [];
-        const map = this.game.map;
+        const map = this.game.tileMap;
         if (!map) return buildings;
 
         for (let y = 0; y < map.height; y++) {
@@ -446,10 +591,6 @@ export class AnimationSystem {
             // Rotate based on direction
             ctx.save();
             ctx.translate(screenX, screenY);
-
-            // Rotation for direction (vehicles face their movement direction)
-            const rotations = [0, Math.PI/2, Math.PI, -Math.PI/2];
-            // ctx.rotate(rotations[v.direction]);
 
             ctx.fillText(v.icon, 0, 0);
             ctx.restore();

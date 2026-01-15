@@ -3,6 +3,7 @@ import { TERRAIN_COLORS } from '../map/TileMap.js';
 import { ResidentialRenderer } from '../rendering/ResidentialRenderer.js';
 import { CommercialRenderer } from '../rendering/CommercialRenderer.js';
 import { IndustrialRenderer } from '../rendering/IndustrialRenderer.js';
+import { ServiceBuildingRenderer } from '../rendering/ServiceBuildingRenderer.js';
 import { BUILDINGS } from '../buildings/Buildings.js';
 import { ZONE_VISUALS, DEV_LEVELS } from '../simulation/Development.js';
 
@@ -123,6 +124,7 @@ export class GameCanvas {
         this.residentialRenderer = new ResidentialRenderer(this.canvas, this.ctx);
         this.commercialRenderer = new CommercialRenderer(this.canvas, this.ctx);
         this.industrialRenderer = new IndustrialRenderer(this.canvas, this.ctx);
+        this.serviceBuildingRenderer = new ServiceBuildingRenderer(this.canvas, this.ctx);
 
         this.tileSize = 32;
         this.minTileSize = 8;
@@ -761,6 +763,22 @@ export class GameCanvas {
         }
         if (building.type === 'industrial_allotment') {
             this.drawIndustrialAllotment(ctx, building, screenX, screenY, tileX, tileY);
+            return;
+        }
+
+        // Service buildings (2x2)
+        if (building.type === 'policeStation' || building.type === 'fireStation' || 
+            building.type === 'hospital' || building.type === 'school') {
+            if (this.serviceBuildingRenderer) {
+                this.serviceBuildingRenderer.renderBuilding(
+                    tileX, tileY,
+                    this.tileSize,
+                    building.type,
+                    this.offsetX,
+                    this.offsetY,
+                    building.mainTile !== false
+                );
+            }
             return;
         }
 

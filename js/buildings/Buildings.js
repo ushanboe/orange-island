@@ -4,6 +4,7 @@
 export const BUILDING_CATEGORIES = {
     ZONES: 'zones',
     INFRASTRUCTURE: 'infrastructure',
+    SERVICES: 'services',
     POWER: 'power',
     ENERGY: 'energy',
     SPECIAL: 'special',
@@ -216,6 +217,85 @@ export const BUILDINGS = {
         },
         canBuildOn: ['grass', 'dirt', 'forest'],
         requiresRoadAccess: true
+    },
+
+
+    // === SERVICES ===
+    policeStation: {
+        id: 'policeStation',
+        name: 'Police Station',
+        description: 'Law and order! The best police, believe me!',
+        category: BUILDING_CATEGORIES.SERVICES,
+        cost: 1500,
+        size: 2,
+        color: '#1565C0',  // Blue
+        icon: '🚔',
+        isServiceBuilding: true,
+        vehicleType: 'police',
+        vehicleCount: 2,
+        effects: {
+            crime: -20,
+            safety: 15,
+            jobs: 10
+        },
+        canBuildOn: ['grass', 'dirt', 'forest']
+    },
+    fireStation: {
+        id: 'fireStation',
+        name: 'Fire Station',
+        description: 'Fighting fires! Heroes, all of them!',
+        category: BUILDING_CATEGORIES.SERVICES,
+        cost: 1500,
+        size: 2,
+        color: '#D32F2F',  // Red
+        icon: '🚒',
+        isServiceBuilding: true,
+        vehicleType: 'fire',
+        vehicleCount: 2,
+        effects: {
+            fireProtection: 20,
+            safety: 15,
+            jobs: 10
+        },
+        canBuildOn: ['grass', 'dirt', 'forest']
+    },
+    hospital: {
+        id: 'hospital',
+        name: 'Hospital',
+        description: 'The best healthcare! Tremendous doctors!',
+        category: BUILDING_CATEGORIES.SERVICES,
+        cost: 2000,
+        size: 2,
+        color: '#FFFFFF',  // White
+        icon: '🏥',
+        isServiceBuilding: true,
+        vehicleType: 'ambulance',
+        vehicleCount: 2,
+        effects: {
+            health: 25,
+            happiness: 10,
+            jobs: 20
+        },
+        canBuildOn: ['grass', 'dirt', 'forest']
+    },
+    school: {
+        id: 'school',
+        name: 'School',
+        description: 'Education! Making our kids smart!',
+        category: BUILDING_CATEGORIES.SERVICES,
+        cost: 1000,
+        size: 2,
+        color: '#FDD835',  // Yellow
+        icon: '🏫',
+        isServiceBuilding: true,
+        vehicleType: null,  // No vehicles for school
+        vehicleCount: 0,
+        effects: {
+            education: 20,
+            happiness: 5,
+            jobs: 15
+        },
+        canBuildOn: ['grass', 'dirt', 'forest']
     },
 
     // === SPECIAL (Monuments) ===
