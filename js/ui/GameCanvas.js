@@ -759,7 +759,7 @@ export class GameCanvas {
             return;
         }
 
-        // Service buildings (2x2)
+        // Service buildings (3x3)
         if (building.type === 'policeStation' || building.type === 'fireStation' || 
             building.type === 'hospital' || building.type === 'school') {
             if (this.serviceBuildingRenderer) {

@@ -13,7 +13,7 @@ export class ServiceBuildingRenderer {
 
         const screenX = x * tileSize + cameraX;
         const screenY = y * tileSize + cameraY;
-        const size = tileSize * 2; // 2x2 building
+        const size = tileSize * 3; // 3x3 building
 
         switch (buildingType) {
             case 'policeStation':
