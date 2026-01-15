@@ -49,12 +49,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupKeyboardShortcuts(game) {
     document.addEventListener('keydown', (e) => {
         // S - Save
-        if (e.key === 's' && e.ctrlKey) {
+        if ((e.key === 's' || e.key === 'S') && e.ctrlKey) {
             e.preventDefault();
             game.save();
         }
         // L - Load
-        if (e.key === 'l' && e.ctrlKey) {
+        if ((e.key === 'l' || e.key === 'L') && e.ctrlKey) {
             e.preventDefault();
             game.load();
         }

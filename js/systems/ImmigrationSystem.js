@@ -133,26 +133,29 @@ export class ImmigrationSystem {
         const map = this.game.tileMap;
         if (!map) return null;
 
-        // Search for water tiles near the island center
-        // Prefer tiles on the side facing the main island
+        // Search for water tiles AWAY from the island toward main island
         const mainIslandX = map.width / 2;
-        const searchDirection = island.centerX < mainIslandX ? 1 : -1;  // Search toward main island
+        const mainIslandY = map.height / 2;
+        const searchDirection = island.centerX < mainIslandX ? 1 : -1;
 
-        for (let radius = 5; radius < 20; radius++) {
-            for (let dy = -radius; dy <= radius; dy++) {
+        // Start searching from further out to ensure we're in open water
+        for (let radius = 8; radius < 30; radius++) {
+            for (let dy = -5; dy <= 5; dy++) {
                 const x = Math.floor(island.centerX + (radius * searchDirection));
                 const y = Math.floor(island.centerY + dy);
 
                 if (x >= 0 && x < map.width && y >= 0 && y < map.height) {
                     const terrain = map.getTerrainAt(x, y);
-                    // TERRAIN.WATER = 1, TERRAIN.DEEP_WATER = 0
+                    // TERRAIN.DEEP_WATER = 0, TERRAIN.WATER = 1
                     if (terrain === 0 || terrain === 1) {
-                        return { x, y };
+                        console.log(`[IMMIGRATION] Found water spawn at (${x}, ${y}), terrain: ${terrain}`);
+                        return { x: x + 0.5, y: y + 0.5 };  // Center of tile
                     }
                 }
             }
         }
 
+        console.log('[IMMIGRATION] No water found near island:', island.name);
         return null;
     }
 
@@ -352,22 +355,19 @@ export class PeopleBoat {
         this.peopleCount = peopleCount;
         this.sourceIsland = sourceIsland;
         
-        // Calculate dynamic speed so boat arrives in exactly 3 game months (3 ticks)
-        // Distance from spawn to target landing
+        // Calculate dynamic speed so boat arrives in approximately 3 game months
         const dx = targetLanding.x - startX;
         const dy = targetLanding.y - startY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        // Speed = distance / (3 months * frames per month)
-        // Game runs at ~60fps, and we want arrival in 3 game ticks
-        // Each game tick happens every ~60 frames (1 second at 60fps)
-        // So we need to cover the distance in 3 * 60 = 180 frames
-        const framesPerMonth = 60;  // Approximate frames per game tick/month
-        const targetMonths = 3;
-        this.speed = distance / (targetMonths * framesPerMonth);
+        // Game tick = 25 seconds, at 60fps = 1500 frames per month
+        // 3 months = 4500 frames, but that's too slow visually
+        // Use ~500 frames (~8 seconds real time) for good visual pacing
+        const targetFrames = 500;
+        this.speed = distance / targetFrames;
         
         // Ensure minimum speed so boats don't get stuck
-        this.speed = Math.max(this.speed, 0.1);
+        this.speed = Math.max(this.speed, 0.3);
         
         console.log(`[BOAT] Distance: ${distance.toFixed(1)}, Speed: ${this.speed.toFixed(3)} (will arrive in ~${targetMonths} months)`);
         
