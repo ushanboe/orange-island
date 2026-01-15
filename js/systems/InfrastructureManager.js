@@ -308,12 +308,9 @@ export class InfrastructureManager {
         }
 
         // Debug output
-        console.log('[INFRA] === Building Connections Updated ===');
-        console.log('[INFRA] Power tiles count:', this.powerTiles.size);
         for (const [key, conn] of this.buildingConnections) {
             const [x, y] = key.split(',').map(Number);
             const tile = tileMap.getTile(x, y);
-            console.log(`[INFRA] ${key} (${tile?.building?.type}): road=${conn.hasRoad}, power=${conn.hasPower}`);
         }
     }
 
@@ -346,17 +343,13 @@ export class InfrastructureManager {
         const key = `${portX},${portY}`;
         const conn = this.buildingConnections.get(key);
 
-        console.log('[INFRA] === canPortOperateBoats ===');
-        console.log('[INFRA] Port:', portX, portY);
 
         if (!conn?.hasRoad) {
-            console.log('[INFRA] ❌ Port has no road');
             return false;
         }
 
         const network = conn.roadNetwork;
         if (!network) {
-            console.log('[INFRA] ❌ No road network');
             return false;
         }
 
@@ -369,22 +362,18 @@ export class InfrastructureManager {
             const tile = this.game.tileMap?.getTile(bx, by);
             const type = tile?.building?.type;
 
-            console.log(`[INFRA] Connected: ${buildingKey} (${type}) power=${buildingConn?.hasPower}`);
 
             if (!buildingConn?.hasPower) continue;
 
             if (type === 'commercial_allotment') {
                 hasCommercialWithPower = true;
-                console.log('[INFRA] ✅ Commercial with power!');
             }
             if (type === 'industrial_allotment') {
                 hasIndustrialWithPower = true;
-                console.log('[INFRA] ✅ Industrial with power!');
             }
         }
 
         const result = hasCommercialWithPower && hasIndustrialWithPower;
-        console.log('[INFRA] Result:', result ? '✅ BOATS OK' : '❌ NO BOATS');
         return result;
     }
 

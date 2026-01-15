@@ -474,7 +474,6 @@ export class Game {
         }
 
         // Update immigration system (people boats and crowds) - OUTSIDE developmentManager block
-        console.log("[DEBUG] About to check immigrationSystem:", !!this.immigrationSystem);
         if (this.immigrationSystem) {
             this.immigrationSystem.update();
         }
@@ -645,7 +644,6 @@ export class Game {
         document.getElementById('treasury').textContent = `$${this.treasury.toLocaleString()}`;
         // Debug visitors
         if (this.month % 5 === 0) {
-            console.log(`[UI DEBUG] Population: ${this.population}, Visitors: ${this.visitors}, Display: ${this.population + (this.visitors ? ' (+' + this.visitors + ' visitors)' : '')}`);
         }
         document.getElementById('population').textContent = this.population + (this.visitors ? ` (+${this.visitors} visitors)` : '');
         document.getElementById('date').textContent = `Year ${this.year}, Month ${this.month}`;

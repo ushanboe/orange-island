@@ -221,7 +221,6 @@ export class GameCanvas {
 
         const { tileX, tileY } = this.screenToTile(x, y);
         
-        console.log('[GameCanvas] onPointerDown:', { 
             tileX, tileY, 
             hasToolManager: !!this.game.toolManager,
             selectedTool: this.game.toolManager?.selectedTool 
@@ -229,7 +228,6 @@ export class GameCanvas {
 
         if (this.game.toolManager && this.game.toolManager.selectedTool) {
             this.isDragging = true;
-            console.log('[GameCanvas] Calling toolManager.onPointerDown');
             this.game.toolManager.onPointerDown(tileX, tileY);
         } else {
             this.isPanning = true;
@@ -778,7 +776,6 @@ export class GameCanvas {
                 // DEBUG: Log once per building type per frame
                 if (!this._debuggedServiceBuildings) this._debuggedServiceBuildings = {};
                 if (!this._debuggedServiceBuildings[building.type]) {
-                    console.log(`[SERVICE] Rendering ${building.type} at tile (${tileX}, ${tileY}), tileSize=${this.tileSize}, offset=(${this.offsetX}, ${this.offsetY})`);
                     this._debuggedServiceBuildings[building.type] = true;
                     setTimeout(() => { this._debuggedServiceBuildings[building.type] = false; }, 1000);
                 }
@@ -891,7 +888,6 @@ export class GameCanvas {
 
     drawResidentialAllotment(ctx, building, screenX, screenY, tileX, tileY) {
         // Debug: log when this is called
-        console.log(`[DRAW] drawResidentialAllotment ENTERED at (${tileX},${tileY})`, building);
         
         // Get cell data from the residential manager
         const resManager = this.game.residentialManager;
@@ -1421,7 +1417,6 @@ export class GameCanvas {
             this._lastPreviewLog = Date.now();
             const _toolId = this.game.toolManager?.selectedTool || 'none';
             const _building = this.game.toolManager?.getSelectedTool();
-            console.log('[PREVIEW v90] toolId=' + _toolId + ', building.size=' + (_building?.size || 'undef') + ', tileSize=' + this.tileSize);
         }
 
         if (!this.game.toolManager || !this.game.toolManager.selectedTool) return;
@@ -1455,7 +1450,6 @@ export class GameCanvas {
         // DEBUG v90 - log actual draw values (once per second)
         if (!this._lastDrawLog || Date.now() - this._lastDrawLog > 1000) {
             this._lastDrawLog = Date.now();
-            console.log('[DRAW v90] screenX=' + screenX + ', screenY=' + screenY + ', totalSize=' + totalSize + ', tileSize=' + this.tileSize + ', buildingSize=' + buildingSize);
         }
         ctx.fillRect(screenX, screenY, totalSize, totalSize);
         
