@@ -5,12 +5,22 @@ export class InfrastructureManager {
         this.game = game;
         this.roadNetworks = [];  // Array of connected road networks
         this.powerGrids = [];    // Array of connected power grids
-        this.updateInterval = 30; // Update every 30 ticks
+        this.updateInterval = 5; // Update every 5 ticks (was 30)
         this.tickCounter = 0;
 
         // Cache for quick lookups
         this.buildingConnections = new Map(); // buildingKey -> { hasRoad, hasPower }
         this.powerTiles = new Set(); // Set of "x,y" strings for tiles with power access
+
+        // Listen for building events to trigger immediate recalculation
+        this.game.events?.on("buildingPlaced", () => {
+            console.log("[INFRA] Building placed - recalculating networks...");
+            this.recalculateNetworks();
+        });
+        this.game.events?.on("buildingDemolished", () => {
+            console.log("[INFRA] Building demolished - recalculating networks...");
+            this.recalculateNetworks();
+        });
     }
 
     update() {
@@ -348,46 +358,17 @@ export class InfrastructureManager {
 
         console.log('[INFRA] === canPortOperateBoats ===');
         console.log('[INFRA] Port:', portX, portY);
+        console.log('[INFRA] Connection data:', conn);
 
+        // Port just needs road access to operate
         if (!conn?.hasRoad) {
-            console.log('[INFRA] ❌ Port has no road');
+            console.log('[INFRA] ❌ Port has no road connection');
             return false;
         }
 
-        const network = conn.roadNetwork;
-        if (!network) {
-            console.log('[INFRA] ❌ No road network');
-            return false;
-        }
-
-        let hasCommercialWithPower = false;
-        let hasIndustrialWithPower = false;
-
-        for (const buildingKey of network.connectedBuildings) {
-            const buildingConn = this.buildingConnections.get(buildingKey);
-            const [bx, by] = buildingKey.split(',').map(Number);
-            const tile = this.game.tileMap?.getTile(bx, by);
-            const type = tile?.building?.type;
-
-            console.log(`[INFRA] Connected: ${buildingKey} (${type}) power=${buildingConn?.hasPower}`);
-
-            if (!buildingConn?.hasPower) continue;
-
-            if (type === 'commercial_allotment') {
-                hasCommercialWithPower = true;
-                console.log('[INFRA] ✅ Commercial with power!');
-            }
-            if (type === 'industrial_allotment') {
-                hasIndustrialWithPower = true;
-                console.log('[INFRA] ✅ Industrial with power!');
-            }
-        }
-
-        const result = hasCommercialWithPower && hasIndustrialWithPower;
-        console.log('[INFRA] Result:', result ? '✅ BOATS OK' : '❌ NO BOATS');
-        return result;
+        console.log('[INFRA] ✅ Port has road - BOATS OK!');
+        return true;
     }
-
     getStatus() {
         return {
             roadNetworks: this.roadNetworks.length,
