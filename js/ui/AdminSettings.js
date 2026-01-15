@@ -50,8 +50,8 @@ export class AdminSettings {
             </div>
 
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px;">Boat Speed:</label>
-                <input type="number" id="admin-boat-speed" value="1.0" min="0.1" max="5" step="0.1"
+                <label style="display: block; margin-bottom: 5px;">Visitors Boat Travel Time (months):</label>
+                <input type="number" id="admin-boat-travel-months" value="2" min="1" max="12" step="1"
                     style="width: 100%; padding: 5px; border-radius: 4px; border: 1px solid #666;">
             </div>
 
@@ -105,7 +105,7 @@ export class AdminSettings {
         if (this.game.immigrationSystem) {
             document.getElementById('admin-spawn-interval').value = this.game.immigrationSystem.spawnInterval;
             document.getElementById('admin-spawn-chance').value = this.game.immigrationSystem.spawnChance || 0.8;
-            document.getElementById('admin-boat-speed').value = this.game.immigrationSystem.boatSpeed || 1.0;
+            document.getElementById('admin-boat-travel-months').value = this.game.immigrationSystem.boatTravelMonths || 2;
             document.getElementById('admin-crowd-speed').value = this.game.immigrationSystem.crowdSpeed || 0.4;
         }
     }
@@ -114,7 +114,7 @@ export class AdminSettings {
         const tickInterval = parseFloat(document.getElementById('admin-tick-interval').value) * 1000;
         const spawnInterval = parseInt(document.getElementById('admin-spawn-interval').value);
         const spawnChance = parseFloat(document.getElementById('admin-spawn-chance').value);
-        const boatSpeed = parseFloat(document.getElementById('admin-boat-speed').value);
+        const boatTravelMonths = parseInt(document.getElementById('admin-boat-travel-months').value);
         const crowdSpeed = parseFloat(document.getElementById('admin-crowd-speed').value);
 
         // Apply to game
@@ -123,14 +123,14 @@ export class AdminSettings {
         if (this.game.immigrationSystem) {
             this.game.immigrationSystem.spawnInterval = spawnInterval;
             this.game.immigrationSystem.spawnChance = spawnChance;
-            this.game.immigrationSystem.boatSpeed = boatSpeed;
+            this.game.immigrationSystem.boatTravelMonths = boatTravelMonths;
             this.game.immigrationSystem.crowdSpeed = crowdSpeed;
         }
 
         // Save to localStorage
         this.saveSettings();
         
-        console.log('[AdminSettings] Applied:', { tickInterval, spawnInterval, spawnChance, boatSpeed, crowdSpeed });
+        console.log('[AdminSettings] Applied:', { tickInterval, spawnInterval, spawnChance, boatTravelMonths, crowdSpeed });
         this.hide();
     }
 
@@ -139,7 +139,7 @@ export class AdminSettings {
             tickInterval: this.game.tickInterval,
             spawnInterval: parseInt(document.getElementById('admin-spawn-interval').value),
             spawnChance: parseFloat(document.getElementById('admin-spawn-chance').value),
-            boatSpeed: parseFloat(document.getElementById('admin-boat-speed').value),
+            boatTravelMonths: parseInt(document.getElementById('admin-boat-travel-months').value),
             crowdSpeed: parseFloat(document.getElementById('admin-crowd-speed').value)
         };
         localStorage.setItem('islandKingdomAdminSettings', JSON.stringify(settings));
@@ -154,7 +154,7 @@ export class AdminSettings {
                 if (this.game.immigrationSystem) {
                     this.game.immigrationSystem.spawnInterval = settings.spawnInterval || 18;
                     this.game.immigrationSystem.spawnChance = settings.spawnChance || 0.8;
-                    this.game.immigrationSystem.boatSpeed = settings.boatSpeed || 1.0;
+                    this.game.immigrationSystem.boatTravelMonths = settings.boatTravelMonths || 2;
                     this.game.immigrationSystem.crowdSpeed = settings.crowdSpeed || 0.4;
                 }
                 console.log('[AdminSettings] Loaded saved settings');

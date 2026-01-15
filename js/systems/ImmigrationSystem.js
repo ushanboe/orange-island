@@ -108,13 +108,29 @@ export class ImmigrationSystem {
 
         // Create people boat
         const peopleCount = Math.floor(Math.random() * 91) + 10;  // 10-100 people
+
+        // Calculate distance-based speed so boat takes exactly travelMonths to arrive
+        const travelMonths = this.boatTravelMonths || 2;  // Default 2 months
+        const tickInterval = this.game.tickInterval || 25000;  // ms per month
+        const travelTimeMs = travelMonths * tickInterval;  // Total travel time in ms
+        const framesPerSecond = 60;
+        const totalFrames = (travelTimeMs / 1000) * framesPerSecond;
+
+        const dx = landingSpot.x - spawnPoint.x;
+        const dy = landingSpot.y - spawnPoint.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const calculatedSpeed = distance / totalFrames;
+
+        console.log(`[IMMIGRATION] Boat travel: ${distance.toFixed(1)} tiles over ${travelMonths} months (${totalFrames} frames), speed=${calculatedSpeed.toFixed(4)}`);
+
         const boat = new PeopleBoat(
             this.game,
             spawnPoint.x,
             spawnPoint.y,
             landingSpot,
             peopleCount,
-            sourceIsland.name
+            sourceIsland.name,
+            calculatedSpeed  // Pass calculated speed
         );
 
         this.peopleBoats.push(boat);
@@ -341,14 +357,14 @@ export class ImmigrationSystem {
  * PeopleBoat - Boat carrying immigrants from source islands
  */
 export class PeopleBoat {
-    constructor(game, startX, startY, targetLanding, peopleCount, sourceIsland) {
+    constructor(game, startX, startY, targetLanding, peopleCount, sourceIsland, speed = 0.5) {
         this.game = game;
         this.x = startX;
         this.y = startY;
         this.targetLanding = targetLanding;
         this.peopleCount = peopleCount;
         this.sourceIsland = sourceIsland;
-        this.speed = 1.0;  // Doubled for slower tick rate
+        this.speed = speed;  // Calculated based on distance for consistent travel time
         this.state = 'arriving';  // arriving, landed, leaving
         this.crowdSpawned = false;
         this.frame = 0;
