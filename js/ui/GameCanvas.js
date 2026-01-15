@@ -1410,10 +1410,19 @@ export class GameCanvas {
 
         const check = this.game.toolManager.canPlaceAt(this.hoverTileX, this.hoverTileY);
         const building = this.game.toolManager.getSelectedTool();
+        
+        // Get building size (default 1 if not specified)
+        const buildingSize = (building && building.size) ? building.size : 1;
+        
+        // Debug log (only once per second to avoid spam)
+        if (!this._lastPreviewLog || Date.now() - this._lastPreviewLog > 1000) {
+            console.log(`[PREVIEW] Tool: ${this.game.toolManager.selectedTool}, Building size: ${buildingSize}`);
+            this._lastPreviewLog = Date.now();
+        }
 
         const screenX = this.hoverTileX * this.tileSize + this.offsetX;
         const screenY = this.hoverTileY * this.tileSize + this.offsetY;
-        const size = this.tileSize * (building ? building.size : 1);
+        const size = this.tileSize * buildingSize;
 
         if (check.valid) {
             ctx.fillStyle = 'rgba(76, 175, 80, 0.4)';
@@ -1427,13 +1436,15 @@ export class GameCanvas {
         ctx.lineWidth = 2;
         ctx.strokeRect(screenX, screenY, size, size);
 
+        // Center icon in the full preview area
         if (building && this.tileSize >= 16) {
-            ctx.font = `${Math.floor(this.tileSize * 0.6)}px Arial`;
+            const fontSize = Math.floor(this.tileSize * buildingSize * 0.4);
+            ctx.font = `${fontSize}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.globalAlpha = 0.7;
             ctx.fillStyle = '#fff';
-            ctx.fillText(building.icon, screenX + this.tileSize/2, screenY + this.tileSize/2);
+            ctx.fillText(building.icon, screenX + size/2, screenY + size/2);
             ctx.globalAlpha = 1;
         }
     }
