@@ -14,7 +14,7 @@ export class ImmigrationSystem {
         this.spawnInterval = 18;  // Game ticks between spawn attempts (adjustable via F2)
         this.spawnChance = 0.8;   // 80% chance per spawn attempt (adjustable via F2)
         this.boatSpeed = 1.0;     // Boat movement speed (adjustable via F2)
-        this.crowdSpeed = 0.4;    // Crowd movement speed (adjustable via F2)   // Ticks between spawn attempts (1.5 years)
+        this.crowdSpeed = 0.4;    // Crowd movement speed (adjustable via F2)
 
         // Immigration tweets for the king
         this.immigrationTweets = [
@@ -133,29 +133,26 @@ export class ImmigrationSystem {
         const map = this.game.tileMap;
         if (!map) return null;
 
-        // Search for water tiles AWAY from the island toward main island
+        // Search for water tiles near the island center
+        // Prefer tiles on the side facing the main island
         const mainIslandX = map.width / 2;
-        const mainIslandY = map.height / 2;
-        const searchDirection = island.centerX < mainIslandX ? 1 : -1;
+        const searchDirection = island.centerX < mainIslandX ? 1 : -1;  // Search toward main island
 
-        // Start searching from further out to ensure we're in open water
-        for (let radius = 8; radius < 30; radius++) {
-            for (let dy = -5; dy <= 5; dy++) {
+        for (let radius = 5; radius < 20; radius++) {
+            for (let dy = -radius; dy <= radius; dy++) {
                 const x = Math.floor(island.centerX + (radius * searchDirection));
                 const y = Math.floor(island.centerY + dy);
 
                 if (x >= 0 && x < map.width && y >= 0 && y < map.height) {
                     const terrain = map.getTerrainAt(x, y);
-                    // TERRAIN.DEEP_WATER = 0, TERRAIN.WATER = 1
+                    // TERRAIN.WATER = 1, TERRAIN.DEEP_WATER = 0
                     if (terrain === 0 || terrain === 1) {
-                        console.log(`[IMMIGRATION] Found water spawn at (${x}, ${y}), terrain: ${terrain}`);
-                        return { x: x + 0.5, y: y + 0.5 };  // Center of tile
+                        return { x, y };
                     }
                 }
             }
         }
 
-        console.log('[IMMIGRATION] No water found near island:', island.name);
         return null;
     }
 
@@ -354,23 +351,7 @@ export class PeopleBoat {
         this.targetLanding = targetLanding;
         this.peopleCount = peopleCount;
         this.sourceIsland = sourceIsland;
-        
-        // Calculate dynamic speed so boat arrives in approximately 3 game months
-        const dx = targetLanding.x - startX;
-        const dy = targetLanding.y - startY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        // Game tick = 25 seconds, at 60fps = 1500 frames per month
-        // 3 months = 4500 frames, but that's too slow visually
-        // Use ~500 frames (~8 seconds real time) for good visual pacing
-        const targetFrames = 500;
-        this.speed = distance / targetFrames;
-        
-        // Ensure minimum speed so boats don't get stuck
-        this.speed = Math.max(this.speed, 0.3);
-        
-        console.log(`[BOAT] Distance: ${distance.toFixed(1)}, Speed: ${this.speed.toFixed(3)} (will arrive in ~${targetMonths} months)`);
-        
+        this.speed = 1.0;  // Doubled for slower tick rate
         this.state = 'arriving';  // arriving, landed, leaving
         this.crowdSpawned = false;
         this.frame = 0;
@@ -501,7 +482,7 @@ export class Crowd {
         this.x = x;
         this.y = y;
         this.count = count;
-        this.speed = this.immigrationSystem?.crowdSpeed || 0.4;  // Doubled for slower tick rate
+        this.speed = 0.4;  // Doubled for slower tick rate
         this.frame = 0;
         this.remove = false;
         this.reachedCivilization = false;
