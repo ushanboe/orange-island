@@ -632,7 +632,7 @@ export class GameCanvas {
 
                 // Draw building if present
                 if (tile.building) {
-                    // Residential allotment rendering (debug removed)
+                    
                     try {
                         this.drawBuilding(ctx, tile.building, screenX, screenY, x, y);
                     } catch (e) {
@@ -1405,10 +1405,8 @@ export class GameCanvas {
         const building = this.game.toolManager.getSelectedTool();
         const check = this.game.toolManager.canPlaceAt(this.hoverTileX, this.hoverTileY);
         
-        // Get building size from building definition
+        // Get building size - service buildings are 3x3
         let buildingSize = (building && building.size) ? building.size : 1;
-        
-        // Service buildings are 3x3
         const serviceBuildings = ['policeStation', 'fireStation', 'hospital', 'school'];
         if (serviceBuildings.includes(toolId)) {
             buildingSize = 3;
@@ -1434,12 +1432,10 @@ export class GameCanvas {
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
             ctx.lineWidth = 1;
             for (let i = 1; i < buildingSize; i++) {
-                // Vertical lines
                 ctx.beginPath();
                 ctx.moveTo(screenX + i * this.tileSize, screenY);
                 ctx.lineTo(screenX + i * this.tileSize, screenY + totalSize);
                 ctx.stroke();
-                // Horizontal lines
                 ctx.beginPath();
                 ctx.moveTo(screenX, screenY + i * this.tileSize);
                 ctx.lineTo(screenX + totalSize, screenY + i * this.tileSize);
@@ -1472,5 +1468,4 @@ export class GameCanvas {
         
         ctx.restore();
     }
-}
 }
