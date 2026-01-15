@@ -762,6 +762,20 @@ export class GameCanvas {
         // Service buildings (3x3)
         if (building.type === 'policeStation' || building.type === 'fireStation' || 
             building.type === 'hospital' || building.type === 'school') {
+            // For non-main tiles, draw colored background to fill the space
+            if (building.mainTile === false) {
+                const colors = {
+                    'policeStation': '#1565C0',
+                    'fireStation': '#D32F2F', 
+                    'hospital': '#FFFFFF',
+                    'school': '#FDD835'
+                };
+                ctx.fillStyle = colors[building.type] || '#888888';
+                ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+                return;
+            }
+            
+            // Main tile - draw the full building graphic
             if (this.serviceBuildingRenderer) {
                 this.serviceBuildingRenderer.renderBuilding(
                     tileX, tileY,
@@ -769,7 +783,7 @@ export class GameCanvas {
                     building.type,
                     this.offsetX,
                     this.offsetY,
-                    building.mainTile !== false
+                    true
                 );
             }
             return;
