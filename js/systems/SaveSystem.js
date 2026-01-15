@@ -8,6 +8,9 @@ export class SaveSystem {
         this.game = game;
         this.saveKeyPrefix = 'island-kingdom-save';
         this.maxSlots = 5;
+
+        // Migrate old single-save format to new multi-slot format
+        this.migrateOldSave();
     }
 
     /**
@@ -314,7 +317,8 @@ export class SaveSystem {
         return {
             peopleBoats,
             crowds,
-            spawnTimer: immigration.spawnTimer
+            spawnTimer: immigration.spawnTimer,
+            islandSpawnTimers: immigration.islandSpawnTimers || {}
         };
     }
 
@@ -437,8 +441,14 @@ export class SaveSystem {
         immigration.peopleBoats = [];
         immigration.crowds = [];
 
-        // Restore spawn timer
+        // Restore spawn timer (legacy)
         immigration.spawnTimer = immigrationData.spawnTimer || 0;
+
+        // Restore per-island spawn timers
+        if (immigrationData.islandSpawnTimers) {
+            immigration.islandSpawnTimers = { ...immigrationData.islandSpawnTimers };
+            console.log('[SAVE] Restored island spawn timers:', immigration.islandSpawnTimers);
+        }
 
         // Restore people boats
         if (immigrationData.peopleBoats && PeopleBoat) {
