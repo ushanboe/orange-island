@@ -348,9 +348,9 @@ export class ImmigrationSystem {
     spawnCrowdFromBoat(boat) {
         if (this.crowds.length >= this.maxCrowds) {
             console.warn(`[IMMIGRATION] Cannot spawn crowd - maxCrowds limit (${this.maxCrowds}) reached!`);
-            // Still add to population even if we can't show the crowd visually
-            this.game.population = (this.game.population || 0) + boat.peopleCount;
-            console.log(`[IMMIGRATION] Added ${boat.peopleCount} directly to population due to crowd limit`);
+            // Still add to visitors even if we can't show the crowd visually
+            this.game.visitors = (this.game.visitors || 0) + boat.peopleCount;
+            console.log(`[IMMIGRATION] Added ${boat.peopleCount} to visitors due to crowd limit. Total visitors: ${this.game.visitors}`);
             return;
         }
 
@@ -367,7 +367,10 @@ export class ImmigrationSystem {
         );
 
         this.crowds.push(crowd);
-        console.log(`[IMMIGRATION] Crowd of ${boat.peopleCount} landed on beach at (${Math.floor(landX)}, ${Math.floor(landY)})`);
+
+        // Add to visitors count when people offload from boat
+        this.game.visitors = (this.game.visitors || 0) + boat.peopleCount;
+        console.log(`[IMMIGRATION] Crowd of ${boat.peopleCount} landed on beach at (${Math.floor(landX)}, ${Math.floor(landY)}). Total visitors: ${this.game.visitors}`);
     }
 
     updateCrowds() {
