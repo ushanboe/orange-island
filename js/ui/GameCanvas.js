@@ -1426,6 +1426,9 @@ export class GameCanvas {
 
         ctx.save();
         
+        // V91 - BRIGHT MAGENTA to prove new code running
+        ctx.fillStyle = "#FF00FF";
+        ctx.fillRect(screenX - 10, screenY - 10, totalSize + 20, totalSize + 20);
         // Draw semi-transparent overlay for entire area
         ctx.fillStyle = check.valid ? 'rgba(0, 200, 0, 0.6)' : 'rgba(200, 0, 0, 0.6)';
         // DEBUG v90 - log actual draw values (once per second)
