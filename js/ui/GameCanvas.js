@@ -1395,6 +1395,12 @@ export class GameCanvas {
     // ==================== PLACEMENT PREVIEW ====================
 
     drawPlacementPreview(ctx) {
+        // DEBUG v89 - log every call
+        const _toolId = this.game.toolManager?.selectedTool || 'none';
+        const _building = this.game.toolManager?.getSelectedTool();
+        const _size = _building?.size || 'undefined';
+        console.log('[PREVIEW v89] toolId=' + _toolId + ', building.size=' + _size);
+
         if (!this.game.toolManager || !this.game.toolManager.selectedTool) return;
         if (this.hoverTileX < 0 || this.hoverTileY < 0) return;
 
