@@ -15,6 +15,12 @@ export class ServiceBuildingRenderer {
         const screenY = y * tileSize + cameraY;
         const size = tileSize * 3; // 3x3 building
 
+        // DEBUG: Log rendering details once per second
+        if (!this._lastDebugTime || Date.now() - this._lastDebugTime > 1000) {
+            console.log(`[RENDERER] Drawing ${buildingType}: tile(${x},${y}) -> screen(${screenX},${screenY}), size=${size}px`);
+            this._lastDebugTime = Date.now();
+        }
+
         switch (buildingType) {
             case 'policeStation':
                 this.drawPoliceStation(screenX, screenY, size);

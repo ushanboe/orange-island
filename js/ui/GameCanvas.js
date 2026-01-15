@@ -767,6 +767,13 @@ export class GameCanvas {
 
             // Main tile - draw the full 3x3 building graphic
             if (this.serviceBuildingRenderer) {
+                // DEBUG: Log once per building type per frame
+                if (!this._debuggedServiceBuildings) this._debuggedServiceBuildings = {};
+                if (!this._debuggedServiceBuildings[building.type]) {
+                    console.log(`[SERVICE] Rendering ${building.type} at tile (${tileX}, ${tileY}), tileSize=${this.tileSize}, offset=(${this.offsetX}, ${this.offsetY})`);
+                    this._debuggedServiceBuildings[building.type] = true;
+                    setTimeout(() => { this._debuggedServiceBuildings[building.type] = false; }, 1000);
+                }
                 this.serviceBuildingRenderer.renderBuilding(
                     tileX, tileY,
                     this.tileSize,
@@ -775,6 +782,8 @@ export class GameCanvas {
                     this.offsetY,
                     true
                 );
+            } else {
+                console.warn('[SERVICE] No serviceBuildingRenderer!');
             }
             return;
         }
