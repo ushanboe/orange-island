@@ -9,7 +9,7 @@ export class ServiceBuildingRenderer {
     }
 
     // Main render function for a service building
-    renderBuilding(x, y, tileSize, buildingType, cameraX, cameraY, isMainTile = true) {
+    renderBuilding(x, y, tileSize, buildingType, cameraX, cameraY, isMainTile = true, isActive = false) {
         if (!isMainTile) return; // Only render from main tile
 
         const screenX = x * tileSize + cameraX;
@@ -31,6 +31,49 @@ export class ServiceBuildingRenderer {
                 this.drawSchool(screenX, screenY, tileSize, buildingSize, totalSize);
                 break;
         }
+
+        // Draw status LED indicator in top-right corner of building
+        this.drawStatusLED(screenX + buildingSize - tileSize * 0.3, screenY + tileSize * 0.15, tileSize, isActive);
+    }
+
+    // Draw a status LED indicator (green = active with power+road, red = inactive)
+    drawStatusLED(x, y, tileSize, isActive) {
+        const ctx = this.ctx;
+        const ledSize = Math.max(4, tileSize * 0.15);
+
+        // Outer glow
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, ledSize * 2);
+        if (isActive) {
+            gradient.addColorStop(0, 'rgba(0, 255, 0, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(0, 255, 0, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 255, 0, 0)');
+        } else {
+            gradient.addColorStop(0, 'rgba(255, 0, 0, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(255, 0, 0, 0.3)');
+            gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+        }
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x, y, ledSize * 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // LED body (dark housing)
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(x, y, ledSize * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // LED light
+        ctx.fillStyle = isActive ? '#00FF00' : '#FF0000';
+        ctx.beginPath();
+        ctx.arc(x, y, ledSize, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Highlight reflection
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.beginPath();
+        ctx.arc(x - ledSize * 0.3, y - ledSize * 0.3, ledSize * 0.4, 0, Math.PI * 2);
+        ctx.fill();
     }
 
     // Draw parking lot area

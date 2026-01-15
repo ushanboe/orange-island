@@ -778,9 +778,16 @@ export class GameCanvas {
         if (serviceBuildings.includes(building.type)) {
             // Only render from main tile
             if (building.mainTile !== false) {
+                // Check if building has power and road access (active status)
+                let isActive = false;
+                if (this.game && this.game.infrastructureManager) {
+                    const hasRoad = this.game.infrastructureManager.hasRoadAccess(tileX, tileY);
+                    const hasPower = this.game.infrastructureManager.hasPower(tileX, tileY);
+                    isActive = hasRoad && hasPower;
+                }
                 this.serviceBuildingRenderer.renderBuilding(
                     tileX, tileY, this.tileSize, building.type,
-                    this.offsetX, this.offsetY, true
+                    this.offsetX, this.offsetY, true, isActive
                 );
             }
             // Non-main tiles don't draw anything (renderer handles full 3x3)
