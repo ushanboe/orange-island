@@ -11,7 +11,7 @@ export class ImmigrationSystem {
         this.maxPeopleBoats = 5;
         this.maxCrowds = 20;
         this.spawnTimer = 0;
-        this.spawnInterval = 18;   // Ticks between spawn attempts (1.5 years)
+        this.spawnInterval = 6;   // Ticks between spawn attempts (6 months)
 
         // Immigration tweets for the king
         this.immigrationTweets = [
@@ -81,11 +81,11 @@ export class ImmigrationSystem {
 
         // Random chance to spawn
         const roll = Math.random();
-        if (roll > 0.8) {
-            console.log(`[IMMIGRATION] Random check failed: ${roll.toFixed(2)} > 0.8`);;
+        if (roll > 0.95) {
+            console.log(`[IMMIGRATION] Random check failed: ${roll.toFixed(2)} > 0.95`);;
             return;
         }
-        console.log(`[IMMIGRATION] Random check passed: ${roll.toFixed(2)} <= 0.8`);;
+        console.log(`[IMMIGRATION] Random check passed: ${roll.toFixed(2)} <= 0.95`);;
 
         // Pick a random source island
         const sourceIsland = map.sourceIslands[Math.floor(Math.random() * map.sourceIslands.length)];
@@ -495,7 +495,7 @@ export class Crowd {
         this.x = x;
         this.y = y;
         this.count = count;
-        this.speed = 0.4;  // Doubled for slower tick rate
+        this.speed = 0.01;  // Slow walking speed for 60fps animation
         this.frame = 0;
         this.remove = false;
         this.reachedCivilization = false;
