@@ -780,7 +780,7 @@ export class GameCanvas {
             if (building.mainTile !== false) {
                 this.serviceBuildingRenderer.renderBuilding(
                     tileX, tileY, this.tileSize, building.type,
-                    this.cameraX, this.cameraY, true
+                    this.offsetX, this.offsetY, true
                 );
             }
             // Non-main tiles don't draw anything (renderer handles full 3x3)
