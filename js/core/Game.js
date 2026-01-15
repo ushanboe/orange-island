@@ -660,22 +660,22 @@ export class Game {
         document.getElementById('king-mood').textContent = moodEmojis[this.kingMoodText] || '👑';
     }
 
-    // Save game
-    save(silent = false) {
+    // Save game (slot 1 is used for auto-save)
+    save(silent = false, slot = 1) {
         if (this.saveSystem) {
-            const success = this.saveSystem.saveGame();
-            if (!silent && success) {
+            const result = this.saveSystem.saveGame(slot, slot === 1 ? 'Auto-Save' : `Save ${slot}`);
+            if (!silent && result.success) {
                 this.kingTweet("Game SAVED! The best save ever! 💾");
             }
-            return success;
+            return result.success;
         }
         return false;
     }
 
-    // Load game
-    load() {
+    // Load game from specific slot
+    load(slot = 1) {
         if (this.saveSystem) {
-            const success = this.saveSystem.loadGame();
+            const success = this.saveSystem.loadGame(slot);
             if (success) {
                 this.kingTweet("Game LOADED! We're BACK! 🎮");
             } else {
@@ -691,10 +691,10 @@ export class Game {
         return this.saveSystem && this.saveSystem.hasSavedGame();
     }
     
-    // Delete saved game
-    deleteSave() {
+    // Delete saved game from specific slot
+    deleteSave(slot = 1) {
         if (this.saveSystem) {
-            this.saveSystem.deleteSave();
+            this.saveSystem.deleteSave(slot);
         }
     }
 

@@ -1,49 +1,107 @@
 /**
  * SaveSystem - Handles saving and loading game state to/from localStorage
+ * Supports multiple save slots
  */
 
 export class SaveSystem {
     constructor(game) {
         this.game = game;
-        this.saveKey = 'island-kingdom-save';
+        this.saveKeyPrefix = 'island-kingdom-save';
+        this.maxSlots = 5;
     }
 
     /**
-     * Check if a saved game exists
+     * Get save key for a specific slot
+     */
+    getSaveKey(slot) {
+        return `${this.saveKeyPrefix}-${slot}`;
+    }
+
+    /**
+     * Get list of all saved games with metadata
+     */
+    getSavedGames() {
+        const saves = [];
+        for (let i = 1; i <= this.maxSlots; i++) {
+            const key = this.getSaveKey(i);
+            const data = localStorage.getItem(key);
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    saves.push({
+                        slot: i,
+                        name: parsed.saveName || `Save ${i}`,
+                        timestamp: parsed.timestamp,
+                        population: parsed.population || 0,
+                        treasury: parsed.treasury || 0,
+                        year: parsed.year || 1,
+                        month: parsed.month || 1
+                    });
+                } catch (e) {
+                    console.error(`[SAVE] Error parsing save slot ${i}:`, e);
+                }
+            }
+        }
+        return saves;
+    }
+
+    /**
+     * Check if any saved game exists
      */
     hasSavedGame() {
-        return localStorage.getItem(this.saveKey) !== null;
+        return this.getSavedGames().length > 0;
     }
 
     /**
-     * Save the current game state to localStorage
+     * Get next available slot number
      */
-    saveGame() {
+    getNextAvailableSlot() {
+        const saves = this.getSavedGames();
+        const usedSlots = new Set(saves.map(s => s.slot));
+        for (let i = 1; i <= this.maxSlots; i++) {
+            if (!usedSlots.has(i)) return i;
+        }
+        // All slots full, return slot 1 (will overwrite)
+        return 1;
+    }
+
+    /**
+     * Save the current game state to a specific slot
+     */
+    saveGame(slot = null, saveName = null) {
         try {
+            if (slot === null) {
+                slot = this.getNextAvailableSlot();
+            }
+            
             const saveData = this.serializeGameState();
-            localStorage.setItem(this.saveKey, JSON.stringify(saveData));
-            console.log('[SAVE] Game saved successfully');
-            return true;
+            saveData.saveName = saveName || `Save ${slot}`;
+            
+            const key = this.getSaveKey(slot);
+            localStorage.setItem(key, JSON.stringify(saveData));
+            console.log(`[SAVE] Game saved to slot ${slot} successfully`);
+            return { success: true, slot, name: saveData.saveName };
         } catch (error) {
             console.error('[SAVE] Failed to save game:', error);
-            return false;
+            return { success: false, error: error.message };
         }
     }
 
     /**
-     * Load game state from localStorage
+     * Load game state from a specific slot
      */
-    loadGame() {
+    loadGame(slot = 1) {
         try {
-            const saveDataStr = localStorage.getItem(this.saveKey);
+            const key = this.getSaveKey(slot);
+            const saveDataStr = localStorage.getItem(key);
             if (!saveDataStr) {
-                console.log('[SAVE] No saved game found');
+                console.log(`[SAVE] No saved game found in slot ${slot}`);
                 return false;
             }
 
             const saveData = JSON.parse(saveDataStr);
             this.deserializeGameState(saveData);
-            console.log('[SAVE] Game loaded successfully');
+            console.log(`[SAVE] Game loaded from slot ${slot} successfully`);
             return true;
         } catch (error) {
             console.error('[SAVE] Failed to load game:', error);
@@ -52,11 +110,26 @@ export class SaveSystem {
     }
 
     /**
-     * Delete the saved game
+     * Delete a saved game from a specific slot
      */
-    deleteSave() {
-        localStorage.removeItem(this.saveKey);
-        console.log('[SAVE] Save deleted');
+    deleteSave(slot) {
+        const key = this.getSaveKey(slot);
+        localStorage.removeItem(key);
+        console.log(`[SAVE] Save slot ${slot} deleted`);
+    }
+
+    /**
+     * Migrate old single-save format to new multi-slot format
+     */
+    migrateOldSave() {
+        const oldKey = 'island-kingdom-save';
+        const oldData = localStorage.getItem(oldKey);
+        if (oldData && !localStorage.getItem(this.getSaveKey(1))) {
+            // Migrate old save to slot 1
+            localStorage.setItem(this.getSaveKey(1), oldData);
+            localStorage.removeItem(oldKey);
+            console.log('[SAVE] Migrated old save to slot 1');
+        }
     }
 
     /**
@@ -163,8 +236,11 @@ export class SaveSystem {
             }
         }
 
+        // Serialize immigration data (boats and crowds)
+        const immigrationData = this.serializeImmigration();
+
         return {
-            version: 1,
+            version: 2,  // Bumped version for new format
             timestamp: Date.now(),
             
             // Game stats
@@ -194,7 +270,51 @@ export class SaveSystem {
             // Allotments
             residentialAllotments,
             commercialAllotments,
-            industrialAllotments
+            industrialAllotments,
+            
+            // Immigration (boats and crowds)
+            immigration: immigrationData
+        };
+    }
+
+    /**
+     * Serialize immigration system data (boats and crowds)
+     */
+    serializeImmigration() {
+        const immigration = this.game.immigrationSystem;
+        if (!immigration) return null;
+
+        // Serialize people boats
+        const peopleBoats = immigration.peopleBoats.map(boat => ({
+            x: boat.x,
+            y: boat.y,
+            targetLanding: boat.targetLanding,
+            peopleCount: boat.peopleCount,
+            sourceIsland: boat.sourceIsland,
+            speed: boat.speed,
+            state: boat.state,
+            crowdSpawned: boat.crowdSpawned,
+            frame: boat.frame
+        }));
+
+        // Serialize crowds
+        const crowds = immigration.crowds.map(crowd => ({
+            x: crowd.x,
+            y: crowd.y,
+            count: crowd.count,
+            speed: crowd.speed,
+            frame: crowd.frame,
+            inForest: crowd.inForest,
+            targetX: crowd.targetX,
+            targetY: crowd.targetY,
+            targetMode: crowd.targetMode,
+            splitCooldown: crowd.splitCooldown
+        }));
+
+        return {
+            peopleBoats,
+            crowds,
+            spawnTimer: immigration.spawnTimer
         };
     }
 
@@ -287,6 +407,11 @@ export class SaveSystem {
             }
         }
 
+        // Restore immigration data (boats and crowds)
+        if (saveData.immigration) {
+            this.deserializeImmigration(saveData.immigration);
+        }
+
         // Recalculate infrastructure networks
         if (game.infrastructureManager) {
             game.infrastructureManager.recalculateNetworks();
@@ -294,6 +419,69 @@ export class SaveSystem {
 
         // Update UI
         game.updateUI();
+    }
+
+    /**
+     * Deserialize immigration system data (boats and crowds)
+     */
+    deserializeImmigration(immigrationData) {
+        const immigration = this.game.immigrationSystem;
+        if (!immigration || !immigrationData) return;
+
+        // Import PeopleBoat and Crowd classes
+        // They should be available on window from ImmigrationSystem.js
+        const PeopleBoat = window.PeopleBoat;
+        const Crowd = window.Crowd;
+
+        // Clear existing boats and crowds
+        immigration.peopleBoats = [];
+        immigration.crowds = [];
+
+        // Restore spawn timer
+        immigration.spawnTimer = immigrationData.spawnTimer || 0;
+
+        // Restore people boats
+        if (immigrationData.peopleBoats && PeopleBoat) {
+            for (const boatData of immigrationData.peopleBoats) {
+                const boat = new PeopleBoat(
+                    this.game,
+                    boatData.x,
+                    boatData.y,
+                    boatData.targetLanding,
+                    boatData.peopleCount,
+                    boatData.sourceIsland
+                );
+                // Restore additional state
+                boat.speed = boatData.speed;
+                boat.state = boatData.state;
+                boat.crowdSpawned = boatData.crowdSpawned;
+                boat.frame = boatData.frame;
+                immigration.peopleBoats.push(boat);
+            }
+            console.log(`[SAVE] Restored ${immigration.peopleBoats.length} boats`);
+        }
+
+        // Restore crowds
+        if (immigrationData.crowds && Crowd) {
+            for (const crowdData of immigrationData.crowds) {
+                const crowd = new Crowd(
+                    this.game,
+                    crowdData.x,
+                    crowdData.y,
+                    crowdData.count
+                );
+                // Restore additional state
+                crowd.speed = crowdData.speed;
+                crowd.frame = crowdData.frame;
+                crowd.inForest = crowdData.inForest;
+                crowd.targetX = crowdData.targetX;
+                crowd.targetY = crowdData.targetY;
+                crowd.targetMode = crowdData.targetMode || 'nearest';
+                crowd.splitCooldown = crowdData.splitCooldown || 0;
+                immigration.crowds.push(crowd);
+            }
+            console.log(`[SAVE] Restored ${immigration.crowds.length} crowds`);
+        }
     }
 
     /**
