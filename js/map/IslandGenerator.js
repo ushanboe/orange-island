@@ -126,24 +126,24 @@ export class IslandGenerator {
                 const angularNoise1 = this.noise2D(
                     Math.cos(angle) * 2.0 + centerX * 0.05,
                     Math.sin(angle) * 2.0 + centerY * 0.05
-                ) * 0.40;  // 40% variation for dramatic features
+                ) * 0.35;  // 35% variation for major features
 
                 // Second octave - medium features (coves, headlands)
                 const angularNoise2 = this.noise2D(
                     Math.cos(angle) * 4.5 + centerX * 0.15,
                     Math.sin(angle) * 4.5 + centerY * 0.15
-                ) * 0.20;  // 20% variation
+                ) * 0.15;  // 15% variation
 
                 // Third octave - small features (rocky details)
                 const angularNoise3 = this.noise2D(
                     Math.cos(angle) * 9 + centerX * 0.25,
                     Math.sin(angle) * 9 + centerY * 0.25
-                ) * 0.10;  // 10% variation
+                ) * 0.08;  // 8% variation
 
-                // Combine all noise layers (up to 70% total variation)
+                // Combine all noise layers (up to 58% total variation)
                 const totalAngularNoise = angularNoise1 + angularNoise2 + angularNoise3;
 
-                const dist = Math.sqrt(dx * dx + dy * dy) * (1 - totalAngularNoise);
+                const dist = Math.sqrt(dx * dx + dy * dy) + totalAngularNoise;
 
                 // Apply falloff with irregular edges
                 let falloff;
@@ -250,7 +250,7 @@ export class IslandGenerator {
                 // Combine all noise layers with boundary factor
                 const totalAngularNoise = (angularNoise1 + angularNoise2 + angularNoise3) * boundaryFactor;
 
-                const dist = Math.sqrt(dx * dx + dy * dy) * (1 - totalAngularNoise);
+                const dist = Math.sqrt(dx * dx + dy * dy) + totalAngularNoise;
 
                 if (dist < 1.3) {
                     let islandHeight;
