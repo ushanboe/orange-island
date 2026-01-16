@@ -802,9 +802,16 @@ export class PeopleBoat {
         // Use faster speed for return trip
         const returnSpeed = this.speed * 2;
 
-        // If we've reached the source island area, remove the boat
-        if (dist < 2) {
-                // console.log(`[IMMIGRATION] Empty boat returned to ${this.sourceIsland} island`);
+        // Remove boat when it gets close to source island (within 12 tiles)
+        // Don't try to reach the center which is on land!
+        if (dist < 12) {
+            this.remove = true;
+            return;
+        }
+        
+        // Also remove if boat hits land (reached island shore)
+        const currentTerrain = this.game.tileMap?.getTerrainAt(Math.floor(this.x), Math.floor(this.y));
+        if (currentTerrain !== undefined && currentTerrain !== 0 && currentTerrain !== 1) {
             this.remove = true;
             return;
         }
