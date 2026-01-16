@@ -21,6 +21,12 @@ export class PoliceSystem {
         this.maxHeldPerStation = 50;
         this.officerSpeed = 0.03;  // Tiles per frame
         this.captureRadius = 1.5;  // How close officer needs to be to capture
+
+        // Wall building configuration
+        this.wallBuildCooldown = 6;  // 6 months (ticks) between wall builds
+        this.wallBuildCost = 1000;  // $1000 per wall tile
+        this.wallBuildMinBudget = 1000000;  // $1M to start building
+        this.wallBuildStopBudget = 300000;  // $300K to stop building
     }
 
     /**
@@ -30,6 +36,7 @@ export class PoliceSystem {
         this.updateStations();
         this.checkForPatrols();
         this.processHeldVisitors();
+        this.updateWallBuilding();
     }
 
     /**
@@ -60,6 +67,91 @@ export class PoliceSystem {
     }
 
     /**
+     * Update wall building for all active police stations
+     * Called each game tick (month)
+     */
+    updateWallBuilding() {
+        const budget = this.game.budget || 0;
+        const tickCount = this.game.tickCount || 0;
+
+        for (const [key, station] of this.stations) {
+            if (!station.isActive) continue;
+
+            // Check budget conditions to enable/disable wall building
+            if (budget >= this.wallBuildMinBudget && !station.wallBuildingEnabled) {
+                station.wallBuildingEnabled = true;
+                console.log(`[POLICE] Station ${key} started wall building (budget: $${budget.toLocaleString()})`);
+            }
+
+            if (budget <= this.wallBuildStopBudget && station.wallBuildingEnabled) {
+                station.wallBuildingEnabled = false;
+                console.log(`[POLICE] Station ${key} stopped wall building (low budget: $${budget.toLocaleString()})`);
+            }
+
+            // Build wall if enabled and cooldown elapsed
+            if (station.wallBuildingEnabled) {
+                const ticksSinceLastBuild = tickCount - station.lastWallBuildTick;
+
+                if (ticksSinceLastBuild >= this.wallBuildCooldown) {
+                    this.buildWallTile(station, key);
+                }
+            }
+        }
+    }
+
+    /**
+     * Build a single wall tile for a police station
+     */
+    buildWallTile(station, stationKey) {
+        const map = this.game.tileMap;
+        if (!map) return;
+
+        // Find all unbuild perimeter tiles
+        const perimeter = map.findPerimeterTiles();
+        if (!perimeter || perimeter.length === 0) {
+            console.log(`[POLICE] Station ${stationKey} - all walls built!`);
+            station.wallBuildingEnabled = false;
+            return;
+        }
+
+        // Find closest perimeter tile to this station
+        let closestTile = null;
+        let closestDist = Infinity;
+
+        for (const tile of perimeter) {
+            const dx = tile.x - station.x;
+            const dy = tile.y - station.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestTile = tile;
+            }
+        }
+
+        if (!closestTile) return;
+
+        // Check if we have enough budget
+        if (this.game.budget < this.wallBuildCost) {
+            console.log(`[POLICE] Station ${stationKey} - insufficient funds for wall ($${this.game.budget} < $${this.wallBuildCost})`);
+            station.wallBuildingEnabled = false;
+            return;
+        }
+
+        // Place wall tile
+        map.setTerrain(closestTile.x, closestTile.y, 10);  // TERRAIN.WALL = 10
+
+        // Deduct cost
+        this.game.budget -= this.wallBuildCost;
+
+        // Update station tracking
+        station.lastWallBuildTick = this.game.tickCount || 0;
+        station.wallsBuilt++;
+
+        console.log(`[POLICE] Station ${stationKey} built wall at (${closestTile.x}, ${closestTile.y}). Total walls: ${station.wallsBuilt}, Budget: $${this.game.budget.toLocaleString()}`);
+    }
+
+        /**
      * Animate police officers - called each frame (60fps)
      */
     animate() {
@@ -97,7 +189,11 @@ export class PoliceSystem {
                             totalOfficers: this.officersPerStation,
                             availableOfficers: this.officersPerStation,
                             heldVisitors: 0,
-                            patrolActive: false
+                            patrolActive: false,
+                            // Wall building properties
+                            wallBuildingEnabled: false,
+                            lastWallBuildTick: 0,
+                            wallsBuilt: 0
                         });
                         // console.log(`[POLICE] New station registered at (${x}, ${y})`);
                     } else {
