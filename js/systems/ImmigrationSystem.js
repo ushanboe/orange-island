@@ -196,29 +196,39 @@ export class ImmigrationSystem {
         const map = this.game.tileMap;
         if (!map) return null;
 
-        console.log(`[DEBUG] findWaterNearIsland called for island:`, island);
-        console.log(`[DEBUG] Map dimensions: ${map.width} x ${map.height}`);
-
-        // Search for water tiles near the island center
+        // Search for DEEP water tiles away from the island
         // Prefer tiles on the side facing the main island
         const mainIslandX = map.width / 2;
-        const searchDirection = island.centerX < mainIslandX ? 1 : -1;  // Search toward main island
+        const searchDirection = island.centerX < mainIslandX ? 1 : -1;
 
-        console.log(`[DEBUG] mainIslandX=${mainIslandX}, searchDirection=${searchDirection}`);
-
-        // Collect ALL valid water spawn points, then pick randomly
+        // Collect valid spawn points - must be in DEEP water with clear path
         const validSpawnPoints = [];
 
-        for (let radius = 3; radius < 12; radius++) {
-            for (let dy = -radius; dy <= radius; dy++) {
+        // Start further from island (radius 12+) to avoid shallow water traps
+        for (let radius = 12; radius < 25; radius++) {
+            for (let dy = -8; dy <= 8; dy++) {
                 const x = Math.floor(island.centerX + (radius * searchDirection));
                 const y = Math.floor(island.centerY + dy);
 
                 if (x >= 0 && x < map.width && y >= 0 && y < map.height) {
                     const terrain = map.getTerrainAt(x, y);
-                    // TERRAIN.WATER = 1, TERRAIN.DEEP_WATER = 0
-                    if (terrain === 0 || terrain === 1) {
-                        validSpawnPoints.push({ x, y });
+                    // Only spawn in DEEP water (terrain 0) to avoid shallow traps
+                    if (terrain === 0) {
+                        // Verify path toward main island is clear
+                        let pathClear = true;
+                        for (let check = 1; check <= 5; check++) {
+                            const checkX = x + (check * searchDirection);
+                            if (checkX >= 0 && checkX < map.width) {
+                                const checkTerrain = map.getTerrainAt(checkX, y);
+                                if (checkTerrain !== 0 && checkTerrain !== 1) {
+                                    pathClear = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (pathClear) {
+                            validSpawnPoints.push({ x, y });
+                        }
                     }
                 }
             }
@@ -230,7 +240,10 @@ export class ImmigrationSystem {
             return validSpawnPoints[randomIndex];
         }
 
-        return null;
+        // Fallback: spawn in open ocean toward main island
+        const fallbackX = island.centerX + (20 * searchDirection);
+        const fallbackY = island.centerY + Math.floor(Math.random() * 10 - 5);
+        return { x: fallbackX, y: fallbackY };
     }
 
     findRemoteLandingSpot(sourceIslandName) {
