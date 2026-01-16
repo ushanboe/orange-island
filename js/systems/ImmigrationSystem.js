@@ -359,9 +359,11 @@ export class ImmigrationSystem {
             return;
         }
 
-        // Spawn crowd on the beach (targetLanding), not in water where boat is
-        const landX = boat.targetLanding ? boat.targetLanding.x : boat.x;
-        const landY = boat.targetLanding ? boat.targetLanding.y : boat.y;
+        // Spawn crowd at boat's ACTUAL position (where it landed), not targetLanding
+        // This fixes the issue where boats land at different spots due to navigation
+        const landX = boat.x;
+        const landY = boat.y;
+        console.log(`[BOAT_DEBUG] Spawning ${boat.peopleCount} people at boat position (${landX.toFixed(1)}, ${landY.toFixed(1)})`);
 
                 // console.log(`[IMMIGRATION] Spawning crowd at (${landX}, ${landY}) with ${boat.peopleCount} people`);
         const crowd = new Crowd(
