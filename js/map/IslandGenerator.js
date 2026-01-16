@@ -34,6 +34,9 @@ export class IslandGenerator {
         // Step 5: Add beaches
         this.addBeaches();
 
+        // Step 5.5: Smooth coastlines to remove single-tile protrusions
+        this.smoothCoastlines();
+
         // Step 6: Add forests
         this.addForests();
 
@@ -145,19 +148,19 @@ export class IslandGenerator {
 
         // Left source island - at the FAR left edge
         const leftIsland = {
-            centerX: 6,  // Very close to left edge
+            centerX: 8,  // Slightly more room for larger island
             centerY: leftY,
-            radiusX: 5,  // Smaller island
-            radiusY: 8,
+            radiusX: 8,  // Larger island
+            radiusY: 11,
             name: 'left'
         };
 
         // Right source island - at the FAR right edge
         const rightIsland = {
-            centerX: width - 6,  // Very close to right edge
+            centerX: width - 8,  // Slightly more room for larger island
             centerY: rightY,
-            radiusX: 5,
-            radiusY: 8,
+            radiusX: 8,  // Larger island
+            radiusY: 11,
             name: 'right'
         };
 
@@ -178,7 +181,15 @@ export class IslandGenerator {
             for (let x = 0; x < width; x++) {
                 const dx = (x - island.centerX) / island.radiusX;
                 const dy = (y - island.centerY) / island.radiusY;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                // Add angular noise to create irregular coastline
+                const angle = Math.atan2(dy, dx);
+                const angularNoise = this.noise2D(
+                    Math.cos(angle) * 3 + island.centerX * 0.1, 
+                    Math.sin(angle) * 3 + island.centerY * 0.1
+                ) * 0.3;  // 30% variation in radius
+
+                const dist = Math.sqrt(dx * dx + dy * dy) * (1 - angularNoise);
 
                 if (dist < 1.3) {
                     let islandHeight;
@@ -190,12 +201,77 @@ export class IslandGenerator {
                         islandHeight = 0.32 * (1 - (dist - 0.9) / 0.4);
                     }
 
-                    const noise = this.noise2D(x * 0.2, y * 0.2) * 0.08;
-                    islandHeight = Math.max(0, islandHeight + noise);
+                    // Primary noise - increased from 0.08 to 0.15
+                    const noise1 = this.noise2D(x * 0.2, y * 0.2) * 0.15;
+                    // Secondary noise layer for more variation
+                    const noise2 = this.noise2D(x * 0.5, y * 0.5) * 0.08;
+
+                    islandHeight = Math.max(0, islandHeight + noise1 + noise2);
 
                     const idx = y * width + x;
                     heightMap[idx] = Math.max(heightMap[idx], islandHeight);
                 }
+            }
+        }
+    }
+
+
+    /**
+     * Smooth coastlines to remove single-tile protrusions that trap boats
+     * Runs multiple passes to ensure clean edges
+     */
+    smoothCoastlines() {
+        const width = this.map.width;
+        const height = this.map.height;
+        const TERRAIN = window.TERRAIN || { WATER: 1, DEEP_WATER: 0, SAND: 2, GRASS: 3 };
+
+        // Run 3 passes for thorough smoothing
+        for (let pass = 0; pass < 3; pass++) {
+            const changes = [];
+
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const current = this.map.getTerrainAt(x, y);
+
+                    // Count neighbors
+                    let waterCount = 0;
+                    let landCount = 0;
+
+                    // Check 8 neighbors
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            if (dx === 0 && dy === 0) continue;
+                            const neighbor = this.map.getTerrainAt(x + dx, y + dy);
+                            if (neighbor === TERRAIN.WATER || neighbor === TERRAIN.DEEP_WATER) {
+                                waterCount++;
+                            } else if (neighbor !== null) {
+                                landCount++;
+                            }
+                        }
+                    }
+
+                    // Remove isolated land tiles (land surrounded by mostly water)
+                    const isLand = current !== TERRAIN.WATER && current !== TERRAIN.DEEP_WATER;
+                    if (isLand && waterCount >= 6) {
+                        changes.push({ x, y, terrain: TERRAIN.WATER });
+                    }
+
+                    // Fill isolated water tiles (water surrounded by mostly land)
+                    const isWater = current === TERRAIN.WATER || current === TERRAIN.DEEP_WATER;
+                    if (isWater && landCount >= 6) {
+                        changes.push({ x, y, terrain: TERRAIN.SAND });
+                    }
+
+                    // Remove single-tile protrusions (land with only 1-2 land neighbors)
+                    if (isLand && landCount <= 2 && waterCount >= 5) {
+                        changes.push({ x, y, terrain: TERRAIN.WATER });
+                    }
+                }
+            }
+
+            // Apply changes
+            for (const change of changes) {
+                this.map.setTerrainAt(change.x, change.y, change.terrain);
             }
         }
     }
