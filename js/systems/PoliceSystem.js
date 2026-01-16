@@ -74,6 +74,7 @@ export class PoliceSystem {
         const budget = this.game.budget || 0;
         const tickCount = this.game.tickCount || 0;
 
+        console.log(`[POLICE DEBUG] Budget: $${budget.toLocaleString()}, Stations: ${this.stations.size}, TickCount: ${tickCount}`);
         for (const [key, station] of this.stations) {
             if (!station.isActive) continue;
 
@@ -105,11 +106,13 @@ export class PoliceSystem {
     buildWallTile(station, stationKey) {
         const map = this.game.tileMap;
         if (!map) return;
+        console.log(`[POLICE DEBUG] buildWallTile called for station ${stationKey}`);
 
         // Find all unbuild perimeter tiles
         const perimeter = map.findPerimeterTiles();
         if (!perimeter || perimeter.length === 0) {
-            console.log(`[POLICE] Station ${stationKey} - all walls built!`);
+        console.log(`[POLICE DEBUG] Station ${stationKey} - Found ${perimeter ? perimeter.length : 0} perimeter tiles`);
+        console.log(`[POLICE DEBUG] Station ${stationKey} - Found ${perimeter ? perimeter.length : 0} perimeter tiles`);
             station.wallBuildingEnabled = false;
             return;
         }
