@@ -387,8 +387,9 @@ export class ImmigrationSystem {
 
             // Check if crowd reached civilization
             if (crowd.reachedCivilization) {
-                // Add directly to population when they reach civilization
-                this.game.population = (this.game.population || 0) + crowd.count;
+                // Population is now handled by police system processing
+                // Visitors who reach civilization without being captured just leave
+                // this.game.population = (this.game.population || 0) + crowd.count;
                 // console.log(`[IMMIGRATION] ${crowd.count} immigrants integrated into population! Total: ${this.game.population}`);
                 crowd.remove = true;
 
