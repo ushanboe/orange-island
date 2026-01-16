@@ -52,7 +52,7 @@ export class PoliceSystem {
         for (let y = 0; y < map.height; y++) {
             for (let x = 0; x < map.width; x++) {
                 const tile = map.getTile(x, y);
-                if (tile?.building?.type === 'policeStation' && tile.building.isMainTile) {
+                if (tile?.building?.type === 'policeStation' && tile.building.mainTile !== false) {
                     const key = `${x},${y}`;
                     foundStations.add(key);
 
