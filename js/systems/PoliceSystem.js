@@ -45,6 +45,11 @@ export class PoliceSystem {
             const toProcess = Math.min(2, station.heldVisitors);
             station.heldVisitors -= toProcess;
 
+            // Subtract from visitors count - they're no longer visitors, becoming residents
+            if (this.game.visitors) {
+                this.game.visitors = Math.max(0, this.game.visitors - toProcess);
+            }
+
             // Add to processed immigrants (will be added to population in tick())
             this.game.processedImmigrants = (this.game.processedImmigrants || 0) + toProcess;
 
@@ -288,10 +293,8 @@ export class PoliceSystem {
         officer.capturedVisitors += toCapture;
         patrol.capturedCount += toCapture;
 
-        // Update game visitors count
-        if (this.game.visitors) {
-            this.game.visitors = Math.max(0, this.game.visitors - toCapture);
-        }
+        // NOTE: Don't subtract from visitors here - detained visitors are still visitors
+        // They will be subtracted when converted to residents in processHeldVisitors()
 
         // console.log(`[POLICE] Officer captured ${toCapture} visitors. Crowd remaining: ${crowd.count}`);
 
