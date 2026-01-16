@@ -277,7 +277,13 @@ export class SaveSystem {
             industrialAllotments,
             
             // Immigration (boats and crowds)
-            immigration: immigrationData
+            immigration: immigrationData,
+            
+            // Game tick counter
+            tickCount: game.tickCount || 0,
+            
+            // Source islands data
+            sourceIslands: tileMap.sourceIslands || []
         };
     }
 
@@ -298,7 +304,14 @@ export class SaveSystem {
             speed: boat.speed,
             state: boat.state,
             crowdSpawned: boat.crowdSpawned,
-            frame: boat.frame
+            frame: boat.frame,
+            // Navigation state
+            avoidanceAngle: boat.avoidanceAngle || 0,
+            avoidanceFrames: boat.avoidanceFrames || 0,
+            lastPos: boat.lastPos || { x: boat.x, y: boat.y },
+            stuckFrames: boat.stuckFrames || 0,
+            startX: boat.startX || boat.x,
+            startY: boat.startY || boat.y
         }));
 
         // Serialize crowds
@@ -312,7 +325,11 @@ export class SaveSystem {
             targetX: crowd.targetX,
             targetY: crowd.targetY,
             targetMode: crowd.targetMode,
-            splitCooldown: crowd.splitCooldown
+            splitCooldown: crowd.splitCooldown,
+            // Survival and citizenship progress
+            survivalMonths: crowd.survivalMonths || 0,
+            lastTickCount: crowd.lastTickCount || 0,
+            spawnTick: crowd.spawnTick || 0
         }));
 
         return {
@@ -360,6 +377,14 @@ export class SaveSystem {
         game.tariffRate = saveData.tariffRate;
         game.monthlyIncome = saveData.monthlyIncome;
         game.monthlyExpenses = saveData.monthlyExpenses;
+
+        // Restore game tick counter
+        game.tickCount = saveData.tickCount || 0;
+
+        // Restore source islands data
+        if (saveData.sourceIslands && game.tileMap) {
+            game.tileMap.sourceIslands = saveData.sourceIslands;
+        }
 
         // Restore terrain data
         if (saveData.terrainData && game.tileMap) {
@@ -468,6 +493,13 @@ export class SaveSystem {
                 boat.state = boatData.state;
                 boat.crowdSpawned = boatData.crowdSpawned;
                 boat.frame = boatData.frame;
+                // Restore navigation state
+                boat.avoidanceAngle = boatData.avoidanceAngle || 0;
+                boat.avoidanceFrames = boatData.avoidanceFrames || 0;
+                boat.lastPos = boatData.lastPos || { x: boat.x, y: boat.y };
+                boat.stuckFrames = boatData.stuckFrames || 0;
+                boat.startX = boatData.startX || boat.x;
+                boat.startY = boatData.startY || boat.y;
                 immigration.peopleBoats.push(boat);
             }
             // console.log(`[SAVE] Restored ${immigration.peopleBoats.length} boats`);
@@ -490,6 +522,10 @@ export class SaveSystem {
                 crowd.targetY = crowdData.targetY;
                 crowd.targetMode = crowdData.targetMode || 'nearest';
                 crowd.splitCooldown = crowdData.splitCooldown || 0;
+                // Restore survival and citizenship progress
+                crowd.survivalMonths = crowdData.survivalMonths || 0;
+                crowd.lastTickCount = crowdData.lastTickCount || 0;
+                crowd.spawnTick = crowdData.spawnTick || 0;
                 immigration.crowds.push(crowd);
             }
             // console.log(`[SAVE] Restored ${immigration.crowds.length} crowds`);
