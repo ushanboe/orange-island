@@ -1023,6 +1023,13 @@ export class Crowd {
         this.targetY = Math.max(5, Math.min(map.height - 5, this.targetY));
     }
 
+    // Helper to check if terrain is walkable
+    isWalkable(terrain) {
+        // TERRAIN: SAND=2, HILL=3, GRASS=4, DIRT=5, FOREST=6, MOUNTAIN=7, PALACE=9
+        return terrain === 2 || terrain === 3 || terrain === 4 || 
+               terrain === 5 || terrain === 6 || terrain === 7 || terrain === 9;
+    }
+
     moveTowardTarget() {
         if (this.targetX === null || this.targetY === null) return;
 
@@ -1030,32 +1037,90 @@ export class Crowd {
         const dy = this.targetY - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist < 0.5) return;
+        if (dist < 0.5) {
+            // Reached target, reset stuck counter
+            this.stuckFrames = 0;
+            return;
+        }
 
-        // Check if next tile is passable
         const map = this.game.tileMap;
         if (!map) return;
+
+        // Track position for stuck detection
+        if (!this.lastPosX) {
+            this.lastPosX = this.x;
+            this.lastPosY = this.y;
+            this.stuckFrames = 0;
+        }
 
         const nextX = this.x + (dx / dist) * this.speed;
         const nextY = this.y + (dy / dist) * this.speed;
         const terrain = map.getTerrainAt(Math.floor(nextX), Math.floor(nextY));
 
-        // Can walk on grass, sand, forest, dirt, hills, mountains
-        // TERRAIN: SAND=2, HILL=3, GRASS=4, DIRT=5, FOREST=6, MOUNTAIN=7
-        if (terrain === 2 || terrain === 3 || terrain === 4 || terrain === 5 || terrain === 6 || terrain === 7) {
+        let moved = false;
+
+        // Try direct path first
+        if (this.isWalkable(terrain)) {
             this.x = nextX;
             this.y = nextY;
+            moved = true;
         } else {
-            // Try to go around obstacle
-            const altDx = dy;  // Perpendicular
-            const altDy = -dx;
-            const altNextX = this.x + (altDx / dist) * this.speed;
-            const altNextY = this.y + (altDy / dist) * this.speed;
-            const altTerrain = map.getTerrainAt(Math.floor(altNextX), Math.floor(altNextY));
+            // Try BOTH perpendicular directions when blocked
+            // Direction 1: Clockwise (90 degrees right)
+            const alt1Dx = dy;
+            const alt1Dy = -dx;
+            const alt1NextX = this.x + (alt1Dx / dist) * this.speed;
+            const alt1NextY = this.y + (alt1Dy / dist) * this.speed;
+            const alt1Terrain = map.getTerrainAt(Math.floor(alt1NextX), Math.floor(alt1NextY));
 
-            if (altTerrain === 2 || altTerrain === 3 || altTerrain === 4 || altTerrain === 5 || altTerrain === 6 || altTerrain === 7) {
-                this.x = altNextX;
-                this.y = altNextY;
+            // Direction 2: Counter-clockwise (90 degrees left)
+            const alt2Dx = -dy;
+            const alt2Dy = dx;
+            const alt2NextX = this.x + (alt2Dx / dist) * this.speed;
+            const alt2NextY = this.y + (alt2Dy / dist) * this.speed;
+            const alt2Terrain = map.getTerrainAt(Math.floor(alt2NextX), Math.floor(alt2NextY));
+
+            // Prefer the direction that gets us closer to target
+            const dist1 = Math.sqrt(Math.pow(alt1NextX - this.targetX, 2) + Math.pow(alt1NextY - this.targetY, 2));
+            const dist2 = Math.sqrt(Math.pow(alt2NextX - this.targetX, 2) + Math.pow(alt2NextY - this.targetY, 2));
+
+            if (this.isWalkable(alt1Terrain) && this.isWalkable(alt2Terrain)) {
+                // Both directions walkable, pick the one closer to target
+                if (dist1 <= dist2) {
+                    this.x = alt1NextX;
+                    this.y = alt1NextY;
+                } else {
+                    this.x = alt2NextX;
+                    this.y = alt2NextY;
+                }
+                moved = true;
+            } else if (this.isWalkable(alt1Terrain)) {
+                this.x = alt1NextX;
+                this.y = alt1NextY;
+                moved = true;
+            } else if (this.isWalkable(alt2Terrain)) {
+                this.x = alt2NextX;
+                this.y = alt2NextY;
+                moved = true;
+            }
+        }
+
+        // Stuck detection: check every 30 frames
+        if (this.frame % 30 === 0) {
+            const movedDist = Math.sqrt(Math.pow(this.x - this.lastPosX, 2) + Math.pow(this.y - this.lastPosY, 2));
+            if (movedDist < 0.3) {
+                this.stuckFrames = (this.stuckFrames || 0) + 30;
+            } else {
+                this.stuckFrames = 0;
+            }
+            this.lastPosX = this.x;
+            this.lastPosY = this.y;
+
+            // If stuck for 120+ frames, pick a new random target
+            if (this.stuckFrames >= 120) {
+                this.targetMode = 'random';
+                this.pickRandomTarget();
+                this.stuckFrames = 0;
             }
         }
     }
