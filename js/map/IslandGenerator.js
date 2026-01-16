@@ -110,14 +110,42 @@ export class IslandGenerator {
         const height = this.map.height;
         const centerX = width / 2;
         const centerY = height / 2;
-        const maxRadius = Math.min(width, height) * 0.32;  // Slightly smaller main island
+        const radiusX = Math.min(width, height) * 0.32;  // Base radius
+        const radiusY = radiusX;  // Circular base shape
 
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                const dx = (x - centerX) / maxRadius;
-                const dy = (y - centerY) / maxRadius;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+                const dx = (x - centerX) / radiusX;
+                const dy = (y - centerY) / radiusY;
 
+                // Calculate angle for angular noise
+                const angle = Math.atan2(dy, dx);
+
+                // Multi-octave angular noise for irregular coastline
+                // First octave - large features (major bays, peninsulas)
+                const angularNoise1 = this.noise2D(
+                    Math.cos(angle) * 2.0 + centerX * 0.05,
+                    Math.sin(angle) * 2.0 + centerY * 0.05
+                ) * 0.40;  // 40% variation for dramatic features
+
+                // Second octave - medium features (coves, headlands)
+                const angularNoise2 = this.noise2D(
+                    Math.cos(angle) * 4.5 + centerX * 0.15,
+                    Math.sin(angle) * 4.5 + centerY * 0.15
+                ) * 0.20;  // 20% variation
+
+                // Third octave - small features (rocky details)
+                const angularNoise3 = this.noise2D(
+                    Math.cos(angle) * 9 + centerX * 0.25,
+                    Math.sin(angle) * 9 + centerY * 0.25
+                ) * 0.10;  // 10% variation
+
+                // Combine all noise layers (up to 70% total variation)
+                const totalAngularNoise = angularNoise1 + angularNoise2 + angularNoise3;
+
+                const dist = Math.sqrt(dx * dx + dy * dy) * (1 - totalAngularNoise);
+
+                // Apply falloff with irregular edges
                 let falloff;
                 if (dist < 0.7) {
                     falloff = 1;
@@ -128,13 +156,16 @@ export class IslandGenerator {
                     falloff = 0;
                 }
 
+                // Add coastal detail noise
                 const coastNoise = this.noise2D(x * 0.1, y * 0.1) * 0.15;
-                falloff = Math.max(0, Math.min(1, falloff + coastNoise - 0.1));
+                falloff = Math.max(0, Math.min(1, falloff + coastNoise));
 
-                heightMap[y * width + x] *= falloff;
+                const idx = y * width + x;
+                heightMap[idx] *= falloff;
             }
         }
     }
+
 
     addSourceIslands(heightMap) {
         const width = this.map.width;
@@ -148,7 +179,7 @@ export class IslandGenerator {
 
         // Left source island - at the FAR left edge
         const leftIsland = {
-            centerX: 8,  // Slightly more room for larger island
+            centerX: 18,  // Increased margin to prevent cutoff with irregular edges
             centerY: leftY,
             radiusX: 8,  // Larger island
             radiusY: 11,
@@ -157,7 +188,7 @@ export class IslandGenerator {
 
         // Right source island - at the FAR right edge
         const rightIsland = {
-            centerX: width - 8,  // Slightly more room for larger island
+            centerX: width - 18,  // Increased margin to prevent cutoff with irregular edges
             centerY: rightY,
             radiusX: 8,  // Larger island
             radiusY: 11,
