@@ -10,7 +10,8 @@ export const TERRAIN = {
     FOREST: 6,
     ROCK: 7,
     MOUNTAIN: 8,
-    PALACE: 9
+    PALACE: 9,
+    WALL: 10
 };
 
 export const TERRAIN_COLORS = {
@@ -23,7 +24,8 @@ export const TERRAIN_COLORS = {
     [TERRAIN.FOREST]: '#1e8449',
     [TERRAIN.ROCK]: '#7f8c8d',
     [TERRAIN.MOUNTAIN]: '#5d6d7e',
-    [TERRAIN.PALACE]: '#ffd700'
+    [TERRAIN.PALACE]: '#ffd700',
+    [TERRAIN.WALL]: '#6b5d52'
 };
 
 export const TERRAIN_NAMES = {
@@ -36,7 +38,8 @@ export const TERRAIN_NAMES = {
     [TERRAIN.FOREST]: 'forest',
     [TERRAIN.ROCK]: 'rock',
     [TERRAIN.MOUNTAIN]: 'mountain',
-    [TERRAIN.PALACE]: 'palace'
+    [TERRAIN.PALACE]: 'palace',
+    [TERRAIN.WALL]: 'wall'
 };
 
 export class TileMap {
@@ -218,6 +221,39 @@ export class TileMap {
                 const tile = this.tiles[y][x];
                 if (tile.terrain === TERRAIN.BEACH || tile.terrain === TERRAIN.SAND) {
                     // Check if adjacent to water
+    // Find perimeter tiles for wall building (grass/forest adjacent to water)
+    findPerimeterTiles() {
+        const perimeter = [];
+
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                const tile = this.tiles[y][x];
+
+                // Must be grass or forest (buildable land)
+                if (tile.terrain !== TERRAIN.GRASS && tile.terrain !== TERRAIN.FOREST) {
+                    continue;
+                }
+
+                // Must not already be a wall
+                if (tile.terrain === TERRAIN.WALL) {
+                    continue;
+                }
+
+                // Check if adjacent to water (perimeter condition)
+                const neighbors = this.getNeighbors(x, y);
+                const hasWater = neighbors.some(n => 
+                    n.terrain === TERRAIN.WATER || n.terrain === TERRAIN.DEEP_WATER
+                );
+
+                if (hasWater) {
+                    perimeter.push({ x, y, tile });
+                }
+            }
+        }
+
+        return perimeter;
+    }
+
                     const neighbors = this.getNeighbors(x, y);
                     const nearWater = neighbors.some(n => 
                         n.terrain === TERRAIN.WATER || n.terrain === TERRAIN.DEEP_WATER
