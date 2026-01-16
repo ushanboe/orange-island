@@ -243,26 +243,7 @@ export class IslandGenerator {
                 }
             }
         }
-    } else if (dist < 0.9) {
-                        islandHeight = 0.5 * (1 - (dist - 0.5) / 0.4);
-                    } else {
-                        islandHeight = 0.32 * (1 - (dist - 0.9) / 0.4);
-                    }
-
-                    // Primary noise - increased from 0.08 to 0.15
-                    const noise1 = this.noise2D(x * 0.2, y * 0.2) * 0.15;
-                    // Secondary noise layer for more variation
-                    const noise2 = this.noise2D(x * 0.5, y * 0.5) * 0.08;
-
-                    islandHeight = Math.max(0, islandHeight + noise1 + noise2);
-
-                    const idx = y * width + x;
-                    heightMap[idx] = Math.max(heightMap[idx], islandHeight);
-                }
-            }
-        }
     }
-
 
     /**
      * Smooth coastlines to remove single-tile protrusions that trap boats
