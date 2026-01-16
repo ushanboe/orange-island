@@ -45,8 +45,8 @@ export class PoliceSystem {
             const toProcess = Math.min(2, station.heldVisitors);
             station.heldVisitors -= toProcess;
 
-            // Add to population
-            this.game.population = (this.game.population || 0) + toProcess;
+            // Add to processed immigrants (will be added to population in tick())
+            this.game.processedImmigrants = (this.game.processedImmigrants || 0) + toProcess;
 
             if (toProcess > 0) {
                 // console.log(`[POLICE] Station ${key} processed ${toProcess} visitors -> residents. Population: ${this.game.population}, Still held: ${station.heldVisitors}`);

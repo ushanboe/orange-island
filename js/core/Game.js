@@ -31,6 +31,7 @@ export class Game {
         this.population = 0;
         this.maxPopulation = 0;
         this.visitors = 0;  // Immigrants who landed but haven't integrated
+        this.processedImmigrants = 0;  // Immigrants processed by police into residents
         this.month = 1;
         this.year = 1;
         this.kingMood = 50;  // 0-100 numeric for development system
@@ -508,8 +509,14 @@ export class Game {
                 this.animationSystem.update();
             }
 
-            // Store residential capacity for reference (not overwriting actual population)
+            // Residential development provides base population
+            // Police processing adds immigrants on top of this
             this.residentialCapacity = totalPop;
+
+            // Population = residential capacity + processed immigrants
+            // Residential capacity: people from developed housing phases
+            // Processed immigrants: visitors captured and processed by police
+            this.population = totalPop + (this.processedImmigrants || 0);
         }
 
         // Update immigration system (people boats and crowds) - OUTSIDE developmentManager block
@@ -537,18 +544,24 @@ export class Game {
         const residentialCount = this.tileMap.countBuildings('residential');
         this.maxPopulation = residentialCount * 25;  // Max based on fully developed zones
 
-        // Population growth is now handled by:
-        // 1. Immigration system (visitors arrive by boat)
-        // 2. Police system (captures and processes visitors into residents)
-        // Simple growth disabled - population only grows through proper immigration
-        // if (!this.developmentManager || this.developmentManager.development.size === 0) {
-        //     if (this.population < this.maxPopulation) {
-        //         const wallCoverage = this.tileMap.getWallCoverage?.() || 0;
-        //         const immigrationRate = 1 - (wallCoverage * 0.8);
-        //         const growth = Math.ceil(Math.random() * 3 * immigrationRate);
-        //         this.population = Math.min(this.maxPopulation, this.population + growth);
-        //     }
-        // }
+        // Population comes from two sources:
+        // 1. Residential development (housing phases provide base population)
+        // 2. Police processing (immigrants become residents, added directly to this.population)
+        //
+        // Residential capacity is calculated each tick and represents developed housing.
+        // We sync population to residential capacity as a baseline.
+        // Police processing adds to population incrementally in PoliceSystem.update().
+        //
+        // To avoid double-counting, we track the residential base separately.
+        if (this.residentialCapacity !== undefined) {
+            // Set population to residential capacity as the base
+            // Police-processed immigrants are added on top in PoliceSystem
+            // But we need to preserve police additions, so only set if capacity > current
+            // Actually, residential capacity IS the population from housing development
+            // Police adds processed visitors on top of this
+            // So we should NOT overwrite here - let police handle additions
+            // Just update maxPopulation for reference
+        }
 
         // Random king comments about population
         if (Math.random() < 0.05) {

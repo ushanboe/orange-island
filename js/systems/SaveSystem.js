@@ -251,6 +251,7 @@ export class SaveSystem {
             population: game.population,
             maxPopulation: game.maxPopulation,
             visitors: game.visitors,
+            processedImmigrants: game.processedImmigrants || 0,
             month: game.month,
             year: game.year,
             kingMood: game.kingMood,
@@ -347,6 +348,7 @@ export class SaveSystem {
         game.population = saveData.population;
         game.maxPopulation = saveData.maxPopulation;
         game.visitors = saveData.visitors || 0;
+        game.processedImmigrants = saveData.processedImmigrants || 0;
         game.month = saveData.month;
         game.year = saveData.year;
         game.kingMood = saveData.kingMood;
