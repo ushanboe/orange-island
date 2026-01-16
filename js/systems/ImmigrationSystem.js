@@ -134,8 +134,12 @@ export class ImmigrationSystem {
         }
 
 
+        // DEBUG: Log source island data
+        console.log(`[DEBUG] Source island: ${sourceIsland.name}, centerX=${sourceIsland.centerX}, centerY=${sourceIsland.centerY}`);
+
         // Find a water tile near the source island to spawn the boat
         const spawnPoint = this.findWaterNearIsland(sourceIsland);
+        console.log(`[DEBUG] Spawn point found:`, spawnPoint);
         if (!spawnPoint) {
                 // console.log(`[IMMIGRATION] Could not find water spawn point for ${sourceIsland.name}`);
             return false;
@@ -192,10 +196,15 @@ export class ImmigrationSystem {
         const map = this.game.tileMap;
         if (!map) return null;
 
+        console.log(`[DEBUG] findWaterNearIsland called for island:`, island);
+        console.log(`[DEBUG] Map dimensions: ${map.width} x ${map.height}`);
+
         // Search for water tiles near the island center
         // Prefer tiles on the side facing the main island
         const mainIslandX = map.width / 2;
         const searchDirection = island.centerX < mainIslandX ? 1 : -1;  // Search toward main island
+
+        console.log(`[DEBUG] mainIslandX=${mainIslandX}, searchDirection=${searchDirection}`);
 
         // Collect ALL valid water spawn points, then pick randomly
         const validSpawnPoints = [];
