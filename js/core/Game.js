@@ -508,7 +508,8 @@ export class Game {
                 this.animationSystem.update();
             }
 
-            this.population = totalPop;
+            // Store residential capacity for reference (not overwriting actual population)
+            this.residentialCapacity = totalPop;
         }
 
         // Update immigration system (people boats and crowds) - OUTSIDE developmentManager block
