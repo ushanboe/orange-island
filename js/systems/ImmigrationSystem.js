@@ -165,8 +165,9 @@ export class ImmigrationSystem {
         const dy = landingSpot.y - spawnPoint.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         const calculatedSpeed = distance / totalFrames;
+        const halvedSpeed = calculatedSpeed * 0.5;  // Halve speed for slower boats
 
-                // console.log(`[IMMIGRATION] Boat from ${sourceIsland.name}: ${distance.toFixed(1)} tiles, ${travelMonths} months, speed=${calculatedSpeed.toFixed(4)}`);
+                // console.log(`[IMMIGRATION] Boat from ${sourceIsland.name}: ${distance.toFixed(1)} tiles, ${travelMonths} months, speed=${halvedSpeed.toFixed(4)}`);
 
         const boat = new PeopleBoat(
             this.game,
@@ -175,7 +176,7 @@ export class ImmigrationSystem {
             landingSpot,
             peopleCount,
             sourceIsland.name,
-            calculatedSpeed
+            halvedSpeed
         );
 
         this.peopleBoats.push(boat);
@@ -541,6 +542,18 @@ export class PeopleBoat {
             return;
         }
 
+        // CRITICAL FIX: Check if boat is ALREADY on land (can happen due to navigation)
+        const map = this.game.tileMap;
+        if (map) {
+            const currentTerrain = map.getTerrainAt(Math.floor(this.x), Math.floor(this.y));
+            // If we're on land (not water), we've landed!
+            if (currentTerrain !== 0 && currentTerrain !== 1 && currentTerrain !== undefined) {
+                console.log(`[BOAT_DEBUG] Boat from ${this.sourceIsland} is ON LAND at (${Math.floor(this.x)}, ${Math.floor(this.y)}), terrain=${currentTerrain} - triggering landed!`);
+                this.state = 'landed';
+                return;
+            }
+        }
+
         const dx = this.targetLanding.x - this.x;
         const dy = this.targetLanding.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -551,7 +564,6 @@ export class PeopleBoat {
         }
 
         // Check if we're about to hit land - stop at water's edge
-        const map = this.game.tileMap;
         if (map) {
             const targetDirX = dx / dist;
             const targetDirY = dy / dist;

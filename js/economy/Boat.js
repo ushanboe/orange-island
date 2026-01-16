@@ -7,7 +7,7 @@ export class Boat {
         this.x = startX;
         this.y = startY;
         this.targetPort = targetPort;
-        this.speed = 0.08; // tiles per frame - INCREASED for visibility
+        this.speed = 0.04; // tiles per frame - halved for better gameplay
         this.state = 'arriving'; // arriving, docked, leaving
         this.dockedTime = 0;
         this.maxDockedTime = 180; // frames to stay docked (3 seconds at 60fps)
@@ -260,6 +260,11 @@ export class Boat {
         const mapWidth = this.game.map?.width || this.game.tileMap?.width || 64;
         const mapHeight = this.game.map?.height || this.game.tileMap?.height || 64;
 
+        // Track stuck frames
+        if (!this.stuckFrames) this.stuckFrames = 0;
+        if (!this.lastX) this.lastX = this.x;
+        if (!this.lastY) this.lastY = this.y;
+
         let targetX, targetY;
 
         switch(this.spawnDirection) {
@@ -298,10 +303,20 @@ export class Boat {
         let moveDirX = targetDirX;
         let moveDirY = targetDirY;
 
-        if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
+        // If we're in avoidance mode, continue for a bit
+        if (this.avoidanceFrames > 0) {
+            this.avoidanceFrames--;
+            const angle = this.avoidanceAngle;
+            moveDirX = Math.cos(angle);
+            moveDirY = Math.sin(angle);
+        } else if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
             const clearDir = this.findClearDirection(targetDirX, targetDirY);
             moveDirX = clearDir.dirX;
             moveDirY = clearDir.dirY;
+            if (clearDir.angle !== 0) {
+                this.avoidanceAngle = Math.atan2(moveDirY, moveDirX);
+                this.avoidanceFrames = 30;
+            }
         }
 
         const nextX = this.x + moveDirX * speed;
@@ -310,7 +325,36 @@ export class Boat {
         if (this.isWater(nextX, nextY)) {
             this.x = nextX;
             this.y = nextY;
+            this.stuckFrames = 0;
+        } else {
+            this.stuckFrames++;
+            // Emergency escape if stuck for too long
+            if (this.stuckFrames > 60) {
+                // Try all directions to find water
+                for (let angle = 0; angle < 360; angle += 30) {
+                    const rad = angle * Math.PI / 180;
+                    const emergX = this.x + Math.cos(rad) * speed * 2;
+                    const emergY = this.y + Math.sin(rad) * speed * 2;
+                    if (this.isWater(emergX, emergY)) {
+                        this.x = emergX;
+                        this.y = emergY;
+                        this.avoidanceAngle = rad;
+                        this.avoidanceFrames = 60;
+                        this.stuckFrames = 0;
+                        break;
+                    }
+                }
+                // If still stuck after 180 frames, just remove the boat
+                if (this.stuckFrames > 180) {
+                    this.remove = true;
+                    return;
+                }
+            }
         }
+
+        // Update last position
+        this.lastX = this.x;
+        this.lastY = this.y;
 
         // Check if reached edge
         if (this.x < -3 || this.x > mapWidth + 3 || this.y < -3 || this.y > mapHeight + 3) {
