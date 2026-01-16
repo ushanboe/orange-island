@@ -61,6 +61,13 @@ export class AdminSettings {
                     style="width: 100%; padding: 5px; border-radius: 4px; border: 1px solid #666;">
             </div>
 
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">💰 Bank Balance ($):</label>
+                <input type="number" id="admin-bank-balance" value="0" min="0" step="1000"
+                    style="width: 100%; padding: 5px; border-radius: 4px; border: 1px solid #666;">
+                <button id="admin-set-balance" style="width: 100%; margin-top: 5px; padding: 8px; background: #FFD700; color: black; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Set Balance</button>
+            </div>
+
             <div style="display: flex; gap: 10px;">
                 <button id="admin-apply" style="flex: 1; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">Apply</button>
                 <button id="admin-close" style="flex: 1; padding: 10px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
@@ -74,9 +81,21 @@ export class AdminSettings {
         // Event listeners
         document.getElementById('admin-apply').addEventListener('click', () => this.applySettings());
         document.getElementById('admin-close').addEventListener('click', () => this.hide());
+        document.getElementById('admin-set-balance').addEventListener('click', () => this.setBankBalance());
     }
 
-    setupKeyboardShortcut() {
+    setBankBalance() {
+        const balance = parseFloat(document.getElementById('admin-bank-balance').value);
+        if (!isNaN(balance) && balance >= 0) {
+            this.game.budget = balance;
+            console.log(`[AdminSettings] Bank balance set to $${balance.toLocaleString()}`);
+            alert(`Bank balance set to $${balance.toLocaleString()}`);
+        } else {
+            alert('Please enter a valid positive number');
+        }
+    }
+
+        setupKeyboardShortcut() {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'F2') {
                 e.preventDefault();
@@ -107,7 +126,8 @@ export class AdminSettings {
             document.getElementById('admin-spawn-chance').value = this.game.immigrationSystem.spawnChance || 0.8;
             document.getElementById('admin-boat-travel-months').value = this.game.immigrationSystem.boatTravelMonths || 2;
             document.getElementById('admin-crowd-speed').value = this.game.immigrationSystem.crowdSpeed || 0.4;
-        }
+    
+        document.getElementById('admin-bank-balance').value = this.game.budget || 0;    }
     }
 
     applySettings() {
