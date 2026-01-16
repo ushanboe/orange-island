@@ -182,20 +182,68 @@ export class IslandGenerator {
                 const dx = (x - island.centerX) / island.radiusX;
                 const dy = (y - island.centerY) / island.radiusY;
 
-                // Add angular noise to create irregular coastline
+                // Calculate angle for angular noise
                 const angle = Math.atan2(dy, dx);
-                const angularNoise = this.noise2D(
-                    Math.cos(angle) * 3 + island.centerX * 0.1, 
-                    Math.sin(angle) * 3 + island.centerY * 0.1
-                ) * 0.3;  // 30% variation in radius
 
-                const dist = Math.sqrt(dx * dx + dy * dy) * (1 - angularNoise);
+                // Multi-octave angular noise for fractal detail
+                // First octave - large features (bays, peninsulas)
+                const angularNoise1 = this.noise2D(
+                    Math.cos(angle) * 2.5 + island.centerX * 0.1,
+                    Math.sin(angle) * 2.5 + island.centerY * 0.1
+                ) * 0.35;  // 35% variation
+
+                // Second octave - medium features (coves, headlands)
+                const angularNoise2 = this.noise2D(
+                    Math.cos(angle) * 5 + island.centerX * 0.2,
+                    Math.sin(angle) * 5 + island.centerY * 0.2
+                ) * 0.15;  // 15% variation
+
+                // Third octave - small features (rocky outcrops)
+                const angularNoise3 = this.noise2D(
+                    Math.cos(angle) * 10 + island.centerX * 0.3,
+                    Math.sin(angle) * 10 + island.centerY * 0.3
+                ) * 0.08;  // 8% variation
+
+                // Asymmetric noise - stronger on edges facing map boundaries
+                let boundaryFactor = 1.0;
+                if (island.name === 'left') {
+                    // Left island - more irregular on left (west) side
+                    const westFactor = Math.max(0, -Math.cos(angle)); // 0 to 1, max at angle=PI
+                    boundaryFactor = 1.0 + westFactor * 0.3; // Up to 30% more noise on west side
+                } else if (island.name === 'right') {
+                    // Right island - more irregular on right (east) side
+                    const eastFactor = Math.max(0, Math.cos(angle)); // 0 to 1, max at angle=0
+                    boundaryFactor = 1.0 + eastFactor * 0.3; // Up to 30% more noise on east side
+                }
+
+                // Combine all noise layers with boundary factor
+                const totalAngularNoise = (angularNoise1 + angularNoise2 + angularNoise3) * boundaryFactor;
+
+                const dist = Math.sqrt(dx * dx + dy * dy) * (1 - totalAngularNoise);
 
                 if (dist < 1.3) {
                     let islandHeight;
                     if (dist < 0.5) {
                         islandHeight = 0.5;
                     } else if (dist < 0.9) {
+                        islandHeight = 0.5 * (1 - (dist - 0.5) / 0.4);
+                    } else {
+                        islandHeight = 0.32 * (1 - (dist - 0.9) / 0.4);
+                    }
+
+                    // Primary noise - increased from 0.08 to 0.15
+                    const noise1 = this.noise2D(x * 0.2, y * 0.2) * 0.15;
+                    // Secondary noise layer for more variation
+                    const noise2 = this.noise2D(x * 0.5, y * 0.5) * 0.08;
+
+                    islandHeight = Math.max(0, islandHeight + noise1 + noise2);
+
+                    const idx = y * width + x;
+                    heightMap[idx] = Math.max(heightMap[idx], islandHeight);
+                }
+            }
+        }
+    } else if (dist < 0.9) {
                         islandHeight = 0.5 * (1 - (dist - 0.5) / 0.4);
                     } else {
                         islandHeight = 0.32 * (1 - (dist - 0.9) / 0.4);
