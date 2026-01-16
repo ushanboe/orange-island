@@ -359,29 +359,32 @@ export class ImmigrationSystem {
         }
 
         // Find nearest beach/land tile to spawn crowd on (boat is in water)
-        const map = this.game.map;
+        const map = this.game.tileMap;
         let landX = boat.x;
         let landY = boat.y;
 
         // Search in expanding radius for a beach or grass tile
+        // Terrain values: DEEP_WATER=0, SHALLOW_WATER=1, SAND/BEACH=2, GRASS=3
         const maxRadius = 5;
         let foundLand = false;
 
-        for (let radius = 1; radius <= maxRadius && !foundLand; radius++) {
-            for (let dy = -radius; dy <= radius && !foundLand; dy++) {
-                for (let dx = -radius; dx <= radius && !foundLand; dx++) {
-                    if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue; // Only check perimeter
+        if (map) {
+            for (let radius = 1; radius <= maxRadius && !foundLand; radius++) {
+                for (let dy = -radius; dy <= radius && !foundLand; dy++) {
+                    for (let dx = -radius; dx <= radius && !foundLand; dx++) {
+                        if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue; // Only check perimeter
 
-                    const checkX = Math.floor(boat.x) + dx;
-                    const checkY = Math.floor(boat.y) + dy;
+                        const checkX = Math.floor(boat.x) + dx;
+                        const checkY = Math.floor(boat.y) + dy;
 
-                    if (checkX >= 0 && checkX < map.width && checkY >= 0 && checkY < map.height) {
-                        const terrain = map.getTerrain(checkX, checkY);
-                        if (terrain === 'beach' || terrain === 'grass') {
-                            landX = checkX + 0.5;  // Center of tile
-                            landY = checkY + 0.5;
-                            foundLand = true;
-                            console.log(`[BOAT_DEBUG] Found land at (${checkX}, ${checkY}) terrain=${terrain}`);
+                        if (checkX >= 0 && checkX < map.width && checkY >= 0 && checkY < map.height) {
+                            const terrain = map.getTerrainAt(checkX, checkY);
+                            // SAND=2 (beach), GRASS=3
+                            if (terrain === 2 || terrain === 3) {
+                                landX = checkX + 0.5;  // Center of tile
+                                landY = checkY + 0.5;
+                                foundLand = true;
+                            }
                         }
                     }
                 }
