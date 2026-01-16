@@ -167,14 +167,6 @@ export class PoliceSystem {
         console.log(`[POLICE] Station ${stationKey} dispatched officer to build wall at (${closestTile.x}, ${closestTile.y}). Total walls: ${station.wallsBuilt}, Budget: $${this.game.treasury.toLocaleString()}`);
     }
 
-        /**
-     * Animate police officers - called each frame (60fps)
-     */
-    animate() {
-        this.updateOfficers();
-        this.updatePatrols();
-    }
-
     /**
      * Scan for active police stations and update their status
      */
@@ -574,6 +566,14 @@ export class PoliceSystem {
         // Update all active officers
         for (let i = this.officers.length - 1; i >= 0; i--) {
             const officer = this.officers[i];
+
+            // Safety check: ensure officer has update method
+            if (!officer || typeof officer.update !== 'function') {
+                console.warn('[POLICE] Invalid officer found, removing:', officer);
+                this.officers.splice(i, 1);
+                continue;
+            }
+
             const stillActive = officer.update();
 
             // If officer just finished building, place the wall
