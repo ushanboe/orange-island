@@ -71,7 +71,7 @@ export class PoliceSystem {
      * Called each game tick (month)
      */
     updateWallBuilding() {
-        const budget = this.game.budget || 0;
+        const budget = this.game.treasury || 0;
         const tickCount = this.game.tickCount || 0;
 
         console.log(`[POLICE DEBUG] Budget: $${budget.toLocaleString()}, Stations: ${this.stations.size}, TickCount: ${tickCount}`);
@@ -135,8 +135,8 @@ export class PoliceSystem {
         if (!closestTile) return;
 
         // Check if we have enough budget
-        if (this.game.budget < this.wallBuildCost) {
-            console.log(`[POLICE] Station ${stationKey} - insufficient funds for wall ($${this.game.budget} < $${this.wallBuildCost})`);
+        if (this.game.treasury < this.wallBuildCost) {
+            console.log(`[POLICE] Station ${stationKey} - insufficient funds for wall ($${this.game.treasury} < $${this.wallBuildCost})`);
             station.wallBuildingEnabled = false;
             return;
         }
@@ -145,13 +145,13 @@ export class PoliceSystem {
         map.setTerrain(closestTile.x, closestTile.y, 10);  // TERRAIN.WALL = 10
 
         // Deduct cost
-        this.game.budget -= this.wallBuildCost;
+        this.game.treasury -= this.wallBuildCost;
 
         // Update station tracking
         station.lastWallBuildTick = this.game.tickCount || 0;
         station.wallsBuilt++;
 
-        console.log(`[POLICE] Station ${stationKey} built wall at (${closestTile.x}, ${closestTile.y}). Total walls: ${station.wallsBuilt}, Budget: $${this.game.budget.toLocaleString()}`);
+        console.log(`[POLICE] Station ${stationKey} built wall at (${closestTile.x}, ${closestTile.y}). Total walls: ${station.wallsBuilt}, Budget: $${this.game.treasury.toLocaleString()}`);
     }
 
         /**

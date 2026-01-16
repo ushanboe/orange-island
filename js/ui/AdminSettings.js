@@ -87,7 +87,8 @@ export class AdminSettings {
     setBankBalance() {
         const balance = parseFloat(document.getElementById('admin-bank-balance').value);
         if (!isNaN(balance) && balance >= 0) {
-            this.game.budget = balance;
+            this.game.treasury = balance;
+            this.game.updateUI();  // Update display immediately
             console.log(`[AdminSettings] Bank balance set to $${balance.toLocaleString()}`);
             alert(`Bank balance set to $${balance.toLocaleString()}`);
         } else {
@@ -127,7 +128,7 @@ export class AdminSettings {
             document.getElementById('admin-boat-travel-months').value = this.game.immigrationSystem.boatTravelMonths || 2;
             document.getElementById('admin-crowd-speed').value = this.game.immigrationSystem.crowdSpeed || 0.4;
     
-        document.getElementById('admin-bank-balance').value = this.game.budget || 0;    }
+        document.getElementById('admin-bank-balance').value = this.game.treasury || 0;    }
     }
 
     applySettings() {

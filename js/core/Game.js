@@ -468,6 +468,8 @@ export class Game {
 
     tick() {
         // Debug tick
+        // Increment tick counter for time-based mechanics
+        this.tickCount = (this.tickCount || 0) + 1;
         // if (this.month === 1 && this.year % 2 === 0) console.log("[TICK] Year", this.year);
         // Advance time
         this.month++;
