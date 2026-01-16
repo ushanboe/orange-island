@@ -94,7 +94,7 @@ export class PoliceSystem {
                             heldVisitors: 0,
                             patrolActive: false
                         });
-                        console.log(`[POLICE] New station registered at (${x}, ${y})`);
+                        // console.log(`[POLICE] New station registered at (${x}, ${y})`);
                     } else {
                         // Update existing station
                         const station = this.stations.get(key);
@@ -293,7 +293,7 @@ export class PoliceSystem {
             this.game.visitors = Math.max(0, this.game.visitors - toCapture);
         }
 
-        console.log(`[POLICE] Officer captured ${toCapture} visitors. Crowd remaining: ${crowd.count}`);
+        // console.log(`[POLICE] Officer captured ${toCapture} visitors. Crowd remaining: ${crowd.count}`);
 
         // If crowd is empty or officer has enough, return to station
         if (crowd.count <= 0 || officer.capturedVisitors >= 10) {
@@ -323,7 +323,7 @@ export class PoliceSystem {
             station.heldVisitors += officer.capturedVisitors;
             station.heldVisitors = Math.min(station.heldVisitors, this.maxHeldPerStation);
 
-            console.log(`[POLICE] Officer returned with ${officer.capturedVisitors} visitors. Station now holds: ${station.heldVisitors}`);
+            // console.log(`[POLICE] Officer returned with ${officer.capturedVisitors} visitors. Station now holds: ${station.heldVisitors}`);
 
             // Remove officer from active list
             const idx = this.officers.indexOf(officer);
