@@ -133,13 +133,9 @@ export class ImmigrationSystem {
             return false;
         }
 
-        //
-})`);
 
         // Find a water tile near the source island to spawn the boat
         const spawnPoint = this.findWaterNearIsland(sourceIsland);
-        //
-` : 'NONE'}`);
         if (!spawnPoint) {
                 // console.log(`[IMMIGRATION] Could not find water spawn point for ${sourceIsland.name}`);
             return false;
@@ -147,8 +143,6 @@ export class ImmigrationSystem {
 
         // Find landing spot far from civilization on main island
         const landingSpot = this.findRemoteLandingSpot(sourceIsland.name);
-        //
- priority=${landingSpot.priority}` : 'NONE'}`);
         if (!landingSpot) {
                 // console.log(`[IMMIGRATION] Could not find remote landing spot for ${sourceIsland.name}`);
             return false;
