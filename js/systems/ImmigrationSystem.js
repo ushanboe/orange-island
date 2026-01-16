@@ -542,47 +542,64 @@ export class PeopleBoat {
             return;
         }
 
-        // CRITICAL FIX: Check if boat is ALREADY on land (can happen due to navigation)
         const map = this.game.tileMap;
+        const dx = this.targetLanding.x - this.x;
+        const dy = this.targetLanding.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // LANDING CHECK 1: Close to target landing spot (within 3 tiles)
+        if (dist < 3) {
+            console.log(`[BOAT_DEBUG] Boat from ${this.sourceIsland} CLOSE TO TARGET (dist=${dist.toFixed(1)}) - triggering landed!`);
+            this.state = 'landed';
+            return;
+        }
+
+        // LANDING CHECK 2: Boat is on land tile
         if (map) {
             const currentTerrain = map.getTerrainAt(Math.floor(this.x), Math.floor(this.y));
-            // If we're on land (not water), we've landed!
-            if (currentTerrain !== 0 && currentTerrain !== 1 && currentTerrain !== undefined) {
+            if (currentTerrain !== undefined && currentTerrain !== 0 && currentTerrain !== 1) {
                 console.log(`[BOAT_DEBUG] Boat from ${this.sourceIsland} is ON LAND at (${Math.floor(this.x)}, ${Math.floor(this.y)}), terrain=${currentTerrain} - triggering landed!`);
                 this.state = 'landed';
                 return;
             }
         }
 
-        const dx = this.targetLanding.x - this.x;
-        const dy = this.targetLanding.y - this.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        // Debug logging (occasional)
-        if (this.frame % 300 === 0) {
-            // console.log(`[PEOPLE_BOAT] From ${this.sourceIsland}: pos(${this.x.toFixed(1)}, ${this.y.toFixed(1)}) -> target(${this.targetLanding.x}, ${this.targetLanding.y}), dist: ${dist.toFixed(1)}, avoidance: ${this.avoidanceFrames}`);
-        }
-
-        // Check if we're about to hit land - stop at water's edge
+        // LANDING CHECK 3: Any adjacent tile is beach/sand
         if (map) {
-            const targetDirX = dx / dist;
-            const targetDirY = dy / dist;
-            const nextX = this.x + targetDirX * this.speed;
-            const nextY = this.y + targetDirY * this.speed;
-            const nextTerrain = map.getTerrainAt(Math.floor(nextX), Math.floor(nextY));
-
-            // WATER=0, DEEP_WATER=1 - if next tile is NOT water, we've reached shore
-            if (nextTerrain !== 0 && nextTerrain !== 1) {
-                console.log(`[BOAT_DEBUG] Boat from ${this.sourceIsland} reached shore at (${Math.floor(this.x)}, ${Math.floor(this.y)}), terrain=${nextTerrain}`);
-                this.state = 'landed';
-                return;
+            const checkOffsets = [[1,0], [-1,0], [0,1], [0,-1], [1,1], [-1,1], [1,-1], [-1,-1]];
+            for (const [ox, oy] of checkOffsets) {
+                const checkX = Math.floor(this.x) + ox;
+                const checkY = Math.floor(this.y) + oy;
+                const adjTerrain = map.getTerrainAt(checkX, checkY);
+                // SAND=2 is beach - if adjacent to beach, we've reached shore
+                if (adjTerrain === 2) {
+                    console.log(`[BOAT_DEBUG] Boat from ${this.sourceIsland} ADJACENT TO BEACH at (${checkX}, ${checkY}) - triggering landed!`);
+                    this.state = 'landed';
+                    return;
+                }
             }
         }
 
-        // Also stop if very close to target
-        if (dist < 1.5) {
-            this.state = 'landed';
-            return;
+        // LANDING CHECK 4: Stuck detection - if boat hasn't moved much in 300 frames, force land
+        if (!this.lastPos) {
+            this.lastPos = { x: this.x, y: this.y };
+            this.stuckFrames = 0;
+        } else {
+            const movedDist = Math.sqrt(Math.pow(this.x - this.lastPos.x, 2) + Math.pow(this.y - this.lastPos.y, 2));
+            if (movedDist < 0.5) {
+                this.stuckFrames = (this.stuckFrames || 0) + 1;
+                if (this.stuckFrames > 300) {
+                    console.log(`[BOAT_DEBUG] Boat from ${this.sourceIsland} STUCK for ${this.stuckFrames} frames at (${this.x.toFixed(1)}, ${this.y.toFixed(1)}) - forcing landed!`);
+                    this.state = 'landed';
+                    return;
+                }
+            } else {
+                this.stuckFrames = 0;
+            }
+            // Update lastPos every 60 frames
+            if (this.frame % 60 === 0) {
+                this.lastPos = { x: this.x, y: this.y };
+            }
         }
 
         // Normalize direction to target
@@ -627,6 +644,10 @@ export class PeopleBoat {
         if (this.isWater(nextX, nextY)) {
             this.x = nextX;
             this.y = nextY;
+        } else {
+            // Can't move forward - we've hit shore!
+            console.log(`[BOAT_DEBUG] Boat from ${this.sourceIsland} BLOCKED by land at (${Math.floor(nextX)}, ${Math.floor(nextY)}) - triggering landed!`);
+            this.state = 'landed';
         }
     }
 
