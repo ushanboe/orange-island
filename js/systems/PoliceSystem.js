@@ -95,21 +95,51 @@ export class PoliceSystem {
      */
     isStationActive(x, y) {
         const infraManager = this.game.infrastructureManager;
-        if (!infraManager) return false;
+        if (!infraManager) {
+            console.log(`[POLICE] No infrastructure manager`);
+            return false;
+        }
 
         const hasPower = infraManager.hasPower(x, y);
         const hasRoad = infraManager.hasRoadAccess(x, y);
 
-        return hasPower && hasRoad;
+        // Debug log on status change
+        const key = `${x},${y}`;
+        const station = this.stations.get(key);
+        const wasActive = station?.isActive;
+        const isActive = hasPower && hasRoad;
+
+        if (wasActive !== isActive) {
+            console.log(`[POLICE] Station (${x},${y}) status: power=${hasPower}, road=${hasRoad}, active=${isActive}`);
+        }
+
+        return isActive;
     }
 
     /**
      * Check if any station should send out a patrol
      */
     checkForPatrols() {
-        if (!this.game.immigrationSystem) return;
+        if (!this.game.immigrationSystem) {
+            console.log('[POLICE] No immigration system');
+            return;
+        }
 
         const crowds = this.game.immigrationSystem.crowds || [];
+
+        // Debug: Log station and crowd status periodically
+        if (this.game.month % 3 === 0 && !this._lastDebugMonth) {
+            this._lastDebugMonth = this.game.month;
+            console.log(`[POLICE] Stations: ${this.stations.size}, Crowds: ${crowds.length}`);
+            for (const [key, station] of this.stations) {
+                console.log(`[POLICE] Station ${key}: active=${station.isActive}, officers=${station.availableOfficers}, held=${station.heldVisitors}, patrolActive=${station.patrolActive}`);
+            }
+            for (const crowd of crowds) {
+                console.log(`[POLICE] Crowd at (${crowd.x?.toFixed(1)}, ${crowd.y?.toFixed(1)}), count=${crowd.count}`);
+            }
+        } else if (this.game.month % 3 !== 0) {
+            this._lastDebugMonth = null;
+        }
 
         for (const [key, station] of this.stations) {
             if (!station.isActive) continue;
