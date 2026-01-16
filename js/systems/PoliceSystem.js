@@ -29,6 +29,29 @@ export class PoliceSystem {
     update() {
         this.updateStations();
         this.checkForPatrols();
+        this.processHeldVisitors();
+    }
+
+    /**
+     * Process held visitors - convert them to residents over time
+     * Each station processes 2 visitors per game tick (month)
+     */
+    processHeldVisitors() {
+        for (const [key, station] of this.stations) {
+            if (!station.isActive) continue;
+            if (station.heldVisitors <= 0) continue;
+
+            // Process 2 visitors per tick - they become residents
+            const toProcess = Math.min(2, station.heldVisitors);
+            station.heldVisitors -= toProcess;
+
+            // Add to population
+            this.game.population = (this.game.population || 0) + toProcess;
+
+            if (toProcess > 0) {
+                console.log(`[POLICE] Station ${key} processed ${toProcess} visitors -> residents. Population: ${this.game.population}, Still held: ${station.heldVisitors}`);
+            }
+        }
     }
 
     /**
