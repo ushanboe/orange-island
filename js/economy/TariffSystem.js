@@ -157,7 +157,7 @@ export class TariffSystem {
         if (ports.length === 0) {
             // Only log occasionally to avoid spam
             if (Math.random() < 0.01) {
-                console.log('[TARIFF] No operational ports (need road + powered commercial + powered industrial)');
+                // console.log('[TARIFF] No operational ports (need road + powered commercial + powered industrial)');
             }
             return null;
         }
@@ -227,7 +227,7 @@ export class TariffSystem {
         }
 
         this.boats.push(boat);
-        console.log('[TARIFF] Boat spawned heading to operational port at', port.x, port.y);
+        // console.log('[TARIFF] Boat spawned heading to operational port at', port.x, port.y);
     }
     processBoat(boat) {
         // Calculate tariff for this boat's cargo

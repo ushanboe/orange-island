@@ -173,12 +173,12 @@ export class Boat {
 
         // Debug logging (occasional)
         if (this.frame % 120 === 0) {
-            console.log(`[BOAT] Cargo boat at (${this.x.toFixed(1)}, ${this.y.toFixed(1)}) -> dock at (${dockX.toFixed(1)}, ${dockY.toFixed(1)}), dist: ${dist.toFixed(2)}, state: ${this.state}`);
+            // console.log(`[BOAT] Cargo boat at (${this.x.toFixed(1)}, ${this.y.toFixed(1)}) -> dock at (${dockX.toFixed(1)}, ${dockY.toFixed(1)}), dist: ${dist.toFixed(2)}, state: ${this.state}`);
         }
 
         // Dock when within 2 tiles of docking position (increased from 1.5)
         if (dist < 2.0) {
-            console.log(`[BOAT] Cargo boat docking at (${dockX.toFixed(1)}, ${dockY.toFixed(1)})`);
+            // console.log(`[BOAT] Cargo boat docking at (${dockX.toFixed(1)}, ${dockY.toFixed(1)})`);
             this.state = 'docked';
             this.x = dockX;
             this.y = dockY;

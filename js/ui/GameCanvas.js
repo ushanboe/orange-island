@@ -221,7 +221,7 @@ export class GameCanvas {
 
         const { tileX, tileY } = this.screenToTile(x, y);
         
-        console.log('[GameCanvas] onPointerDown:', { 
+        // console.log('[GameCanvas] onPointerDown:', { 
             tileX, tileY, 
             hasToolManager: !!this.game.toolManager,
             selectedTool: this.game.toolManager?.selectedTool 
@@ -229,7 +229,7 @@ export class GameCanvas {
 
         if (this.game.toolManager && this.game.toolManager.selectedTool) {
             this.isDragging = true;
-            console.log('[GameCanvas] Calling toolManager.onPointerDown');
+            // console.log('[GameCanvas] Calling toolManager.onPointerDown');
             this.game.toolManager.onPointerDown(tileX, tileY);
         } else {
             this.isPanning = true;
@@ -643,7 +643,7 @@ export class GameCanvas {
                     if (tile.building.type === 'residential_allotment') {
                         if (!this._resLogCount) this._resLogCount = 0;
                         if (this._resLogCount < 5) {
-                            console.log(`[RENDER] Found residential_allotment at (${x},${y}), calling drawBuilding...`);
+                            // console.log(`[RENDER] Found residential_allotment at (${x},${y}), calling drawBuilding...`);
                             this._resLogCount++;
                         }
                     }
@@ -900,7 +900,7 @@ export class GameCanvas {
 
     drawResidentialAllotment(ctx, building, screenX, screenY, tileX, tileY) {
         // Debug: log when this is called
-        console.log(`[DRAW] drawResidentialAllotment ENTERED at (${tileX},${tileY})`, building);
+        // console.log(`[DRAW] drawResidentialAllotment ENTERED at (${tileX},${tileY})`, building);
         
         // Get cell data from the residential manager
         const resManager = this.game.residentialManager;

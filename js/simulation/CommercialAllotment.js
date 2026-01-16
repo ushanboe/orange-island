@@ -59,13 +59,13 @@ export class CommercialAllotmentManager {
     }
 
     createAllotment(x, y) {
-        console.log(`[CommercialAllotment] createAllotment called at (${x}, ${y})`);
+        // console.log(`[CommercialAllotment] createAllotment called at (${x}, ${y})`);
 
         if (!this.canPlaceAllotment(x, y)) {
-            console.log(`[CommercialAllotment] ❌ createAllotment: canPlaceAllotment returned false`);
+            // console.log(`[CommercialAllotment] ❌ createAllotment: canPlaceAllotment returned false`);
             return false;
         }
-        console.log(`[CommercialAllotment] ✅ createAllotment: canPlaceAllotment passed`);
+        // console.log(`[CommercialAllotment] ✅ createAllotment: canPlaceAllotment passed`);
 
         const key = `${x},${y}`;
 
@@ -107,12 +107,12 @@ export class CommercialAllotmentManager {
             }
         }
 
-        console.log(`[CommercialAllotment] ✅ createAllotment: Allotment created successfully at (${x}, ${y})`);
+        // console.log(`[CommercialAllotment] ✅ createAllotment: Allotment created successfully at (${x}, ${y})`);
         return true;
     }
 
     canPlaceAllotment(x, y) {
-        console.log(`[CommercialAllotment] Checking placement at (${x}, ${y})`);
+        // console.log(`[CommercialAllotment] Checking placement at (${x}, ${y})`);
         for (let dy = 0; dy < 3; dy++) {
             for (let dx = 0; dx < 3; dx++) {
                 const checkX = x + dx;
@@ -120,24 +120,24 @@ export class CommercialAllotmentManager {
                 const tile = this.map.getTile(checkX, checkY);
 
                 if (!tile) {
-                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) is null/undefined`);
+                    // console.log(`  ❌ Tile at (${checkX}, ${checkY}) is null/undefined`);
                     return false;
                 }
                 if (tile.building) {
-                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) has building:`, tile.building);
+                    // console.log(`  ❌ Tile at (${checkX}, ${checkY}) has building:`, tile.building);
                     return false;
                 }
 
                 const terrain = tile.terrain;
                 if (terrain === TERRAIN.WATER || terrain === TERRAIN.DEEP_WATER ||
                     terrain === TERRAIN.MOUNTAIN || terrain === TERRAIN.ROCK) {
-                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) has unbuildable terrain: ${terrain}`);
+                    // console.log(`  ❌ Tile at (${checkX}, ${checkY}) has unbuildable terrain: ${terrain}`);
                     return false;
                 }
-                console.log(`  ✓ Tile at (${checkX}, ${checkY}) OK (terrain: ${terrain})`);
+                // console.log(`  ✓ Tile at (${checkX}, ${checkY}) OK (terrain: ${terrain})`);
             }
         }
-        console.log(`  ✅ All 9 tiles valid for placement`);
+        // console.log(`  ✅ All 9 tiles valid for placement`);
         return true;
     }
 

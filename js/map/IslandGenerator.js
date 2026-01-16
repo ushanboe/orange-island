@@ -17,7 +17,7 @@ export class IslandGenerator {
     }
 
     generate() {
-        console.log('Generating islands...');
+        // console.log('Generating islands...');
 
         // Step 1: Create height map
         const heightMap = this.generateHeightMap();
@@ -43,7 +43,7 @@ export class IslandGenerator {
         // Step 8: Mark source islands for boat spawning
         this.markSourceIslands();
 
-        console.log('Island generation complete!');
+        // console.log('Island generation complete!');
         return this.map;
     }
 
@@ -163,7 +163,7 @@ export class IslandGenerator {
 
         this.sourceIslands = [leftIsland, rightIsland];
 
-        console.log(`Source islands: Left at (${leftIsland.centerX}, ${Math.floor(leftY)}), Right at (${rightIsland.centerX}, ${Math.floor(rightY)})`);
+        // console.log(`Source islands: Left at (${leftIsland.centerX}, ${Math.floor(leftY)}), Right at (${rightIsland.centerX}, ${Math.floor(rightY)})`);
 
         [leftIsland, rightIsland].forEach(island => {
             this.addIslandToHeightMap(heightMap, island);
@@ -281,7 +281,7 @@ export class IslandGenerator {
                             }
                         }
                         this.map.setTile(x, y, TERRAIN.PALACE);
-                        console.log(`Palace placed at ${x}, ${y}`);
+                        // console.log(`Palace placed at ${x}, ${y}`);
                         return;
                     }
                 }
@@ -314,7 +314,7 @@ export class IslandGenerator {
                 }
             }
 
-            console.log(`Source island "${island.name}" at (${island.centerX}, ${Math.floor(island.centerY)}) has ${beachTiles.length} beach tiles`);
+            // console.log(`Source island "${island.name}" at (${island.centerX}, ${Math.floor(island.centerY)}) has ${beachTiles.length} beach tiles`);
 
             return {
                 name: island.name,
@@ -324,7 +324,7 @@ export class IslandGenerator {
             };
         });
 
-        console.log('Source islands marked:', this.map.sourceIslands.length);
+        // console.log('Source islands marked:', this.map.sourceIslands.length);
     }
 }
 

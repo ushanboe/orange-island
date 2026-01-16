@@ -175,7 +175,7 @@ export class ImmigrationSystem {
         );
 
         this.peopleBoats.push(boat);
-                // console.log(`[IMMIGRATION] ✅ Boat spawned from ${sourceIsland.name} with ${peopleCount} people`);
+                console.log(`[IMMIGRATION] ✅ Boat spawned from ${sourceIsland.name} with ${peopleCount} people`);
                 // console.log(`[IMMIGRATION] Spawn: (${spawnPoint.x}, ${spawnPoint.y}) -> Landing: (${landingSpot.x}, ${landingSpot.y})`);
 
         // King tweet about boats
@@ -370,7 +370,7 @@ export class ImmigrationSystem {
 
         // Add to visitors count when people offload from boat
         this.game.visitors = (this.game.visitors || 0) + boat.peopleCount;
-                // console.log(`[IMMIGRATION] Crowd of ${boat.peopleCount} landed on beach at (${Math.floor(landX)}, ${Math.floor(landY)}). Total visitors: ${this.game.visitors}`);
+                console.log(`[IMMIGRATION] Crowd of ${boat.peopleCount} landed on beach at (${Math.floor(landX)}, ${Math.floor(landY)}). Total visitors: ${this.game.visitors}`);
     }
 
     updateCrowds() {
@@ -542,7 +542,7 @@ export class PeopleBoat {
 
         // Debug logging (occasional)
         if (this.frame % 300 === 0) {
-            console.log(`[PEOPLE_BOAT] From ${this.sourceIsland}: pos(${this.x.toFixed(1)}, ${this.y.toFixed(1)}) -> target(${this.targetLanding.x}, ${this.targetLanding.y}), dist: ${dist.toFixed(1)}, avoidance: ${this.avoidanceFrames}`);
+            // console.log(`[PEOPLE_BOAT] From ${this.sourceIsland}: pos(${this.x.toFixed(1)}, ${this.y.toFixed(1)}) -> target(${this.targetLanding.x}, ${this.targetLanding.y}), dist: ${dist.toFixed(1)}, avoidance: ${this.avoidanceFrames}`);
         }
 
         // Check if we're about to hit land - stop at water's edge
@@ -947,7 +947,7 @@ export class Crowd {
 
         // Debug: log position periodically
         if (Math.random() < 0.01) {
-            console.log(`[CROWD] Checking civilization at (${Math.floor(this.x)},${Math.floor(this.y)}), count: ${this.count}`);
+            // console.log(`[CROWD] Checking civilization at (${Math.floor(this.x)},${Math.floor(this.y)}), count: ${this.count}`);
         }
         const map = this.game.tileMap;
         if (!map) return;
@@ -966,7 +966,7 @@ export class Crowd {
 
                 // Reached civilization if near a building or palace
                 if (tile?.building || terrain === 9) {
-                    console.log(`[CROWD] Reached civilization at (${tx},${ty})! Building: ${tile?.building}, Terrain: ${terrain}`);
+                    // console.log(`[CROWD] Reached civilization at (${tx},${ty})! Building: ${tile?.building}, Terrain: ${terrain}`);
                     this.reachedCivilization = true;
                     return;
                 }

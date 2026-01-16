@@ -14,11 +14,11 @@ export class InfrastructureManager {
 
         // Listen for building events to trigger immediate recalculation
         this.game.events?.on("buildingPlaced", () => {
-            console.log("[INFRA] Building placed - recalculating networks...");
+            // console.log("[INFRA] Building placed - recalculating networks...");
             this.recalculateNetworks();
         });
         this.game.events?.on("buildingDemolished", () => {
-            console.log("[INFRA] Building demolished - recalculating networks...");
+            // console.log("[INFRA] Building demolished - recalculating networks...");
             this.recalculateNetworks();
         });
     }
@@ -318,12 +318,12 @@ export class InfrastructureManager {
         }
 
         // Debug output
-        console.log('[INFRA] === Building Connections Updated ===');
-        console.log('[INFRA] Power tiles count:', this.powerTiles.size);
+        // console.log('[INFRA] === Building Connections Updated ===');
+        // console.log('[INFRA] Power tiles count:', this.powerTiles.size);
         for (const [key, conn] of this.buildingConnections) {
             const [x, y] = key.split(',').map(Number);
             const tile = tileMap.getTile(x, y);
-            console.log(`[INFRA] ${key} (${tile?.building?.type}): road=${conn.hasRoad}, power=${conn.hasPower}`);
+            // console.log(`[INFRA] ${key} (${tile?.building?.type}): road=${conn.hasRoad}, power=${conn.hasPower}`);
         }
     }
 
@@ -356,23 +356,23 @@ export class InfrastructureManager {
         const key = `${portX},${portY}`;
         const conn = this.buildingConnections.get(key);
 
-        console.log('[INFRA] === canPortOperateBoats ===');
-        console.log('[INFRA] Port:', portX, portY);
-        console.log('[INFRA] Connection data:', conn);
+        // console.log('[INFRA] === canPortOperateBoats ===');
+        // console.log('[INFRA] Port:', portX, portY);
+        // console.log('[INFRA] Connection data:', conn);
 
         // Port needs road access to operate
         if (!conn?.hasRoad) {
-            console.log('[INFRA] ❌ Port has no road connection');
+            // console.log('[INFRA] ❌ Port has no road connection');
             return false;
         }
 
         // Port needs power to operate
         if (!conn?.hasPower) {
-            console.log('[INFRA] ❌ Port has no power connection');
+            // console.log('[INFRA] ❌ Port has no power connection');
             return false;
         }
 
-        console.log('[INFRA] ✅ Port has road + power - BOATS OK!');
+        // console.log('[INFRA] ✅ Port has road + power - BOATS OK!');
         return true;
     }
     getStatus() {

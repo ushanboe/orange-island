@@ -49,7 +49,7 @@ export class PoliceSystem {
             this.game.population = (this.game.population || 0) + toProcess;
 
             if (toProcess > 0) {
-                console.log(`[POLICE] Station ${key} processed ${toProcess} visitors -> residents. Population: ${this.game.population}, Still held: ${station.heldVisitors}`);
+                // console.log(`[POLICE] Station ${key} processed ${toProcess} visitors -> residents. Population: ${this.game.population}, Still held: ${station.heldVisitors}`);
             }
         }
     }
@@ -107,7 +107,7 @@ export class PoliceSystem {
         // Remove stations that no longer exist
         for (const key of this.stations.keys()) {
             if (!foundStations.has(key)) {
-                console.log(`[POLICE] Station removed at ${key}`);
+                // console.log(`[POLICE] Station removed at ${key}`);
                 this.stations.delete(key);
             }
         }
@@ -119,7 +119,7 @@ export class PoliceSystem {
     isStationActive(x, y) {
         const infraManager = this.game.infrastructureManager;
         if (!infraManager) {
-            console.log(`[POLICE] No infrastructure manager`);
+            // console.log(`[POLICE] No infrastructure manager`);
             return false;
         }
 
@@ -133,7 +133,7 @@ export class PoliceSystem {
         const isActive = hasPower && hasRoad;
 
         if (wasActive !== isActive) {
-            console.log(`[POLICE] Station (${x},${y}) status: power=${hasPower}, road=${hasRoad}, active=${isActive}`);
+            // console.log(`[POLICE] Station (${x},${y}) status: power=${hasPower}, road=${hasRoad}, active=${isActive}`);
         }
 
         return isActive;
@@ -144,7 +144,7 @@ export class PoliceSystem {
      */
     checkForPatrols() {
         if (!this.game.immigrationSystem) {
-            console.log('[POLICE] No immigration system');
+            // console.log('[POLICE] No immigration system');
             return;
         }
 
@@ -153,12 +153,12 @@ export class PoliceSystem {
         // Debug: Log station and crowd status periodically
         if (this.game.month % 3 === 0 && !this._lastDebugMonth) {
             this._lastDebugMonth = this.game.month;
-            console.log(`[POLICE] Stations: ${this.stations.size}, Crowds: ${crowds.length}`);
+            // console.log(`[POLICE] Stations: ${this.stations.size}, Crowds: ${crowds.length}`);
             for (const [key, station] of this.stations) {
-                console.log(`[POLICE] Station ${key}: active=${station.isActive}, officers=${station.availableOfficers}, held=${station.heldVisitors}, patrolActive=${station.patrolActive}`);
+                // console.log(`[POLICE] Station ${key}: active=${station.isActive}, officers=${station.availableOfficers}, held=${station.heldVisitors}, patrolActive=${station.patrolActive}`);
             }
             for (const crowd of crowds) {
-                console.log(`[POLICE] Crowd at (${crowd.x?.toFixed(1)}, ${crowd.y?.toFixed(1)}), count=${crowd.count}`);
+                // console.log(`[POLICE] Crowd at (${crowd.x?.toFixed(1)}, ${crowd.y?.toFixed(1)}), count=${crowd.count}`);
             }
         } else if (this.game.month % 3 !== 0) {
             this._lastDebugMonth = null;
@@ -232,7 +232,7 @@ export class PoliceSystem {
         }
 
         this.patrols.push(patrol);
-        console.log(`[POLICE] Patrol dispatched from (${station.x}, ${station.y}) with ${this.officersPerPatrol} officers`);
+        // console.log(`[POLICE] Patrol dispatched from (${station.x}, ${station.y}) with ${this.officersPerPatrol} officers`);
     }
 
     /**
@@ -356,7 +356,7 @@ export class PoliceSystem {
         const idx = this.patrols.indexOf(patrol);
         if (idx >= 0) this.patrols.splice(idx, 1);
 
-        console.log(`[POLICE] Patrol complete. Total captured: ${patrol.capturedCount}`);
+        // console.log(`[POLICE] Patrol complete. Total captured: ${patrol.capturedCount}`);
     }
 
     /**

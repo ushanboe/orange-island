@@ -98,7 +98,7 @@ export class SaveSystem {
             const key = this.getSaveKey(slot);
             const saveDataStr = localStorage.getItem(key);
             if (!saveDataStr) {
-                console.log(`[SAVE] No saved game found in slot ${slot}`);
+                // console.log(`[SAVE] No saved game found in slot ${slot}`);
                 return false;
             }
 
@@ -118,7 +118,7 @@ export class SaveSystem {
     deleteSave(slot) {
         const key = this.getSaveKey(slot);
         localStorage.removeItem(key);
-        console.log(`[SAVE] Save slot ${slot} deleted`);
+        // console.log(`[SAVE] Save slot ${slot} deleted`);
     }
 
     /**
@@ -131,7 +131,7 @@ export class SaveSystem {
             // Migrate old save to slot 1
             localStorage.setItem(this.getSaveKey(1), oldData);
             localStorage.removeItem(oldKey);
-            console.log('[SAVE] Migrated old save to slot 1');
+            // console.log('[SAVE] Migrated old save to slot 1');
         }
     }
 
@@ -447,7 +447,7 @@ export class SaveSystem {
         // Restore per-island spawn timers
         if (immigrationData.islandSpawnTimers) {
             immigration.islandSpawnTimers = { ...immigrationData.islandSpawnTimers };
-            console.log('[SAVE] Restored island spawn timers:', immigration.islandSpawnTimers);
+            // console.log('[SAVE] Restored island spawn timers:', immigration.islandSpawnTimers);
         }
 
         // Restore people boats
@@ -468,7 +468,7 @@ export class SaveSystem {
                 boat.frame = boatData.frame;
                 immigration.peopleBoats.push(boat);
             }
-            console.log(`[SAVE] Restored ${immigration.peopleBoats.length} boats`);
+            // console.log(`[SAVE] Restored ${immigration.peopleBoats.length} boats`);
         }
 
         // Restore crowds
@@ -490,7 +490,7 @@ export class SaveSystem {
                 crowd.splitCooldown = crowdData.splitCooldown || 0;
                 immigration.crowds.push(crowd);
             }
-            console.log(`[SAVE] Restored ${immigration.crowds.length} crowds`);
+            // console.log(`[SAVE] Restored ${immigration.crowds.length} crowds`);
         }
     }
 

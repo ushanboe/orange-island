@@ -75,7 +75,7 @@ export class AnimationSystem {
         const infraManager = this.game.infrastructureManager;
 
         if (!map || !infraManager) {
-            console.log('[BOATS] No map or infraManager available');
+            // console.log('[BOATS] No map or infraManager available');
             return ports;
         }
 
@@ -90,9 +90,9 @@ export class AnimationSystem {
                     const portX = tile.building.originX ?? x;
                     const portY = tile.building.originY ?? y;
 
-                    console.log('[BOATS] Found port at', portX, portY, '- checking connectivity...');
+                    // console.log('[BOATS] Found port at', portX, portY, '- checking connectivity...');
                     const canOperate = infraManager.canPortOperateBoats(portX, portY);
-                    console.log('[BOATS] Port at', portX, portY, 'canOperate:', canOperate);
+                    // console.log('[BOATS] Port at', portX, portY, 'canOperate:', canOperate);
 
                     if (canOperate) {
                         ports.push({ x: portX, y: portY });
@@ -102,7 +102,7 @@ export class AnimationSystem {
         }
 
         if (portsFound > 0) {
-            console.log('[BOATS] Ports found:', portsFound, '- operational:', ports.length);
+            // console.log('[BOATS] Ports found:', portsFound, '- operational:', ports.length);
         }
         return ports;
     }

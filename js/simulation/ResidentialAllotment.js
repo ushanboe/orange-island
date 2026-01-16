@@ -56,14 +56,14 @@ export class ResidentialAllotmentManager {
 
     // Create a new 3x3 residential allotment
     createAllotment(x, y) {
-        console.log(`[ResidentialAllotment] createAllotment called at (${x}, ${y})`);
+        // console.log(`[ResidentialAllotment] createAllotment called at (${x}, ${y})`);
 
         // Ensure we're placing at valid position
         if (!this.canPlaceAllotment(x, y)) {
-            console.log(`[ResidentialAllotment] ❌ createAllotment: canPlaceAllotment returned false`);
+            // console.log(`[ResidentialAllotment] ❌ createAllotment: canPlaceAllotment returned false`);
             return false;
         }
-        console.log(`[ResidentialAllotment] ✅ createAllotment: canPlaceAllotment passed`);
+        // console.log(`[ResidentialAllotment] ✅ createAllotment: canPlaceAllotment passed`);
 
         const key = `${x},${y}`;
 
@@ -109,13 +109,13 @@ export class ResidentialAllotmentManager {
             }
         }
 
-        console.log(`[ResidentialAllotment] ✅ createAllotment: Allotment created successfully at (${x}, ${y})`);
+        // console.log(`[ResidentialAllotment] ✅ createAllotment: Allotment created successfully at (${x}, ${y})`);
         return true;
     }
 
     // Check if we can place a 3x3 allotment
     canPlaceAllotment(x, y) {
-        console.log(`[ResidentialAllotment] Checking placement at (${x}, ${y})`);
+        // console.log(`[ResidentialAllotment] Checking placement at (${x}, ${y})`);
         for (let dy = 0; dy < 3; dy++) {
             for (let dx = 0; dx < 3; dx++) {
                 const checkX = x + dx;
@@ -123,11 +123,11 @@ export class ResidentialAllotmentManager {
                 const tile = this.map.getTile(checkX, checkY);
 
                 if (!tile) {
-                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) is null/undefined (out of bounds?)`);
+                    // console.log(`  ❌ Tile at (${checkX}, ${checkY}) is null/undefined (out of bounds?)`);
                     return false;
                 }
                 if (tile.building) {
-                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) has building:`, tile.building);
+                    // console.log(`  ❌ Tile at (${checkX}, ${checkY}) has building:`, tile.building);
                     return false;
                 }
 
@@ -135,13 +135,13 @@ export class ResidentialAllotmentManager {
                 const terrain = tile.terrain;
                 if (terrain === TERRAIN.WATER || terrain === TERRAIN.DEEP_WATER ||
                     terrain === TERRAIN.MOUNTAIN || terrain === TERRAIN.ROCK) {
-                    console.log(`  ❌ Tile at (${checkX}, ${checkY}) has unbuildable terrain: ${terrain}`);
+                    // console.log(`  ❌ Tile at (${checkX}, ${checkY}) has unbuildable terrain: ${terrain}`);
                     return false;
                 }
-                console.log(`  ✓ Tile at (${checkX}, ${checkY}) OK (terrain: ${terrain})`);
+                // console.log(`  ✓ Tile at (${checkX}, ${checkY}) OK (terrain: ${terrain})`);
             }
         }
-        console.log(`  ✅ All 9 tiles valid for placement`);
+        // console.log(`  ✅ All 9 tiles valid for placement`);
         return true;
     }
 
@@ -166,7 +166,7 @@ export class ResidentialAllotmentManager {
         // Debug logging every 10 ticks
         if (this.game.month % 10 === 0 && this.allotments.size > 0) {
             const sample = Array.from(this.allotments.values())[0];
-            console.log(`[RESIDENTIAL] Allotments: ${this.allotments.size}, TotalPop: ${totalPopulation}, Sample phase: ${sample.phase}, hasRoad: ${sample.hasRoad}, hasPower: ${sample.hasPower}, progress: ${sample.progress?.toFixed(1)}`);
+            // console.log(`[RESIDENTIAL] Allotments: ${this.allotments.size}, TotalPop: ${totalPopulation}, Sample phase: ${sample.phase}, hasRoad: ${sample.hasRoad}, hasPower: ${sample.hasPower}, progress: ${sample.progress?.toFixed(1)}`);
         }
 
         return { totalPopulation };
@@ -475,7 +475,7 @@ export class ResidentialAllotmentManager {
         const tile = this.map.getTile(x, y);
         if (!tile?.building?.allotmentKey) {
             // Only log occasionally to avoid spam
-            if (Math.random() < 0.001) console.log(`[ResidentialAllotment] getCellRenderData(${x},${y}): no allotmentKey`, tile?.building);
+            // if (Math.random() < 0.001) console.log(`[ResidentialAllotment] getCellRenderData(${x},${y}): no allotmentKey`, tile?.building);
             return null;
         }
 

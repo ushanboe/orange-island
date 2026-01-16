@@ -103,7 +103,7 @@ export class Game {
 
         // Initialize police enforcement system
         this.policeSystem = new PoliceSystem(this);
-        console.log("[INIT] ImmigrationSystem created:", !!this.immigrationSystem);
+        // console.log("[INIT] ImmigrationSystem created:", !!this.immigrationSystem);
 
         // Initialize canvas (after managers so it can access them for rendering)
         this.canvas = new GameCanvas(this, 'game-canvas');
@@ -125,10 +125,10 @@ export class Game {
         // Setup autosave every 60 seconds
         this.autosaveInterval = setInterval(() => {
             if (this.saveSystem && !this.paused) {
-                console.log('[AUTOSAVE] Saving game...');
+                // console.log('[AUTOSAVE] Saving game...');
                 const result = this.saveSystem.saveGame(null, 'Autosave');
                 if (result.success) {
-                    console.log(`[AUTOSAVE] Saved to slot ${result.slot}`);
+                    // console.log(`[AUTOSAVE] Saved to slot ${result.slot}`);
                 }
             }
         }, 60000);  // 60 seconds
@@ -186,7 +186,7 @@ export class Game {
             // Residential uses the new 3x3 allotment system
             if (buildingType === 'residential') {
                 // Allotment is created by ToolManager, just log it
-                console.log('Residential allotment placed at', data.tileX, data.tileY);
+                // console.log('Residential allotment placed at', data.tileX, data.tileY);
             } else if (buildingType === 'commercial' || buildingType === 'industrial') {
                 // Commercial and industrial still use old development system
                 this.developmentManager.initZone(data.tileX, data.tileY, buildingType);
@@ -465,7 +465,7 @@ export class Game {
 
     tick() {
         // Debug tick
-        if (this.month === 1 && this.year % 2 === 0) console.log("[TICK] Year", this.year);
+        // if (this.month === 1 && this.year % 2 === 0) console.log("[TICK] Year", this.year);
         // Advance time
         this.month++;
         if (this.month > 12) {
@@ -513,7 +513,7 @@ export class Game {
         }
 
         // Update immigration system (people boats and crowds) - OUTSIDE developmentManager block
-        console.log("[DEBUG] About to check immigrationSystem:", !!this.immigrationSystem);
+        // console.log("[DEBUG] About to check immigrationSystem:", !!this.immigrationSystem);
         if (this.immigrationSystem) {
             this.immigrationSystem.update();
         }
@@ -711,11 +711,11 @@ export class Game {
 
     // Save game using SaveSystem with multiple slots
     save(slot = null) {
-        console.log('[SAVE] Save requested, slot:', slot);
+        // console.log('[SAVE] Save requested, slot:', slot);
         if (this.saveSystem) {
             try {
                 const result = this.saveSystem.saveGame(slot);
-                console.log('[SAVE] Result:', result);
+                // console.log('[SAVE] Result:', result);
                 if (result.success) {
                     this.kingTweet(`Game SAVED to slot ${result.slot}! The best save ever! 💾`);
                 } else {
@@ -865,7 +865,7 @@ export class Game {
             // Ctrl+S to save
             if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
                 e.preventDefault(); // Prevent browser save dialog
-                console.log('[KEYBOARD] Ctrl+S pressed - saving game');
+                // console.log('[KEYBOARD] Ctrl+S pressed - saving game');
                 this.save();
                 return;
             }
@@ -873,7 +873,7 @@ export class Game {
             // Ctrl+L to load
             if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L')) {
                 e.preventDefault(); // Prevent browser address bar focus
-                console.log('[KEYBOARD] Ctrl+L pressed - loading game');
+                // console.log('[KEYBOARD] Ctrl+L pressed - loading game');
                 this.showLoadDialog();
                 return;
             }
