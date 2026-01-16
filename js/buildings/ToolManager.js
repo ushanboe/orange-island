@@ -117,10 +117,10 @@ export class ToolManager {
         // For larger buildings, check all tiles
         if (building.size > 1) {
             // console.log(`[ToolManager] Multi-tile building check:`, {
-                id: building.id,
-                size: building.size,
-                isAllotment: building.isAllotment
-            });
+//                 id: building.id,
+//                 size: building.size,
+//                 isAllotment: building.isAllotment
+//             });
 
             // Special validation for allotments
             if (building.isAllotment && building.size > 1) {
@@ -209,7 +209,7 @@ export class ToolManager {
 
             // Clear building if present
             if (oldBuilding) {
-                tileMap.setBuilding(tileX, tileY, null);
+//                tileMap.setBuilding(tileX, tileY, null);
             }
 
             // Clear forest and replace with grass
@@ -221,14 +221,14 @@ export class ToolManager {
 
             if (oldBuilding) {
                 this.game.events.emit('buildingDemolished', {
-                    tileX, tileY,
+//                    tileX, tileY,
                     building: oldBuilding,
                     cost: building.cost
                 });
                 this.game.kingTweet(`Demolished! Sad! But sometimes you gotta tear it down to build it better! 🚜`);
             } else if (wasForest) {
                 this.game.events.emit('forestCleared', {
-                    tileX, tileY,
+//                    tileX, tileY,
                     cost: building.cost
                 });
                 this.game.kingTweet(`Cleared that forest! Making room for GREATNESS! 🌲➡️🏗️`);
@@ -287,7 +287,7 @@ export class ToolManager {
 
         // Emit event
         this.game.events.emit('buildingPlaced', {
-            tileX, tileY,
+//            tileX, tileY,
             building,
             cost: building.cost
         });
@@ -380,13 +380,13 @@ export class ToolManager {
     // Handle pointer move (drag placement)
     onPointerMove(tileX, tileY) {
         // console.log('[ToolManager] onPointerMove:', { 
-            tileX, tileY, 
-            isPlacing: this.isPlacing, 
-            dragBuilding: this.dragBuilding,
-            selectedTool: this.selectedTool,
-            lastPlacedTile: this.lastPlacedTile
-        });
-
+//            tileX, tileY, 
+//             isPlacing: this.isPlacing, 
+//             dragBuilding: this.dragBuilding,
+//             selectedTool: this.selectedTool,
+//             lastPlacedTile: this.lastPlacedTile
+//         });
+// 
         if (!this.isPlacing || !this.dragBuilding) {
             // console.log('[ToolManager] Drag placement blocked - isPlacing:', this.isPlacing, 'dragBuilding:', this.dragBuilding);
             return;
