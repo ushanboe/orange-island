@@ -25,7 +25,7 @@ export const TERRAIN_COLORS = {
     [TERRAIN.ROCK]: '#7f8c8d',
     [TERRAIN.MOUNTAIN]: '#5d6d7e',
     [TERRAIN.PALACE]: '#ffd700',
-    [TERRAIN.WALL]: '#FF0000'
+    [TERRAIN.WALL]: '#8B4513'
 };
 
 export const TERRAIN_NAMES = {

@@ -414,6 +414,11 @@ export class GameCanvas {
 
         // Update smoke
         this.updateSmoke();
+
+        // Update police officers
+        if (this.game.policeSystem) {
+            this.game.policeSystem.animate();
+        }
     }
 
     // ==================== VEHICLE SYSTEM ====================
@@ -659,6 +664,9 @@ export class GameCanvas {
         // Draw vehicles on roads
         this.renderVehicles(ctx);
 
+        // Draw police officers
+        this.renderPoliceOfficers(ctx);
+
         // Draw boats on water
         this.renderBoats(ctx);
 
@@ -703,6 +711,18 @@ export class GameCanvas {
             const screenX = v.x * this.tileSize + this.offsetX;
             const screenY = v.y * this.tileSize + this.offsetY;
             ctx.fillText(v.icon, screenX, screenY);
+        }
+    }
+
+    renderPoliceOfficers(ctx) {
+        if (!this.game.policeSystem) return;
+
+        const officers = this.game.policeSystem.getOfficers();
+        if (!officers || officers.length === 0) return;
+
+        // Render each active police officer
+        for (const officer of officers) {
+            officer.render(ctx, this.tileSize, this.offsetX, this.offsetY);
         }
     }
 

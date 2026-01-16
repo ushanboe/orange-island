@@ -1,3 +1,4 @@
+import { PoliceOfficer } from '../entities/PoliceOfficer.js';
 /**
  * PoliceSystem - Handles police enforcement, patrols, and visitor detention
  * Each active police station has:
@@ -141,17 +142,29 @@ export class PoliceSystem {
             return;
         }
 
-        // Place wall tile
-        map.setTerrain(closestTile.x, closestTile.y, 10);  // TERRAIN.WALL = 10
+        // Spawn police officer to build the wall
+        const officer = new PoliceOfficer(
+            station.x,
+            station.y,
+            closestTile.x,
+            closestTile.y,
+            stationKey
+        );
 
-        // Deduct cost
+        // Store wall tile info in officer for later placement
+        officer.wallX = closestTile.x;
+        officer.wallY = closestTile.y;
+
+        this.officers.push(officer);
+
+        // Deduct cost immediately (officer is committed)
         this.game.treasury -= this.wallBuildCost;
 
         // Update station tracking
         station.lastWallBuildTick = this.game.tickCount || 0;
         station.wallsBuilt++;
 
-        console.log(`[POLICE] Station ${stationKey} built wall at (${closestTile.x}, ${closestTile.y}). Total walls: ${station.wallsBuilt}, Budget: $${this.game.treasury.toLocaleString()}`);
+        console.log(`[POLICE] Station ${stationKey} dispatched officer to build wall at (${closestTile.x}, ${closestTile.y}). Total walls: ${station.wallsBuilt}, Budget: $${this.game.treasury.toLocaleString()}`);
     }
 
         /**
@@ -550,5 +563,37 @@ export class PoliceSystem {
             availableOfficers,
             activePatrols: this.patrols.length
         };
+    }
+
+    /**
+     * Animate police officers - called each frame (60fps)
+     */
+    animate() {
+        const map = this.game.map;
+
+        // Update all active officers
+        for (let i = this.officers.length - 1; i >= 0; i--) {
+            const officer = this.officers[i];
+            const stillActive = officer.update();
+
+            // If officer just finished building, place the wall
+            if (officer.state === 'building' && officer.buildProgress >= 0.99 && !officer.wallPlaced) {
+                map.setTerrain(officer.wallX, officer.wallY, 10);  // TERRAIN.WALL = 10
+                officer.wallPlaced = true;
+                console.log(`[POLICE] Officer completed wall at (${officer.wallX}, ${officer.wallY})`);
+            }
+
+            // Remove completed officers
+            if (!stillActive) {
+                this.officers.splice(i, 1);
+            }
+        }
+    }
+
+    /**
+     * Get all active police officers for rendering
+     */
+    getOfficers() {
+        return this.officers;
     }
 }
