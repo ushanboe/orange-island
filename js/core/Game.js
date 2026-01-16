@@ -694,10 +694,7 @@ export class Game {
             treasuryEl.textContent = `$${this.treasury.toLocaleString()}`;
             treasuryEl.style.color = '';  // Default color
         }
-        // Debug visitors
-        if (this.month % 5 === 0) {
-            console.log(`[UI DEBUG] Population: ${this.population}, Visitors: ${this.visitors}, Display: ${this.population + (this.visitors ? ' (+' + this.visitors + ' visitors)' : '')}`);
-        }
+
         document.getElementById('population').textContent = this.population + (this.visitors ? ` (+${this.visitors} visitors)` : '');
         document.getElementById('date').textContent = `Year ${this.year}, Month ${this.month}`;
 
@@ -713,15 +710,25 @@ export class Game {
 
     // Save game using SaveSystem with multiple slots
     save(slot = null) {
+        console.log('[SAVE] Save requested, slot:', slot);
         if (this.saveSystem) {
-            const result = this.saveSystem.saveGame(slot);
-            if (result.success) {
-                this.kingTweet(`Game SAVED to slot ${result.slot}! The best save ever! 💾`);
-            } else {
-                this.kingTweet("Save FAILED! Sad! 😢");
+            try {
+                const result = this.saveSystem.saveGame(slot);
+                console.log('[SAVE] Result:', result);
+                if (result.success) {
+                    this.kingTweet(`Game SAVED to slot ${result.slot}! The best save ever! 💾`);
+                } else {
+                    console.error('[SAVE] Save failed:', result.error);
+                    this.kingTweet("Save FAILED! Sad! 😢");
+                }
+                return result;
+            } catch (e) {
+                console.error('[SAVE] Exception during save:', e);
+                this.kingTweet("Save FAILED! Error! 😢");
+                return { success: false, error: e.message };
             }
-            return result;
         }
+        console.error('[SAVE] No save system available');
         return { success: false, error: 'No save system' };
     }
 
@@ -852,8 +859,25 @@ export class Game {
             toolbar.appendChild(tariffBtn);
         }
 
-        // Add keyboard shortcut
+        // Add keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            // Ctrl+S to save
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+                e.preventDefault(); // Prevent browser save dialog
+                console.log('[KEYBOARD] Ctrl+S pressed - saving game');
+                this.save();
+                return;
+            }
+
+            // Ctrl+L to load
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L')) {
+                e.preventDefault(); // Prevent browser address bar focus
+                console.log('[KEYBOARD] Ctrl+L pressed - loading game');
+                this.showLoadDialog();
+                return;
+            }
+
+            // T for tariff UI
             if (e.key === 't' || e.key === 'T') {
                 if (!e.ctrlKey && !e.metaKey) {
                     this.tariffUI.toggle();
