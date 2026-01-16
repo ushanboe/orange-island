@@ -899,7 +899,7 @@ export class Crowd {
         this.x = x;
         this.y = y;
         this.count = count;
-        this.speed = 0.015;  // Walking speed for 60fps animation (reduced 50%)
+        this.speed = 0.015;  // Walking speed for 60fps animation
         this.frame = 0;
         this.remove = false;
         this.reachedCivilization = false;
@@ -909,12 +909,40 @@ export class Crowd {
         this.pathUpdateTimer = 0;
         this.pathUpdateInterval = 60;  // Update path every 60 frames
         this.splitCooldown = 0;
-        this.targetMode = 'nearest';  // 'nearest', 'random', or 'wander' 
+
+        // New: Survival timer for citizenship
+        this.spawnTick = game.tickCount || 0;  // Track when spawned
+        this.survivalMonths = 0;  // Months survived
+        this.maxSurvivalMonths = 3;  // Become citizens after 3 months
+        this.lastTickCount = game.tickCount || 0;
+
+        // New: Behavior state
+        this.state = 'roaming';  // 'roaming', 'attracted', 'avoiding'
+
+        // Stuck detection
+        this.lastPosX = x;
+        this.lastPosY = y;
+        this.stuckFrames = 0;
     }
 
     update() {
         this.frame++;
         this.splitCooldown = Math.max(0, this.splitCooldown - 1);
+
+        // Track survival time (game ticks = months)
+        const currentTick = this.game.tickCount || 0;
+        if (currentTick > this.lastTickCount) {
+            this.survivalMonths += (currentTick - this.lastTickCount);
+            this.lastTickCount = currentTick;
+        }
+
+        // Check if survived 3 months - become citizens!
+        if (this.survivalMonths >= this.maxSurvivalMonths && !this.reachedCivilization) {
+            this.reachedCivilization = true;
+            this.game.population += this.count;
+            this.remove = true;
+            return;
+        }
 
         // Update path periodically
         this.pathUpdateTimer++;
@@ -929,95 +957,110 @@ export class Crowd {
         // Check if in forest
         this.checkForestStatus();
 
-        // Check if reached civilization
-        this.checkCivilization();
+        // Check if reached monument/palace
+        this.checkMonumentReached();
+    }
+
+    // Check if a building is a monument (attracts crowds)
+    isMonument(buildingId) {
+        return buildingId === 'statue' || buildingId === 'tower' || buildingId === 'golfCourse';
+    }
+
+    // Check if a building should be avoided
+    shouldAvoid(buildingId) {
+        // Avoid all buildings EXCEPT monuments
+        return buildingId && !this.isMonument(buildingId);
     }
 
     updateTarget() {
         const map = this.game.tileMap;
         if (!map) return;
 
-        // Different behavior based on target mode
-        if (this.targetMode === 'random') {
-            this.pickRandomTarget();
-            return;
-        }
-        if (this.targetMode === 'wander') {
-            this.pickWanderTarget();
-            return;
-        }
+        const ATTRACTION_RANGE = 15;
+        const AVOIDANCE_RANGE = 5;
 
-        // Default: Find nearest building or palace (civilization)
-        let nearestDist = Infinity;
-        let nearestX = map.width / 2;
-        let nearestY = map.height / 2;
+        let nearestMonumentDist = Infinity;
+        let nearestMonumentX = null;
+        let nearestMonumentY = null;
 
-        // Check for buildings
+        let nearestAvoidDist = Infinity;
+        let avoidX = null;
+        let avoidY = null;
+
+        // Scan for monuments and buildings to avoid
         for (let y = 0; y < map.height; y++) {
             for (let x = 0; x < map.width; x++) {
                 const tile = map.getTile(x, y);
                 const terrain = map.getTerrainAt(x, y);
+                const dist = Math.sqrt(Math.pow(x - this.x, 2) + Math.pow(y - this.y, 2));
 
-                // Target buildings or palace
-                if (tile?.building || terrain === 9) {  // TERRAIN.PALACE = 9
-                    const dist = Math.sqrt(Math.pow(x - this.x, 2) + Math.pow(y - this.y, 2));
-                    if (dist < nearestDist) {
-                        nearestDist = dist;
-                        nearestX = x;
-                        nearestY = y;
+                // Check for Palace (terrain 9) - ATTRACT
+                if (terrain === 9 && dist < ATTRACTION_RANGE && dist < nearestMonumentDist) {
+                    nearestMonumentDist = dist;
+                    nearestMonumentX = x;
+                    nearestMonumentY = y;
+                }
+
+                // Check for buildings
+                if (tile?.building) {
+                    const buildingId = tile.building.id || tile.building.type;
+
+                    // Monument - ATTRACT
+                    if (this.isMonument(buildingId) && dist < ATTRACTION_RANGE && dist < nearestMonumentDist) {
+                        nearestMonumentDist = dist;
+                        nearestMonumentX = x;
+                        nearestMonumentY = y;
+                    }
+                    // Other building - AVOID
+                    else if (this.shouldAvoid(buildingId) && dist < AVOIDANCE_RANGE && dist < nearestAvoidDist) {
+                        nearestAvoidDist = dist;
+                        avoidX = x;
+                        avoidY = y;
                     }
                 }
             }
         }
 
-        this.targetX = nearestX;
-        this.targetY = nearestY;
-    }
+        // Priority 1: If monument found, move toward it
+        if (nearestMonumentX !== null) {
+            this.state = 'attracted';
+            this.targetX = nearestMonumentX;
+            this.targetY = nearestMonumentY;
+            return;
+        }
 
-    pickRandomTarget() {
-        const map = this.game.tileMap;
-        if (!map) return;
-
-        // Collect all buildings and pick a random one
-        const buildings = [];
-        for (let y = 0; y < map.height; y++) {
-            for (let x = 0; x < map.width; x++) {
-                const tile = map.getTile(x, y);
-                const terrain = map.getTerrainAt(x, y);
-                if (tile?.building || terrain === 9) {
-                    buildings.push({ x, y });
-                }
+        // Priority 2: If building to avoid is nearby, move away from it
+        if (avoidX !== null && nearestAvoidDist < AVOIDANCE_RANGE) {
+            this.state = 'avoiding';
+            // Move in opposite direction from the building
+            const awayDx = this.x - avoidX;
+            const awayDy = this.y - avoidY;
+            const awayDist = Math.sqrt(awayDx * awayDx + awayDy * awayDy);
+            if (awayDist > 0) {
+                this.targetX = this.x + (awayDx / awayDist) * 10;
+                this.targetY = this.y + (awayDy / awayDist) * 10;
+                // Clamp to map bounds
+                this.targetX = Math.max(5, Math.min(map.width - 5, this.targetX));
+                this.targetY = Math.max(5, Math.min(map.height - 5, this.targetY));
             }
+            return;
         }
 
-        if (buildings.length > 0) {
-            // Pick a random building (not necessarily nearest)
-            const target = buildings[Math.floor(Math.random() * buildings.length)];
-            this.targetX = target.x;
-            this.targetY = target.y;
-        } else {
-            // No buildings, wander toward center
-            this.targetX = map.width / 2 + (Math.random() - 0.5) * 20;
-            this.targetY = map.height / 2 + (Math.random() - 0.5) * 20;
-        }
-        
-        // 20% chance to go back to shore instead
-        if (Math.random() < 0.2) {
-            this.targetMode = 'wander';
-            this.pickWanderTarget();
-        }
+        // Priority 3: Roam randomly
+        this.state = 'roaming';
+        this.pickWanderTarget();
     }
 
     pickWanderTarget() {
         const map = this.game.tileMap;
         if (!map) return;
 
-        // Wander in a random direction, possibly back toward shore
+        // Wander in a random direction
         const angle = Math.random() * Math.PI * 2;
         const distance = 10 + Math.random() * 20;
         this.targetX = this.x + Math.cos(angle) * distance;
         this.targetY = this.y + Math.sin(angle) * distance;
-        
+
         // Clamp to map bounds
         this.targetX = Math.max(5, Math.min(map.width - 5, this.targetX));
         this.targetY = Math.max(5, Math.min(map.height - 5, this.targetY));
@@ -1038,20 +1081,12 @@ export class Crowd {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < 0.5) {
-            // Reached target, reset stuck counter
             this.stuckFrames = 0;
             return;
         }
 
         const map = this.game.tileMap;
         if (!map) return;
-
-        // Track position for stuck detection
-        if (!this.lastPosX) {
-            this.lastPosX = this.x;
-            this.lastPosY = this.y;
-            this.stuckFrames = 0;
-        }
 
         const nextX = this.x + (dx / dist) * this.speed;
         const nextY = this.y + (dy / dist) * this.speed;
@@ -1066,26 +1101,22 @@ export class Crowd {
             moved = true;
         } else {
             // Try BOTH perpendicular directions when blocked
-            // Direction 1: Clockwise (90 degrees right)
             const alt1Dx = dy;
             const alt1Dy = -dx;
             const alt1NextX = this.x + (alt1Dx / dist) * this.speed;
             const alt1NextY = this.y + (alt1Dy / dist) * this.speed;
             const alt1Terrain = map.getTerrainAt(Math.floor(alt1NextX), Math.floor(alt1NextY));
 
-            // Direction 2: Counter-clockwise (90 degrees left)
             const alt2Dx = -dy;
             const alt2Dy = dx;
             const alt2NextX = this.x + (alt2Dx / dist) * this.speed;
             const alt2NextY = this.y + (alt2Dy / dist) * this.speed;
             const alt2Terrain = map.getTerrainAt(Math.floor(alt2NextX), Math.floor(alt2NextY));
 
-            // Prefer the direction that gets us closer to target
             const dist1 = Math.sqrt(Math.pow(alt1NextX - this.targetX, 2) + Math.pow(alt1NextY - this.targetY, 2));
             const dist2 = Math.sqrt(Math.pow(alt2NextX - this.targetX, 2) + Math.pow(alt2NextY - this.targetY, 2));
 
             if (this.isWalkable(alt1Terrain) && this.isWalkable(alt2Terrain)) {
-                // Both directions walkable, pick the one closer to target
                 if (dist1 <= dist2) {
                     this.x = alt1NextX;
                     this.y = alt1NextY;
@@ -1105,7 +1136,7 @@ export class Crowd {
             }
         }
 
-        // Stuck detection: check every 30 frames
+        // Stuck detection
         if (this.frame % 30 === 0) {
             const movedDist = Math.sqrt(Math.pow(this.x - this.lastPosX, 2) + Math.pow(this.y - this.lastPosY, 2));
             if (movedDist < 0.3) {
@@ -1116,10 +1147,8 @@ export class Crowd {
             this.lastPosX = this.x;
             this.lastPosY = this.y;
 
-            // If stuck for 120+ frames, pick a new random target
             if (this.stuckFrames >= 120) {
-                this.targetMode = 'random';
-                this.pickRandomTarget();
+                this.pickWanderTarget();
                 this.stuckFrames = 0;
             }
         }
@@ -1133,18 +1162,13 @@ export class Crowd {
         this.inForest = (terrain === 6);  // TERRAIN.FOREST = 6
     }
 
-    checkCivilization() {
-        // Guard: skip if already reached civilization
+    // Check if reached a monument or palace
+    checkMonumentReached() {
         if (this.reachedCivilization) return;
 
-        // Debug: log position periodically
-        if (Math.random() < 0.01) {
-            // console.log(`[CROWD] Checking civilization at (${Math.floor(this.x)},${Math.floor(this.y)}), count: ${this.count}`);
-        }
         const map = this.game.tileMap;
         if (!map) return;
 
-        // Check tiles around current position
         const checkRadius = 2;
         for (let dy = -checkRadius; dy <= checkRadius; dy++) {
             for (let dx = -checkRadius; dx <= checkRadius; dx++) {
@@ -1156,43 +1180,48 @@ export class Crowd {
                 const tile = map.getTile(tx, ty);
                 const terrain = map.getTerrainAt(tx, ty);
 
-                // Reached civilization if near a building or palace
-                if (tile?.building || terrain === 9) {
-                    // console.log(`[CROWD] Reached civilization at (${tx},${ty})! Building: ${tile?.building}, Terrain: ${terrain}`);
+                // Reached Palace (terrain 9)
+                if (terrain === 9) {
                     this.reachedCivilization = true;
+                    this.game.population += this.count;
+                    this.remove = true;
                     return;
+                }
+
+                // Reached Monument building
+                if (tile?.building) {
+                    const buildingId = tile.building.id || tile.building.type;
+                    if (this.isMonument(buildingId)) {
+                        this.reachedCivilization = true;
+                        this.game.population += this.count;
+                        this.remove = true;
+                        return;
+                    }
                 }
             }
         }
     }
 
     shouldSplit() {
-        // Can split if:
-        // - More than 20 people
-        // - Random chance
-        // - Not on cooldown
-        return this.count > 10 && 
-               this.splitCooldown === 0 && 
-               Math.random() < 0.10;  // 10% chance per frame - more splitting!
+        return this.count > 10 &&
+               this.splitCooldown === 0 &&
+               Math.random() < 0.10;
     }
 
     split() {
-        // Split off a portion of the crowd
-        const splitCount = Math.floor(this.count * (0.2 + Math.random() * 0.3));  // 20-50%
+        const splitCount = Math.floor(this.count * (0.2 + Math.random() * 0.3));
         if (splitCount < 5) return null;
 
         this.count -= splitCount;
-        this.splitCooldown = 60;  // 1 second cooldown
+        this.splitCooldown = 60;
 
-        // New crowd spawns slightly offset
         const offsetX = (Math.random() - 0.5) * 3;
         const offsetY = (Math.random() - 0.5) * 3;
 
-                // console.log(`[IMMIGRATION] Crowd split: ${splitCount} broke off, ${this.count} remain`);
-
         const newCrowd = new Crowd(this.game, this.x + offsetX, this.y + offsetY, splitCount);
-        // Make the new crowd go in a DIFFERENT direction
-        newCrowd.targetMode = 'random';  // Will pick a random target instead of nearest
+        // New crowd inherits survival time
+        newCrowd.survivalMonths = this.survivalMonths;
+        newCrowd.lastTickCount = this.lastTickCount;
         return newCrowd;
     }
 
@@ -1200,7 +1229,6 @@ export class Crowd {
         const screenX = (this.x * tileSize) + offsetX;
         const screenY = (this.y * tileSize) + offsetY;
 
-        // Don't render if off screen
         if (screenX < -tileSize * 2 || screenX > ctx.canvas.width + tileSize * 2 ||
             screenY < -tileSize * 2 || screenY > ctx.canvas.height + tileSize * 2) {
             return;
@@ -1208,53 +1236,51 @@ export class Crowd {
 
         ctx.save();
 
-        // If in forest, make translucent (hiding)
         if (this.inForest) {
             ctx.globalAlpha = 0.4;
         }
 
-        // Draw crowd as cluster of dots
-        const clusterSize = Math.min(8, Math.ceil(Math.sqrt(this.count)));
-        ctx.fillStyle = '#8D6E63';  // Brown/tan color for people
+        // Draw crowd as group of people emoji
+        const emoji = this.count > 20 ? '👥' : '👤';
+        const fontSize = Math.min(tileSize * 0.8, 16 + Math.min(this.count / 5, 8));
+        ctx.font = `${fontSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(emoji, screenX + tileSize/2, screenY + tileSize/2);
 
-        for (let i = 0; i < clusterSize; i++) {
-            for (let j = 0; j < clusterSize; j++) {
-                if (i * clusterSize + j >= Math.min(this.count, 64)) break;
+        // Draw count badge
+        if (this.count > 1) {
+            const badgeText = this.count.toString();
+            ctx.font = 'bold 10px Arial';
+            const textWidth = ctx.measureText(badgeText).width;
 
-                const px = screenX + (i - clusterSize/2) * 4 + Math.sin(this.frame * 0.05 + i) * 1;
-                const py = screenY + (j - clusterSize/2) * 4 + Math.cos(this.frame * 0.05 + j) * 1;
+            // Badge background
+            ctx.fillStyle = this.state === 'attracted' ? '#4CAF50' : 
+                           this.state === 'avoiding' ? '#FF9800' : '#2196F3';
+            ctx.beginPath();
+            ctx.roundRect(screenX + tileSize/2 - textWidth/2 - 4, screenY - tileSize * 0.7, textWidth + 8, 14, 3);
+            ctx.fill();
 
-                ctx.beginPath();
-                ctx.arc(px, py, 2.5, 0, Math.PI * 2);
-                ctx.fill();
-            }
+            // Badge text
+            ctx.fillStyle = 'white';
+            ctx.fillText(badgeText, screenX + tileSize/2, screenY - tileSize * 0.7 + 7);
         }
 
-        ctx.restore();
+        // Draw survival indicator (small progress bar)
+        if (this.survivalMonths > 0) {
+            const progress = Math.min(this.survivalMonths / this.maxSurvivalMonths, 1);
+            const barWidth = tileSize * 0.8;
+            const barHeight = 3;
+            const barX = screenX + tileSize * 0.1;
+            const barY = screenY + tileSize + 2;
 
-        // Draw count marker (always visible, even when hiding)
-        ctx.save();
-        ctx.font = 'bold 12px Arial';
-        ctx.textAlign = 'center';
+            // Background
+            ctx.fillStyle = '#333';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
 
-        // Background pill
-        const text = this.count.toString();
-        const textWidth = ctx.measureText(text).width;
-
-        // Different color if hiding in forest
-        ctx.fillStyle = this.inForest ? 'rgba(76, 175, 80, 0.8)' : 'rgba(0, 0, 0, 0.7)';
-        ctx.beginPath();
-        ctx.roundRect(screenX - textWidth/2 - 5, screenY - tileSize * 0.7, textWidth + 10, 16, 8);
-        ctx.fill();
-
-        // Count text
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillText(text, screenX, screenY - tileSize * 0.7 + 12);
-
-        // Forest icon if hiding
-        if (this.inForest) {
-            ctx.font = '10px Arial';
-            ctx.fillText('🌲', screenX + textWidth/2 + 8, screenY - tileSize * 0.7 + 11);
+            // Progress
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(barX, barY, barWidth * progress, barHeight);
         }
 
         ctx.restore();
