@@ -537,15 +537,18 @@ export class Game {
         const residentialCount = this.tileMap.countBuildings('residential');
         this.maxPopulation = residentialCount * 25;  // Max based on fully developed zones
 
-        // If no development manager, use simple growth
-        if (!this.developmentManager || this.developmentManager.development.size === 0) {
-            if (this.population < this.maxPopulation) {
-                const wallCoverage = this.tileMap.getWallCoverage?.() || 0;
-                const immigrationRate = 1 - (wallCoverage * 0.8);
-                const growth = Math.ceil(Math.random() * 3 * immigrationRate);
-                this.population = Math.min(this.maxPopulation, this.population + growth);
-            }
-        }
+        // Population growth is now handled by:
+        // 1. Immigration system (visitors arrive by boat)
+        // 2. Police system (captures and processes visitors into residents)
+        // Simple growth disabled - population only grows through proper immigration
+        // if (!this.developmentManager || this.developmentManager.development.size === 0) {
+        //     if (this.population < this.maxPopulation) {
+        //         const wallCoverage = this.tileMap.getWallCoverage?.() || 0;
+        //         const immigrationRate = 1 - (wallCoverage * 0.8);
+        //         const growth = Math.ceil(Math.random() * 3 * immigrationRate);
+        //         this.population = Math.min(this.maxPopulation, this.population + growth);
+        //     }
+        // }
 
         // Random king comments about population
         if (Math.random() < 0.05) {
