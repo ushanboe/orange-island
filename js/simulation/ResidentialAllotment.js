@@ -481,7 +481,7 @@ export class ResidentialAllotmentManager {
 
         const allotment = this.allotments.get(tile.building.allotmentKey);
         if (!allotment) {
-            console.warn(`[ResidentialAllotment] getCellRenderData(${x},${y}): allotment not found for key ${tile.building.allotmentKey}`);
+//             console.warn(`[ResidentialAllotment] getCellRenderData(${x},${y}): allotment not found for key ${tile.building.allotmentKey}`);
             return null;
         }
 
