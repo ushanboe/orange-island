@@ -25,7 +25,7 @@ export const TERRAIN_COLORS = {
     [TERRAIN.ROCK]: '#7f8c8d',
     [TERRAIN.MOUNTAIN]: '#5d6d7e',
     [TERRAIN.PALACE]: '#ffd700',
-    [TERRAIN.WALL]: '#6b5d52'
+    [TERRAIN.WALL]: '#FF0000'
 };
 
 export const TERRAIN_NAMES = {
@@ -121,6 +121,9 @@ export class TileMap {
     setTerrain(x, y, terrain) {
         if (!this.isInBounds(x, y)) return;
         this.tiles[y][x].terrain = terrain;
+        if (terrain === 10) {  // WALL
+            console.log(`[TILEMAP] WALL placed at (${x}, ${y}), terrain value: ${terrain}`);
+        }
     }
 
     // Get terrain type name
