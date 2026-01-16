@@ -82,7 +82,7 @@ export class SaveSystem {
             
             const key = this.getSaveKey(slot);
             localStorage.setItem(key, JSON.stringify(saveData));
-            // console.log(`[SAVE] Game saved to slot ${slot} successfully`);
+            console.log(`[SAVE] Game saved to slot ${slot} successfully`);
             return { success: true, slot, name: saveData.saveName };
         } catch (error) {
             console.error('[SAVE] Failed to save game:', error);
@@ -98,16 +98,19 @@ export class SaveSystem {
             const key = this.getSaveKey(slot);
             const saveDataStr = localStorage.getItem(key);
             if (!saveDataStr) {
-                // console.log(`[SAVE] No saved game found in slot ${slot}`);
+                console.log(`[SAVE] No saved game found in slot ${slot}`);
                 return false;
             }
 
+            console.log('[SAVE] Starting game load...');
             const saveData = JSON.parse(saveDataStr);
+            console.log('[SAVE] Save data parsed, version:', saveData.version);
             this.deserializeGameState(saveData);
-            // console.log(`[SAVE] Game loaded from slot ${slot} successfully`);
+            console.log(`[SAVE] Game loaded from slot ${slot} successfully`);
             return true;
         } catch (error) {
             console.error('[SAVE] Failed to load game:', error);
+            console.error('[SAVE] Error stack:', error.stack);
             return false;
         }
     }
@@ -118,7 +121,7 @@ export class SaveSystem {
     deleteSave(slot) {
         const key = this.getSaveKey(slot);
         localStorage.removeItem(key);
-        // console.log(`[SAVE] Save slot ${slot} deleted`);
+        console.log(`[SAVE] Save slot ${slot} deleted`);
     }
 
     /**
@@ -131,7 +134,7 @@ export class SaveSystem {
             // Migrate old save to slot 1
             localStorage.setItem(this.getSaveKey(1), oldData);
             localStorage.removeItem(oldKey);
-            // console.log('[SAVE] Migrated old save to slot 1');
+            console.log('[SAVE] Migrated old save to slot 1');
         }
     }
 
@@ -360,96 +363,166 @@ export class SaveSystem {
     deserializeGameState(saveData) {
         const game = this.game;
 
-        // Restore game stats
-        game.treasury = saveData.treasury;
-        game.population = saveData.population;
-        game.maxPopulation = saveData.maxPopulation;
-        game.visitors = saveData.visitors || 0;
-        game.processedImmigrants = saveData.processedImmigrants || 0;
-        game.month = saveData.month;
-        game.year = saveData.year;
-        game.kingMood = saveData.kingMood;
-        game.kingMoodText = saveData.kingMoodText;
-        game.kingEgo = saveData.kingEgo;
-        
-        // Restore economy
-        game.taxRate = saveData.taxRate;
-        game.tariffRate = saveData.tariffRate;
-        game.monthlyIncome = saveData.monthlyIncome;
-        game.monthlyExpenses = saveData.monthlyExpenses;
+        try {
+            console.log('[SAVE] Restoring game stats...');
+            // Restore game stats
+            game.treasury = saveData.treasury;
+            game.population = saveData.population;
+            game.maxPopulation = saveData.maxPopulation;
+            game.visitors = saveData.visitors || 0;
+            game.processedImmigrants = saveData.processedImmigrants || 0;
+            game.month = saveData.month;
+            game.year = saveData.year;
+            game.kingMood = saveData.kingMood;
+            game.kingMoodText = saveData.kingMoodText;
+            game.kingEgo = saveData.kingEgo;
+            
+            // Restore economy
+            game.taxRate = saveData.taxRate;
+            game.tariffRate = saveData.tariffRate;
+            game.monthlyIncome = saveData.monthlyIncome;
+            game.monthlyExpenses = saveData.monthlyExpenses;
 
-        // Restore game tick counter
-        game.tickCount = saveData.tickCount || 0;
-
-        // Restore source islands data
-        if (saveData.sourceIslands && game.tileMap) {
-            game.tileMap.sourceIslands = saveData.sourceIslands;
+            // Restore game tick counter
+            game.tickCount = saveData.tickCount || 0;
+            console.log('[SAVE] Game stats restored, tickCount:', game.tickCount);
+        } catch (e) {
+            console.error('[SAVE] Error restoring game stats:', e);
+            throw e;
         }
 
-        // Restore terrain data
-        if (saveData.terrainData && game.tileMap) {
-            this.deserializeTerrainData(game.tileMap, saveData.terrainData, saveData.mapWidth);
+        try {
+            console.log('[SAVE] Restoring source islands...');
+            // Restore source islands data
+            if (saveData.sourceIslands && game.tileMap) {
+                game.tileMap.sourceIslands = saveData.sourceIslands;
+                console.log('[SAVE] Source islands restored:', game.tileMap.sourceIslands.length);
+            }
+        } catch (e) {
+            console.error('[SAVE] Error restoring source islands:', e);
+            throw e;
         }
 
-        // Restore buildings
-        if (saveData.tiles && game.tileMap) {
-            for (const tileData of saveData.tiles) {
-                const tile = game.tileMap.getTile(tileData.x, tileData.y);
-                if (tile) {
-                    tile.building = tileData.building;
+        try {
+            console.log('[SAVE] Restoring terrain data...');
+            // Restore terrain data
+            if (saveData.terrainData && game.tileMap) {
+                this.deserializeTerrainData(game.tileMap, saveData.terrainData, saveData.mapWidth);
+                console.log('[SAVE] Terrain data restored');
+            }
+        } catch (e) {
+            console.error('[SAVE] Error restoring terrain:', e);
+            throw e;
+        }
+
+        try {
+            console.log('[SAVE] Restoring buildings...');
+            // Restore buildings
+            if (saveData.tiles && game.tileMap) {
+                for (const tileData of saveData.tiles) {
+                    const tile = game.tileMap.getTile(tileData.x, tileData.y);
+                    if (tile) {
+                        tile.building = tileData.building;
+                    }
                 }
+                console.log('[SAVE] Buildings restored:', saveData.tiles.length);
             }
+        } catch (e) {
+            console.error('[SAVE] Error restoring buildings:', e);
+            throw e;
         }
 
-        // Restore residential allotments
-        if (saveData.residentialAllotments && game.residentialManager) {
-            game.residentialManager.allotments.clear();
-            for (const allotmentData of saveData.residentialAllotments) {
-                const allotment = game.residentialManager.createAllotmentFromSave(
-                    allotmentData.x,
-                    allotmentData.y,
-                    allotmentData.cells,
-                    allotmentData.totalPopulation
-                );
+        try {
+            console.log('[SAVE] Restoring residential allotments...');
+            // Restore residential allotments
+            if (saveData.residentialAllotments && game.residentialManager) {
+                game.residentialManager.allotments.clear();
+                for (const allotmentData of saveData.residentialAllotments) {
+                    const allotment = game.residentialManager.createAllotmentFromSave(
+                        allotmentData.x,
+                        allotmentData.y,
+                        allotmentData.cells,
+                        allotmentData.totalPopulation
+                    );
+                }
+                console.log('[SAVE] Residential allotments restored:', saveData.residentialAllotments.length);
             }
+        } catch (e) {
+            console.error('[SAVE] Error restoring residential allotments:', e);
+            throw e;
         }
 
-        // Restore commercial allotments
-        if (saveData.commercialAllotments && game.commercialManager) {
-            game.commercialManager.allotments.clear();
-            for (const allotmentData of saveData.commercialAllotments) {
-                game.commercialManager.createAllotmentFromSave(
-                    allotmentData.x,
-                    allotmentData.y,
-                    allotmentData.cells
-                );
+        try {
+            console.log('[SAVE] Restoring commercial allotments...');
+            // Restore commercial allotments
+            if (saveData.commercialAllotments && game.commercialManager) {
+                game.commercialManager.allotments.clear();
+                for (const allotmentData of saveData.commercialAllotments) {
+                    game.commercialManager.createAllotmentFromSave(
+                        allotmentData.x,
+                        allotmentData.y,
+                        allotmentData.cells
+                    );
+                }
+                console.log('[SAVE] Commercial allotments restored:', saveData.commercialAllotments.length);
             }
+        } catch (e) {
+            console.error('[SAVE] Error restoring commercial allotments:', e);
+            throw e;
         }
 
-        // Restore industrial allotments
-        if (saveData.industrialAllotments && game.industrialManager) {
-            game.industrialManager.allotments.clear();
-            for (const allotmentData of saveData.industrialAllotments) {
-                game.industrialManager.createAllotmentFromSave(
-                    allotmentData.x,
-                    allotmentData.y,
-                    allotmentData.cells
-                );
+        try {
+            console.log('[SAVE] Restoring industrial allotments...');
+            // Restore industrial allotments
+            if (saveData.industrialAllotments && game.industrialManager) {
+                game.industrialManager.allotments.clear();
+                for (const allotmentData of saveData.industrialAllotments) {
+                    game.industrialManager.createAllotmentFromSave(
+                        allotmentData.x,
+                        allotmentData.y,
+                        allotmentData.cells
+                    );
+                }
+                console.log('[SAVE] Industrial allotments restored:', saveData.industrialAllotments.length);
             }
+        } catch (e) {
+            console.error('[SAVE] Error restoring industrial allotments:', e);
+            throw e;
         }
 
-        // Restore immigration data (boats and crowds)
-        if (saveData.immigration) {
-            this.deserializeImmigration(saveData.immigration);
+        try {
+            console.log('[SAVE] Restoring immigration data...');
+            // Restore immigration data (boats and crowds)
+            if (saveData.immigration) {
+                this.deserializeImmigration(saveData.immigration);
+                console.log('[SAVE] Immigration data restored');
+            }
+        } catch (e) {
+            console.error('[SAVE] Error restoring immigration:', e);
+            throw e;
         }
 
-        // Recalculate infrastructure networks
-        if (game.infrastructureManager) {
-            game.infrastructureManager.recalculateNetworks();
+        try {
+            console.log('[SAVE] Recalculating infrastructure...');
+            // Recalculate infrastructure networks
+            if (game.infrastructureManager) {
+                game.infrastructureManager.recalculateNetworks();
+                console.log('[SAVE] Infrastructure recalculated');
+            }
+        } catch (e) {
+            console.error('[SAVE] Error recalculating infrastructure:', e);
+            throw e;
         }
 
-        // Update UI
-        game.updateUI();
+        try {
+            console.log('[SAVE] Updating UI...');
+            // Update UI
+            game.updateUI();
+            console.log('[SAVE] UI updated');
+        } catch (e) {
+            console.error('[SAVE] Error updating UI:', e);
+            throw e;
+        }
     }
 
     /**
@@ -457,13 +530,27 @@ export class SaveSystem {
      */
     deserializeImmigration(immigrationData) {
         const immigration = this.game.immigrationSystem;
-        if (!immigration || !immigrationData) return;
+        if (!immigration || !immigrationData) {
+            console.log('[SAVE] No immigration system or data to restore');
+            return;
+        }
 
+        console.log('[SAVE] Checking for PeopleBoat and Crowd classes...');
         // Import PeopleBoat and Crowd classes
         // They should be available on window from ImmigrationSystem.js
         const PeopleBoat = window.PeopleBoat;
         const Crowd = window.Crowd;
 
+        if (!PeopleBoat) {
+            console.error('[SAVE] PeopleBoat class not found on window!');
+            throw new Error('PeopleBoat class not available');
+        }
+        if (!Crowd) {
+            console.error('[SAVE] Crowd class not found on window!');
+            throw new Error('Crowd class not available');
+        }
+
+        console.log('[SAVE] Classes found, clearing existing boats and crowds...');
         // Clear existing boats and crowds
         immigration.peopleBoats = [];
         immigration.crowds = [];
@@ -474,11 +561,12 @@ export class SaveSystem {
         // Restore per-island spawn timers
         if (immigrationData.islandSpawnTimers) {
             immigration.islandSpawnTimers = { ...immigrationData.islandSpawnTimers };
-            // console.log('[SAVE] Restored island spawn timers:', immigration.islandSpawnTimers);
+            console.log('[SAVE] Restored island spawn timers:', immigration.islandSpawnTimers);
         }
 
         // Restore people boats
-        if (immigrationData.peopleBoats && PeopleBoat) {
+        if (immigrationData.peopleBoats) {
+            console.log('[SAVE] Restoring', immigrationData.peopleBoats.length, 'boats...');
             for (const boatData of immigrationData.peopleBoats) {
                 const boat = new PeopleBoat(
                     this.game,
@@ -502,11 +590,12 @@ export class SaveSystem {
                 boat.startY = boatData.startY || boat.y;
                 immigration.peopleBoats.push(boat);
             }
-            // console.log(`[SAVE] Restored ${immigration.peopleBoats.length} boats`);
+            console.log(`[SAVE] Restored ${immigration.peopleBoats.length} boats`);
         }
 
         // Restore crowds
-        if (immigrationData.crowds && Crowd) {
+        if (immigrationData.crowds) {
+            console.log('[SAVE] Restoring', immigrationData.crowds.length, 'crowds...');
             for (const crowdData of immigrationData.crowds) {
                 const crowd = new Crowd(
                     this.game,
@@ -528,7 +617,7 @@ export class SaveSystem {
                 crowd.spawnTick = crowdData.spawnTick || 0;
                 immigration.crowds.push(crowd);
             }
-            // console.log(`[SAVE] Restored ${immigration.crowds.length} crowds`);
+            console.log(`[SAVE] Restored ${immigration.crowds.length} crowds`);
         }
     }
 
