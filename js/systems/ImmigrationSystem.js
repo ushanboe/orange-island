@@ -133,8 +133,11 @@ export class ImmigrationSystem {
             return false;
         }
 
+        console.log(`[BOAT_DEBUG] Spawning boat from ${sourceIsland.name} island at center (${sourceIsland.centerX}, ${Math.floor(sourceIsland.centerY)})`);
+
         // Find a water tile near the source island to spawn the boat
         const spawnPoint = this.findWaterNearIsland(sourceIsland);
+        console.log(`[BOAT_DEBUG] Spawn point found: ${spawnPoint ? `(${spawnPoint.x}, ${spawnPoint.y})` : 'NONE'}`);
         if (!spawnPoint) {
                 // console.log(`[IMMIGRATION] Could not find water spawn point for ${sourceIsland.name}`);
             return false;
@@ -142,6 +145,7 @@ export class ImmigrationSystem {
 
         // Find landing spot far from civilization on main island
         const landingSpot = this.findRemoteLandingSpot(sourceIsland.name);
+        console.log(`[BOAT_DEBUG] Landing spot for ${sourceIsland.name}: ${landingSpot ? `(${landingSpot.x}, ${landingSpot.y}) priority=${landingSpot.priority}` : 'NONE'}`);
         if (!landingSpot) {
                 // console.log(`[IMMIGRATION] Could not find remote landing spot for ${sourceIsland.name}`);
             return false;
@@ -557,7 +561,7 @@ export class PeopleBoat {
 
             // WATER=0, DEEP_WATER=1 - if next tile is NOT water, we've reached shore
             if (nextTerrain !== 0 && nextTerrain !== 1) {
-                // console.log(`[IMMIGRATION] Boat reached shore at (${Math.floor(this.x)}, ${Math.floor(this.y)})`);
+                console.log(`[BOAT_DEBUG] Boat from ${this.sourceIsland} reached shore at (${Math.floor(this.x)}, ${Math.floor(this.y)}), terrain=${nextTerrain}`);
                 this.state = 'landed';
                 return;
             }
