@@ -160,12 +160,12 @@ export class Game {
         const startMenu = new StartMenu(this);
         
         startMenu.onNewGame = () => {
-            console.log('[GAME] Starting new game...');
+            // console.log('[GAME] Starting new game...');
             this.start();
         };
         
         startMenu.onLoadGame = (slot) => {
-            console.log('[GAME] Loading game from slot', slot);
+            // console.log('[GAME] Loading game from slot', slot);
             if (this.saveSystem.loadGame(slot)) {
                 this.start();
             } else {
@@ -896,31 +896,31 @@ export class Game {
     debugTile(x, y) {
         const tile = this.tileMap.getTile(x, y);
         if (!tile) {
-            console.log(`Tile (${x}, ${y}) is out of bounds`);
+            // console.log(`Tile (${x}, ${y}) is out of bounds`);
             return null;
         }
         const terrainName = this.tileMap.getTileType(tile.terrain);
-        console.log(`=== Tile (${x}, ${y}) ===`);
-        console.log(`Terrain: ${terrainName} (code: ${tile.terrain})`);
-        console.log(`Building:`, tile.building);
-        console.log(`Full tile data:`, tile);
+        // console.log(`=== Tile (${x}, ${y}) ===`);
+        // console.log(`Terrain: ${terrainName} (code: ${tile.terrain})`);
+        // console.log(`Building:`, tile.building);
+        // console.log(`Full tile data:`, tile);
         return tile;
     }
 
     // Debug helper - check 3x3 area for residential placement
     debugArea(x, y) {
-        console.log(`=== Checking 3x3 area starting at (${x}, ${y}) ===`);
+        // console.log(`=== Checking 3x3 area starting at (${x}, ${y}) ===`);
         for (let dy = 0; dy < 3; dy++) {
             for (let dx = 0; dx < 3; dx++) {
                 const checkX = x + dx;
                 const checkY = y + dy;
                 const tile = this.tileMap.getTile(checkX, checkY);
                 if (!tile) {
-                    console.log(`  (${checkX}, ${checkY}): OUT OF BOUNDS`);
+                    // console.log(`  (${checkX}, ${checkY}): OUT OF BOUNDS`);
                 } else {
                     const terrainName = this.tileMap.getTileType(tile.terrain);
                     const hasBuilding = tile.building ? `YES - ${JSON.stringify(tile.building)}` : 'NO';
-                    console.log(`  (${checkX}, ${checkY}): terrain=${terrainName}, building=${hasBuilding}`);
+                    // console.log(`  (${checkX}, ${checkY}): terrain=${terrainName}, building=${hasBuilding}`);
                 }
             }
         }

@@ -82,7 +82,7 @@ export class SaveSystem {
             
             const key = this.getSaveKey(slot);
             localStorage.setItem(key, JSON.stringify(saveData));
-            console.log(`[SAVE] Game saved to slot ${slot} successfully`);
+            // console.log(`[SAVE] Game saved to slot ${slot} successfully`);
             return { success: true, slot, name: saveData.saveName };
         } catch (error) {
             console.error('[SAVE] Failed to save game:', error);
@@ -104,7 +104,7 @@ export class SaveSystem {
 
             const saveData = JSON.parse(saveDataStr);
             this.deserializeGameState(saveData);
-            console.log(`[SAVE] Game loaded from slot ${slot} successfully`);
+            // console.log(`[SAVE] Game loaded from slot ${slot} successfully`);
             return true;
         } catch (error) {
             console.error('[SAVE] Failed to load game:', error);

@@ -130,7 +130,7 @@ export class AdminSettings {
         // Save to localStorage
         this.saveSettings();
         
-        console.log('[AdminSettings] Applied:', { tickInterval, spawnInterval, spawnChance, boatTravelMonths, crowdSpeed });
+        // console.log('[AdminSettings] Applied:', { tickInterval, spawnInterval, spawnChance, boatTravelMonths, crowdSpeed });
         this.hide();
     }
 
@@ -157,7 +157,7 @@ export class AdminSettings {
                     this.game.immigrationSystem.boatTravelMonths = settings.boatTravelMonths || 2;
                     this.game.immigrationSystem.crowdSpeed = settings.crowdSpeed || 0.4;
                 }
-                console.log('[AdminSettings] Loaded saved settings');
+                // console.log('[AdminSettings] Loaded saved settings');
             } catch (e) {
                 console.warn('[AdminSettings] Failed to load settings:', e);
             }

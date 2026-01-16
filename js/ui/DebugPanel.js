@@ -98,7 +98,7 @@ export class DebugPanel {
         this.update();
         // Update every 500ms
         this.updateInterval = setInterval(() => this.update(), 500);
-        console.log('🔧 Debug panel opened');
+        // console.log('🔧 Debug panel opened');
     }
 
     hide() {
@@ -108,7 +108,7 @@ export class DebugPanel {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
         }
-        console.log('🔧 Debug panel closed');
+        // console.log('🔧 Debug panel closed');
     }
 
     update() {

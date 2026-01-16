@@ -175,7 +175,7 @@ export class ImmigrationSystem {
         );
 
         this.peopleBoats.push(boat);
-                console.log(`[IMMIGRATION] ✅ Boat spawned from ${sourceIsland.name} with ${peopleCount} people`);
+                // console.log(`[IMMIGRATION] ✅ Boat spawned from ${sourceIsland.name} with ${peopleCount} people`);
                 // console.log(`[IMMIGRATION] Spawn: (${spawnPoint.x}, ${spawnPoint.y}) -> Landing: (${landingSpot.x}, ${landingSpot.y})`);
 
         // King tweet about boats
@@ -370,7 +370,7 @@ export class ImmigrationSystem {
 
         // Add to visitors count when people offload from boat
         this.game.visitors = (this.game.visitors || 0) + boat.peopleCount;
-                console.log(`[IMMIGRATION] Crowd of ${boat.peopleCount} landed on beach at (${Math.floor(landX)}, ${Math.floor(landY)}). Total visitors: ${this.game.visitors}`);
+                // console.log(`[IMMIGRATION] Crowd of ${boat.peopleCount} landed on beach at (${Math.floor(landX)}, ${Math.floor(landY)}). Total visitors: ${this.game.visitors}`);
     }
 
     updateCrowds() {
