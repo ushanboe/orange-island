@@ -152,7 +152,6 @@ export class Game {
         this.kingTweet("Welcome to MY kingdom! It's going to be TREMENDOUS! 👑🏝️");
 
         console.log('✅ Game initialized!');
-        console.log('[GAME] After init - Treasury:', this.treasury, 'Visitors:', this.visitors);
 
         // Start game loop
         this.showStartMenu();

@@ -209,7 +209,7 @@ export class ToolManager {
 
             // Clear building if present
             if (oldBuilding) {
-//                tileMap.setBuilding(tileX, tileY, null);
+                tileMap.setBuilding(tileX, tileY, null);
             }
 
             // Clear forest and replace with grass
@@ -221,14 +221,14 @@ export class ToolManager {
 
             if (oldBuilding) {
                 this.game.events.emit('buildingDemolished', {
-//                    tileX, tileY,
+                    tileX, tileY,
                     building: oldBuilding,
                     cost: building.cost
                 });
                 this.game.kingTweet(`Demolished! Sad! But sometimes you gotta tear it down to build it better! 🚜`);
             } else if (wasForest) {
                 this.game.events.emit('forestCleared', {
-//                    tileX, tileY,
+                    tileX, tileY,
                     cost: building.cost
                 });
                 this.game.kingTweet(`Cleared that forest! Making room for GREATNESS! 🌲➡️🏗️`);

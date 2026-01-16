@@ -773,7 +773,7 @@ export class Crowd {
         this.x = x;
         this.y = y;
         this.count = count;
-        this.speed = 0.03;  // Walking speed for 60fps animation (faster to reach buildings)
+        this.speed = 0.015;  // Walking speed for 60fps animation (reduced 50%)
         this.frame = 0;
         this.remove = false;
         this.reachedCivilization = false;

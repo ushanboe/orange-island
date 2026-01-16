@@ -13,8 +13,6 @@ export class Toolbar {
         this.createToolbar();
         this.setupEventListeners();
 
-        // Initial affordability check
-        console.log('[TOOLBAR] Treasury at init:', this.game.treasury);
     }
 
     createToolbar() {
@@ -243,7 +241,6 @@ export class Toolbar {
     showToolsForCategory(category) {
         this.toolsContainer.innerHTML = '';
 
-        console.log('[TOOLBAR] Showing category:', category, 'Treasury:', this.game.treasury);
 
         const buildings = getBuildingsByCategory(category);
 
