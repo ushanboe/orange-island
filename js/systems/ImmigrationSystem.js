@@ -355,15 +355,40 @@ export class ImmigrationSystem {
             console.warn(`[IMMIGRATION] Cannot spawn crowd - maxCrowds limit (${this.maxCrowds}) reached!`);
             // Still add to visitors even if we can't show the crowd visually
             this.game.visitors = (this.game.visitors || 0) + boat.peopleCount;
-                // console.log(`[IMMIGRATION] Added ${boat.peopleCount} to visitors due to crowd limit. Total visitors: ${this.game.visitors}`);
             return;
         }
 
-        // Spawn crowd at boat's ACTUAL position (where it landed), not targetLanding
-        // This fixes the issue where boats land at different spots due to navigation
-        const landX = boat.x;
-        const landY = boat.y;
-        console.log(`[BOAT_DEBUG] Spawning ${boat.peopleCount} people at boat position (${landX.toFixed(1)}, ${landY.toFixed(1)})`);
+        // Find nearest beach/land tile to spawn crowd on (boat is in water)
+        const map = this.game.map;
+        let landX = boat.x;
+        let landY = boat.y;
+
+        // Search in expanding radius for a beach or grass tile
+        const maxRadius = 5;
+        let foundLand = false;
+
+        for (let radius = 1; radius <= maxRadius && !foundLand; radius++) {
+            for (let dy = -radius; dy <= radius && !foundLand; dy++) {
+                for (let dx = -radius; dx <= radius && !foundLand; dx++) {
+                    if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue; // Only check perimeter
+
+                    const checkX = Math.floor(boat.x) + dx;
+                    const checkY = Math.floor(boat.y) + dy;
+
+                    if (checkX >= 0 && checkX < map.width && checkY >= 0 && checkY < map.height) {
+                        const terrain = map.getTerrain(checkX, checkY);
+                        if (terrain === 'beach' || terrain === 'grass') {
+                            landX = checkX + 0.5;  // Center of tile
+                            landY = checkY + 0.5;
+                            foundLand = true;
+                            console.log(`[BOAT_DEBUG] Found land at (${checkX}, ${checkY}) terrain=${terrain}`);
+                        }
+                    }
+                }
+            }
+        }
+
+        console.log(`[BOAT_DEBUG] Spawning ${boat.peopleCount} people at (${landX.toFixed(1)}, ${landY.toFixed(1)}), boat was at (${boat.x.toFixed(1)}, ${boat.y.toFixed(1)})`);
 
                 // console.log(`[IMMIGRATION] Spawning crowd at (${landX}, ${landY}) with ${boat.peopleCount} people`);
         const crowd = new Crowd(
