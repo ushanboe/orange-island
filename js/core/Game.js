@@ -32,6 +32,8 @@ export class Game {
         this.maxPopulation = 0;
         this.visitors = 0;  // Immigrants who landed but haven't integrated
         this.processedImmigrants = 0;  // Immigrants processed by police into residents
+
+        console.log('[GAME] Initial state - Treasury:', this.treasury, 'Visitors:', this.visitors);
         this.month = 1;
         this.year = 1;
         this.kingMood = 50;  // 0-100 numeric for development system
@@ -150,6 +152,7 @@ export class Game {
         this.kingTweet("Welcome to MY kingdom! It's going to be TREMENDOUS! 👑🏝️");
 
         console.log('✅ Game initialized!');
+        console.log('[GAME] After init - Treasury:', this.treasury, 'Visitors:', this.visitors);
 
         // Start game loop
         this.showStartMenu();
