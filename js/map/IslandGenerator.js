@@ -271,7 +271,7 @@ export class IslandGenerator {
 
             // Apply changes
             for (const change of changes) {
-                this.map.setTerrainAt(change.x, change.y, change.terrain);
+                this.map.setTerrain(change.x, change.y, change.terrain);
             }
         }
     }
