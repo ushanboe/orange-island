@@ -172,7 +172,7 @@ export class ImmigrationSystem {
             spawnPoint.y,
             landingSpot,
             peopleCount,
-            sourceIsland.name,
+            sourceIsland,  // Pass full island object for return coordinates
             halvedSpeed
         );
 
@@ -197,7 +197,10 @@ export class ImmigrationSystem {
         const mainIslandX = map.width / 2;
         const searchDirection = island.centerX < mainIslandX ? 1 : -1;  // Search toward main island
 
-        for (let radius = 5; radius < 20; radius++) {
+        // Collect ALL valid water spawn points, then pick randomly
+        const validSpawnPoints = [];
+
+        for (let radius = 3; radius < 12; radius++) {
             for (let dy = -radius; dy <= radius; dy++) {
                 const x = Math.floor(island.centerX + (radius * searchDirection));
                 const y = Math.floor(island.centerY + dy);
@@ -206,10 +209,16 @@ export class ImmigrationSystem {
                     const terrain = map.getTerrainAt(x, y);
                     // TERRAIN.WATER = 1, TERRAIN.DEEP_WATER = 0
                     if (terrain === 0 || terrain === 1) {
-                        return { x, y };
+                        validSpawnPoints.push({ x, y });
                     }
                 }
             }
+        }
+
+        // Pick a random spawn point from valid options
+        if (validSpawnPoints.length > 0) {
+            const randomIndex = Math.floor(Math.random() * validSpawnPoints.length);
+            return validSpawnPoints[randomIndex];
         }
 
         return null;
@@ -281,21 +290,25 @@ export class ImmigrationSystem {
 
         if (beachTiles.length === 0) return null;
 
-        // Sort by priority (highest first), then by distance from civ
-        beachTiles.sort((a, b) => {
-            if (b.priority !== a.priority) return b.priority - a.priority;
-            return b.distFromCiv - a.distFromCiv;
-        });
+        // Filter to only beaches on the preferred coast (priority >= 2 means correct coast)
+        const preferredBeaches = beachTiles.filter(b => b.isOnPreferredSide);
 
-        // Get the best priority level available
-        const bestPriority = beachTiles[0].priority;
-        const bestBeaches = beachTiles.filter(b => b.priority === bestPriority);
+        // If we have beaches on preferred coast, pick randomly from ALL of them
+        if (preferredBeaches.length > 0) {
+            const randomIndex = Math.floor(Math.random() * preferredBeaches.length);
+            return preferredBeaches[randomIndex];
+        }
 
-        // Pick randomly from top 30% of best beaches
-        const topCount = Math.max(1, Math.floor(bestBeaches.length * 0.3));
-        const chosen = bestBeaches[Math.floor(Math.random() * topCount)];
+        // Fallback: pick randomly from any beach in middle Y range
+        const middleBeaches = beachTiles.filter(b => b.isInMiddleY);
+        if (middleBeaches.length > 0) {
+            const randomIndex = Math.floor(Math.random() * middleBeaches.length);
+            return middleBeaches[randomIndex];
+        }
 
-        return chosen;
+        // Last resort: pick randomly from all beaches
+        const randomIndex = Math.floor(Math.random() * beachTiles.length);
+        return beachTiles[randomIndex];
     }
 
     getDistanceFromCivilization(x, y) {
@@ -514,11 +527,23 @@ export class PeopleBoat {
         this.game = game;
         this.x = startX;
         this.y = startY;
-        this.startX = startX;  // Remember spawn position for return trip
+        this.startX = startX;  // Remember spawn position
         this.startY = startY;
         this.targetLanding = targetLanding;
         this.peopleCount = peopleCount;
-        this.sourceIsland = sourceIsland;
+
+        // Handle sourceIsland as object or string for backwards compatibility
+        if (typeof sourceIsland === 'object') {
+            this.sourceIslandName = sourceIsland.name;
+            this.sourceIslandCenterX = sourceIsland.centerX;
+            this.sourceIslandCenterY = sourceIsland.centerY;
+        } else {
+            this.sourceIslandName = sourceIsland;
+            // Fallback to spawn position if no center provided
+            this.sourceIslandCenterX = startX;
+            this.sourceIslandCenterY = startY;
+        }
+
         this.speed = speed;  // Calculated based on distance for consistent travel time
         this.state = 'arriving';  // arriving, landed, leaving
         this.crowdSpawned = false;
@@ -744,9 +769,9 @@ export class PeopleBoat {
      * Move back to source island instead of just disappearing
      */
     moveBackToSource() {
-        // Target is the original spawn position (near source island)
-        const targetX = this.startX;
-        const targetY = this.startY;
+        // Target is the source island center (not spawn position)
+        const targetX = this.sourceIslandCenterX;
+        const targetY = this.sourceIslandCenterY;
 
         const dx = targetX - this.x;
         const dy = targetY - this.y;
