@@ -221,6 +221,19 @@ export class TileMap {
                 const tile = this.tiles[y][x];
                 if (tile.terrain === TERRAIN.BEACH || tile.terrain === TERRAIN.SAND) {
                     // Check if adjacent to water
+                    const neighbors = this.getNeighbors(x, y);
+                    const nearWater = neighbors.some(n =>
+                        n.terrain === TERRAIN.WATER || n.terrain === TERRAIN.DEEP_WATER
+                    );
+                    if (nearWater) {
+                        coastal.push({ x, y, tile });
+                    }
+                }
+            }
+        }
+        return coastal;
+    }
+
     // Find perimeter tiles for wall building (grass/forest adjacent to water)
     findPerimeterTiles() {
         const perimeter = [];
@@ -241,7 +254,7 @@ export class TileMap {
 
                 // Check if adjacent to water (perimeter condition)
                 const neighbors = this.getNeighbors(x, y);
-                const hasWater = neighbors.some(n => 
+                const hasWater = neighbors.some(n =>
                     n.terrain === TERRAIN.WATER || n.terrain === TERRAIN.DEEP_WATER
                 );
 
@@ -253,20 +266,6 @@ export class TileMap {
 
         return perimeter;
     }
-
-                    const neighbors = this.getNeighbors(x, y);
-                    const nearWater = neighbors.some(n => 
-                        n.terrain === TERRAIN.WATER || n.terrain === TERRAIN.DEEP_WATER
-                    );
-                    if (nearWater) {
-                        coastal.push({ x, y, tile });
-                    }
-                }
-            }
-        }
-        return coastal;
-    }
-
     // Get neighboring tiles
     getNeighbors(x, y) {
         const neighbors = [];
