@@ -71,7 +71,7 @@ export class Game {
 
         // Timing
         this.lastUpdate = 0;
-        this.tickInterval = 4000;  // 4 seconds per game tick (50% slower)
+        this.tickInterval = 25000;  // 25 seconds per game tick (1 month)
         this.lastTick = 0;
 
         // King's tweets
@@ -605,7 +605,7 @@ export class Game {
         const roadMaintenance = roadCount * 1;
         const golfMaintenance = golfCount * 20;
         const generalExpenses = Math.floor(this.population * 0.5);
-        const visitorWelfare = this.visitors * 5;  // $5 per visitor per month
+        const visitorWelfare = Math.floor(this.visitors * 0.5);  // $0.50 per visitor per month
 
         this.monthlyExpenses = roadMaintenance + golfMaintenance + generalExpenses + visitorWelfare;
 
