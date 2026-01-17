@@ -14,17 +14,7 @@ export class ImmigrationSystem {
         this.peopleBoats = [];      // Boats carrying immigrants
         this.crowds = [];           // Landed immigrant groups
         this.maxPeopleBoats = 5;
-        this.maxCrowds = 50;
-        
-        // === NEW LANDING SYSTEM ===
-        // Registry of all valid sand tiles on main island perimeter
-        this.mainIslandSandTiles = [];
-        // Shuffled queue of available target tiles (not yet used)
-        this.availableTargets = [];
-        // Set of used target coordinates (as "x,y" strings)
-        this.usedTargets = new Set();
-        // Flag to track if registry has been built
-        this.registryBuilt = false;  // Increased to prevent people not appearing after boat landing
+        this.maxCrowds = 50;  // Increased to prevent people not appearing after boat landing
 
         // Per-island spawn tracking
         // Each source island spawns a boat every ~12 months independently
@@ -66,125 +56,6 @@ export class ImmigrationSystem {
                 // console.log(`[IMMIGRATION] Initialized spawn timer for ${island.name}: ${this.islandSpawnTimers[island.name]} months until first boat`);
             }
         }
-    }
-
-    /**
-     * Build registry of all valid sand tiles on main island perimeter
-     * Called once after map is ready
-     * Excludes source island tiles
-     */
-    buildSandTileRegistry() {
-        const map = this.game.tileMap;
-        if (!map || this.registryBuilt) return;
-        
-        console.log('[IMMIGRATION] Building sand tile registry...');
-        
-        const centerX = map.width / 2;
-        const centerY = map.height / 2;
-        
-        // Get source island boundaries to exclude them
-        const sourceIslandBounds = [];
-        if (map.sourceIslands) {
-            for (const island of map.sourceIslands) {
-                sourceIslandBounds.push({
-                    centerX: island.centerX,
-                    centerY: island.centerY,
-                    radius: 20  // Exclude tiles within 20 tiles of source island centers
-                });
-            }
-        }
-        
-        // Scan entire map for sand tiles (terrain = 2)
-        for (let y = 0; y < map.height; y++) {
-            for (let x = 0; x < map.width; x++) {
-                const terrain = map.getTerrainAt(x, y);
-                
-                // Only SAND tiles (terrain = 2) that are coastal
-                if (terrain === 2 && map.isCoastal(x, y)) {
-                    
-                    // Check distance from main island center
-                    const distFromCenter = Math.sqrt(
-                        Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)
-                    );
-                    
-                    // Must be within reasonable distance of main island (not too far, not too close to center)
-                    if (distFromCenter > 10 && distFromCenter < 55) {
-                        
-                        // Check if this tile is near any source island - EXCLUDE if so
-                        let isNearSourceIsland = false;
-                        for (const bounds of sourceIslandBounds) {
-                            const distFromSource = Math.sqrt(
-                                Math.pow(x - bounds.centerX, 2) + Math.pow(y - bounds.centerY, 2)
-                            );
-                            if (distFromSource < bounds.radius) {
-                                isNearSourceIsland = true;
-                                break;
-                            }
-                        }
-                        
-                        if (!isNearSourceIsland) {
-                            // Valid main island sand tile!
-                            this.mainIslandSandTiles.push({ x, y });
-                        }
-                    }
-                }
-            }
-        }
-        
-        console.log(`[IMMIGRATION] Found ${this.mainIslandSandTiles.length} valid sand tiles on main island`);
-        
-        // Initialize the available targets queue with shuffled tiles
-        this.resetTargetQueue();
-        
-        this.registryBuilt = true;
-    }
-    
-    /**
-     * Shuffle and reset the available targets queue
-     * Called when all targets have been used
-     */
-    resetTargetQueue() {
-        // Copy all sand tiles to available targets
-        this.availableTargets = [...this.mainIslandSandTiles];
-        
-        // Fisher-Yates shuffle
-        for (let i = this.availableTargets.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [this.availableTargets[i], this.availableTargets[j]] = 
-                [this.availableTargets[j], this.availableTargets[i]];
-        }
-        
-        // Clear used targets
-        this.usedTargets.clear();
-        
-        console.log(`[IMMIGRATION] Target queue reset with ${this.availableTargets.length} shuffled targets`);
-    }
-    
-    /**
-     * Get next available target tile for a boat
-     * Returns null if no targets available (shouldn't happen)
-     */
-    getNextTargetTile() {
-        // Build registry if not done yet
-        if (!this.registryBuilt) {
-            this.buildSandTileRegistry();
-        }
-        
-        // If queue is empty, reset it
-        if (this.availableTargets.length === 0) {
-            this.resetTargetQueue();
-        }
-        
-        // Pop next target from queue
-        if (this.availableTargets.length > 0) {
-            const target = this.availableTargets.pop();
-            this.usedTargets.add(`${target.x},${target.y}`);
-            console.log(`[IMMIGRATION] Assigned target (${target.x}, ${target.y}), ${this.availableTargets.length} remaining`);
-            return target;
-        }
-        
-        console.warn('[IMMIGRATION] No target tiles available!');
-        return null;
     }
 
     update() {
@@ -274,16 +145,12 @@ export class ImmigrationSystem {
             return false;
         }
 
-        // Get next target sand tile from the registry (new system)
-        const targetTile = this.getNextTargetTile();
-        if (!targetTile) {
-            console.log(`[IMMIGRATION] Could not get target tile for ${sourceIsland.name}`);
+        // Find landing spot far from civilization on main island
+        const landingSpot = this.findRemoteLandingSpot(sourceIsland.name);
+        if (!landingSpot) {
+                // console.log(`[IMMIGRATION] Could not find remote landing spot for ${sourceIsland.name}`);
             return false;
         }
-        
-        // The boat will navigate to this sand tile directly
-        // Landing happens when boat reaches target or adjacent tile
-        const landingSpot = { x: targetTile.x + 0.5, y: targetTile.y + 0.5 };
 
         // Create people boat
         const peopleCount = Math.floor(Math.random() * 91) + 10;  // 10-100 people
@@ -571,23 +438,75 @@ export class ImmigrationSystem {
             return;
         }
 
-        // === NEW SIMPLE SPAWN LOGIC ===
-        // Boat's target is already a sand tile, spawn crowd there!
+        // Find nearest beach/land tile to spawn crowd on (boat is in water)
         const map = this.game.tileMap;
-        let landX, landY;
-        
-        if (boat.targetLanding) {
-            // Use the target tile (which is a sand tile from our registry)
-            landX = boat.targetLanding.x;
-            landY = boat.targetLanding.y;
-        } else {
-            // Fallback to boat position if no target
-            landX = boat.x;
-            landY = boat.y;
+        let landX = boat.x;
+        let landY = boat.y;
+
+        // Search TOWARD MAIN ISLAND CENTER for a beach or grass tile
+        // This prevents finding beaches on source islands
+        // Terrain values: DEEP_WATER=0, SHALLOW_WATER=1, SAND/BEACH=2, GRASS=3
+        const maxRadius = 8;
+        let foundLand = false;
+
+        if (map) {
+            const mapCenterX = map.width / 2;
+            const mapCenterY = map.height / 2;
+
+            // Calculate direction toward main island center
+            const dirToCenter = {
+                x: mapCenterX - boat.x,
+                y: mapCenterY - boat.y
+            };
+            const dirLen = Math.sqrt(dirToCenter.x * dirToCenter.x + dirToCenter.y * dirToCenter.y);
+            if (dirLen > 0) {
+                dirToCenter.x /= dirLen;
+                dirToCenter.y /= dirLen;
+            }
+
+            // Search in direction toward main island first, then expand
+            // Priority: tiles in the direction of main island center
+            const candidates = [];
+
+            for (let radius = 1; radius <= maxRadius; radius++) {
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        // Check perimeter tiles (where at least one of dx,dy equals radius)
+                        if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
+
+                        const checkX = Math.floor(boat.x) + dx;
+                        const checkY = Math.floor(boat.y) + dy;
+
+                        if (checkX >= 0 && checkX < map.width && checkY >= 0 && checkY < map.height) {
+                            const terrain = map.getTerrainAt(checkX, checkY);
+                            // SAND=2 (beach), GRASS=3
+                            if (terrain === 2 || terrain === 3) {
+                                // Calculate how much this tile is in the direction of main island
+                                const dotProduct = dx * dirToCenter.x + dy * dirToCenter.y;
+                                candidates.push({
+                                    x: checkX + 0.5,
+                                    y: checkY + 0.5,
+                                    score: dotProduct,  // Higher = more toward main island
+                                    radius: radius
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // If we found candidates at this radius, pick the best one
+                if (candidates.length > 0) {
+                    // Sort by score (highest first = most toward main island)
+                    candidates.sort((a, b) => b.score - a.score);
+                    landX = candidates[0].x;
+                    landY = candidates[0].y;
+                    foundLand = true;
+                    break;
+                }
+            }
         }
-        
-        const terrain = map ? map.getTerrainAt(Math.floor(landX), Math.floor(landY)) : -1;
-        console.log(`[IMMIGRATION] Spawning crowd at (${landX.toFixed(1)}, ${landY.toFixed(1)}) with ${boat.peopleCount} people. Target tile terrain=${terrain}`);
+
+        console.log(`[IMMIGRATION] Spawning crowd at (${landX}, ${landY}) with ${boat.peopleCount} people. Boat at (${boat.x.toFixed(1)}, ${boat.y.toFixed(1)}), foundLand=${foundLand}, terrain=${map ? map.getTerrainAt(Math.floor(landX), Math.floor(landY)) : 'no map'}`);
         const crowd = new Crowd(
             this.game,
             landX,
@@ -786,33 +705,75 @@ export class PeopleBoat {
         const dy = this.targetLanding.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        // === NEW SIMPLE LANDING LOGIC ===
-        // Land when within 1.5 tiles of target sand tile OR on/adjacent to target
-        if (dist < 1.5) {
-            console.log(`[BOATS] People boat reached target at (${this.targetLanding.x.toFixed(1)}, ${this.targetLanding.y.toFixed(1)}), landing!`);
-            this.state = 'landed';
-            return;
-        }
-        
-        // Also land if we're on the target tile or adjacent to it
-        const targetTileX = Math.floor(this.targetLanding.x);
-        const targetTileY = Math.floor(this.targetLanding.y);
-        const boatTileX = Math.floor(this.x);
-        const boatTileY = Math.floor(this.y);
-        
-        if (Math.abs(boatTileX - targetTileX) <= 1 && Math.abs(boatTileY - targetTileY) <= 1) {
-            console.log(`[BOATS] People boat adjacent to target tile, landing!`);
+        // Calculate distance traveled from spawn point
+        const traveledX = this.x - this.startX;
+        const traveledY = this.y - this.startY;
+        const distanceTraveled = Math.sqrt(traveledX * traveledX + traveledY * traveledY);
+
+        // Calculate total journey distance
+        const totalJourneyX = this.targetLanding.x - this.startX;
+        const totalJourneyY = this.targetLanding.y - this.startY;
+        const totalJourneyDist = Math.sqrt(totalJourneyX * totalJourneyX + totalJourneyY * totalJourneyY);
+
+        // CRITICAL: Only allow landing checks if boat has traveled at least 60% of journey
+        // This prevents boats from landing on source island beaches
+        const minTravelPercent = 0.6;
+        const hasMinTravel = distanceTraveled >= (totalJourneyDist * minTravelPercent);
+
+        // Also check if boat is near main island center (within 45 tiles)
+        const mapCenterX = map ? map.width / 2 : 64;
+        const mapCenterY = map ? map.height / 2 : 64;
+        const distFromCenter = Math.sqrt(Math.pow(this.x - mapCenterX, 2) + Math.pow(this.y - mapCenterY, 2));
+        const isNearMainIsland = distFromCenter < 45;
+
+        // LANDING CHECK 1: Close to target landing spot (within 3 tiles)
+        // Only if minimum travel achieved
+        if (hasMinTravel && dist < 3) {
             this.state = 'landed';
             return;
         }
 
-        // === STUCK DETECTION ===
+        // LANDING CHECK 2: Boat is on land tile (only if near main island)
+        if (hasMinTravel && isNearMainIsland && map) {
+            const currentTerrain = map.getTerrainAt(Math.floor(this.x), Math.floor(this.y));
+            if (currentTerrain !== undefined && currentTerrain !== 0 && currentTerrain !== 1) {
+                this.state = 'landed';
+                return;
+            }
+        }
+
+        // LANDING CHECK 2.5: Boat is in SHALLOW WATER (terrain 1) near main island
+        // This fixes boats getting stuck when there are multiple shallow water tiles before beach
+        if (hasMinTravel && isNearMainIsland && map) {
+            const currentTerrain = map.getTerrainAt(Math.floor(this.x), Math.floor(this.y));
+            if (currentTerrain === 1) {  // SHALLOW_WATER = 1
+                this.state = 'landed';
+                return;
+            }
+        }
+
+        // LANDING CHECK 3: Adjacent to beach (only if near main island AND min travel)
+        if (hasMinTravel && isNearMainIsland && map) {
+            const checkOffsets = [[1,0], [-1,0], [0,1], [0,-1], [1,1], [-1,1], [1,-1], [-1,-1]];
+            for (const [ox, oy] of checkOffsets) {
+                const checkX = Math.floor(this.x) + ox;
+                const checkY = Math.floor(this.y) + oy;
+                const adjTerrain = map.getTerrainAt(checkX, checkY);
+                // SAND=2 is beach - if adjacent to beach, we've reached shore
+                if (adjTerrain === 2) {
+                    this.state = 'landed';
+                    return;
+                }
+            }
+        }
+
+        // LANDING CHECK 4: Stuck detection with retry and retreat logic
         if (!this.lastPos) {
             this.lastPos = { x: this.x, y: this.y };
             this.stuckFrames = 0;
         } else {
             const movedDist = Math.sqrt(Math.pow(this.x - this.lastPos.x, 2) + Math.pow(this.y - this.lastPos.y, 2));
-            if (movedDist < 0.3) {
+            if (movedDist < 0.5) {
                 this.stuckFrames = (this.stuckFrames || 0) + 1;
                 
                 // After ~5 seconds stuck (150 frames), try recovery
@@ -820,48 +781,76 @@ export class PeopleBoat {
                     this.retryAttempts = (this.retryAttempts || 0) + 1;
                     this.stuckFrames = 0;
                     
-                    console.log(`[BOATS] People boat stuck, retry attempt ${this.retryAttempts}/6`);
-                    
-                    // After 6 retry attempts, return to source and get new target
-                    if (this.retryAttempts >= 6) {
-                        console.log('[BOATS] People boat giving up after 6 attempts, returning to source for new target');
+                    // After 5 retry attempts, retreat and find new coastline
+                    if (this.retryAttempts >= 5) {
+                        console.log('[BOATS] People boat giving up on current target after 5 failed attempts');
                         
-                        // Get a NEW target from the queue
+                        // Find a DIFFERENT coastline target (at least 15 tiles away from current target)
                         const immigrationSystem = this.game.systems?.find(s => s.constructor.name === 'ImmigrationSystem');
                         if (immigrationSystem) {
-                            const newTarget = immigrationSystem.getNextTargetTile();
-                            if (newTarget) {
-                                this.targetLanding = { x: newTarget.x + 0.5, y: newTarget.y + 0.5 };
-                                console.log(`[BOATS] Got new target: (${newTarget.x}, ${newTarget.y})`);
+                            const currentTargetX = this.targetLanding?.x || 0;
+                            const currentTargetY = this.targetLanding?.y || 0;
+                            
+                            // Try up to 10 times to find a different spot
+                            let foundDifferent = false;
+                            for (let attempt = 0; attempt < 10; attempt++) {
+                                const newTarget = immigrationSystem.findRemoteLandingSpot(this.sourceIslandName);
+                                if (newTarget) {
+                                    const distFromOld = Math.sqrt(
+                                        Math.pow(newTarget.x - currentTargetX, 2) + 
+                                        Math.pow(newTarget.y - currentTargetY, 2)
+                                    );
+                                    // Must be at least 15 tiles away from old target
+                                    if (distFromOld > 15) {
+                                        this.targetLanding = newTarget;
+                                        foundDifferent = true;
+                                        console.log('[BOATS] People boat found new landing target', distFromOld.toFixed(1), 'tiles away');
+                                        break;
+                                    }
+                                }
                             }
+                            
+                            // If couldn't find different spot, just give up and leave
+                            if (!foundDifferent) {
+                                console.log('[BOATS] People boat could not find different coastline - leaving');
+                                this.state = 'leaving';
+                                return;
+                            }
+                        } else {
+                            // No immigration system found - leave
+                            this.state = 'leaving';
+                            return;
                         }
                         
-                        // Return to source first, then try again
-                        this.state = 'leaving';
-                        this.retryAttempts = 0;
+                        this.retryAttempts = 0;  // Reset for new attempt
                         return;
                     }
                     
                     // Small random nudge to try to unstick
-                    this.x += (Math.random() - 0.5) * 3;
-                    this.y += (Math.random() - 0.5) * 3;
+                    this.x += (Math.random() - 0.5) * 2;
+                    this.y += (Math.random() - 0.5) * 2;
+                    return;
+                }
+                
+                // Legacy: force landing if stuck very long AND conditions met
+                if (this.stuckFrames > 300 && hasMinTravel && isNearMainIsland) {
+                    this.state = 'landed';
                     return;
                 }
             } else {
                 this.stuckFrames = 0;
             }
-            
             // Update lastPos every 60 frames
             if (this.frame % 60 === 0) {
                 this.lastPos = { x: this.x, y: this.y };
             }
         }
 
-        // === NAVIGATION ===
         // Normalize direction to target
         const targetDirX = dx / dist;
         const targetDirY = dy / dist;
 
+        // Check if direct path is clear
         let moveDirX = targetDirX;
         let moveDirY = targetDirY;
 
@@ -878,35 +867,37 @@ export class PeopleBoat {
             }
         } else {
             // Check if path ahead is blocked
+            // For boats returning to source, always use avoidance when needed
             if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
-                const clearDir = this.findClearDirection(targetDirX, targetDirY);
-                moveDirX = clearDir.dirX;
-                moveDirY = clearDir.dirY;
+                    const clearDir = this.findClearDirection(targetDirX, targetDirY);
+                    moveDirX = clearDir.dirX;
+                    moveDirY = clearDir.dirY;
 
-                // Set avoidance mode for smoother navigation
-                if (clearDir.angle !== 0) {
-                    this.avoidanceAngle = Math.atan2(moveDirY, moveDirX);
-                    this.avoidanceFrames = 30;
+                    // Set avoidance mode for smoother navigation
+                    if (clearDir.angle !== 0) {
+                        this.avoidanceAngle = Math.atan2(moveDirY, moveDirX);
+                        this.avoidanceFrames = 30;
+                    }
                 }
-            }
+            // When readyToLand && closeToTarget, boat goes straight toward beach and will hit shore
         }
 
         // Move in the chosen direction
         const nextX = this.x + moveDirX * this.speed;
         const nextY = this.y + moveDirY * this.speed;
 
-        // Check if next position is water - if so, move there
+        // Final safety check - don't move into land
         if (this.isWater(nextX, nextY)) {
             this.x = nextX;
             this.y = nextY;
         } else {
-            // Hit land! Check if we're close enough to target to land
-            if (dist < 5) {
-                console.log(`[BOATS] People boat hit land near target, landing!`);
+            // Can't move forward - we've hit shore!
+            // Only trigger landing if we've traveled enough AND near main island
+            if (hasMinTravel && isNearMainIsland) {
                 this.state = 'landed';
             } else {
-                // Not close to target, try to navigate around
-                const clearDir = this.findClearDirection(-targetDirX, -targetDirY);
+                // Not near main island yet - try to navigate around
+                const clearDir = this.findClearDirection(-dx/dist, -dy/dist);  // Try opposite direction
                 if (clearDir.angle !== 0) {
                     this.avoidanceAngle = Math.atan2(clearDir.dirY, clearDir.dirX);
                     this.avoidanceFrames = 60;
