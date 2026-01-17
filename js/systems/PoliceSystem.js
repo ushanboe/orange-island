@@ -399,50 +399,92 @@ export class PoliceSystem {
         const dx = targetX - officer.x;
         const dy = targetY - officer.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        if (dist < 0.1) return true;  // Already at target
-        
+
+        if (dist < 0.1) {
+            officer.stuckFrames = 0;
+            return true;  // Already at target
+        }
+
         const dirX = dx / dist;
         const dirY = dy / dist;
-        
+
+        let moved = false;
+
         // Try direct path first
         const nextX = officer.x + dirX * this.officerSpeed;
         const nextY = officer.y + dirY * this.officerSpeed;
-        
+
         if (this.isTileWalkable(nextX, nextY)) {
             officer.x = nextX;
             officer.y = nextY;
-            return false;
-        }
-        
-        // Try perpendicular directions to navigate around wall
-        const alt1X = officer.x + dirY * this.officerSpeed;
-        const alt1Y = officer.y + (-dirX) * this.officerSpeed;
-        
-        const alt2X = officer.x + (-dirY) * this.officerSpeed;
-        const alt2Y = officer.y + dirX * this.officerSpeed;
-        
-        // Pick the alternative that gets closer to target
-        const dist1 = Math.sqrt(Math.pow(alt1X - targetX, 2) + Math.pow(alt1Y - targetY, 2));
-        const dist2 = Math.sqrt(Math.pow(alt2X - targetX, 2) + Math.pow(alt2Y - targetY, 2));
-        
-        if (this.isTileWalkable(alt1X, alt1Y) && this.isTileWalkable(alt2X, alt2Y)) {
-            if (dist1 <= dist2) {
+            moved = true;
+        } else {
+            // Try perpendicular directions to navigate around wall
+            const alt1X = officer.x + dirY * this.officerSpeed;
+            const alt1Y = officer.y + (-dirX) * this.officerSpeed;
+
+            const alt2X = officer.x + (-dirY) * this.officerSpeed;
+            const alt2Y = officer.y + dirX * this.officerSpeed;
+
+            // Pick the alternative that gets closer to target
+            const dist1 = Math.sqrt(Math.pow(alt1X - targetX, 2) + Math.pow(alt1Y - targetY, 2));
+            const dist2 = Math.sqrt(Math.pow(alt2X - targetX, 2) + Math.pow(alt2Y - targetY, 2));
+
+            if (this.isTileWalkable(alt1X, alt1Y) && this.isTileWalkable(alt2X, alt2Y)) {
+                if (dist1 <= dist2) {
+                    officer.x = alt1X;
+                    officer.y = alt1Y;
+                } else {
+                    officer.x = alt2X;
+                    officer.y = alt2Y;
+                }
+                moved = true;
+            } else if (this.isTileWalkable(alt1X, alt1Y)) {
                 officer.x = alt1X;
                 officer.y = alt1Y;
-            } else {
+                moved = true;
+            } else if (this.isTileWalkable(alt2X, alt2Y)) {
                 officer.x = alt2X;
                 officer.y = alt2Y;
+                moved = true;
             }
-        } else if (this.isTileWalkable(alt1X, alt1Y)) {
-            officer.x = alt1X;
-            officer.y = alt1Y;
-        } else if (this.isTileWalkable(alt2X, alt2Y)) {
-            officer.x = alt2X;
-            officer.y = alt2Y;
         }
-        // If all blocked, officer stays in place
-        
+
+        // Stuck detection with backup logic
+        if (!moved) {
+            officer.stuckFrames = (officer.stuckFrames || 0) + 1;
+
+            if (officer.stuckFrames >= 60) {
+                // Back up 2 tiles away from target
+                const backupX = officer.x - dirX * 2;
+                const backupY = officer.y - dirY * 2;
+
+                if (this.isTileWalkable(backupX, backupY)) {
+                    officer.x = backupX;
+                    officer.y = backupY;
+                    console.log(`[POLICE] Officer backed up 2 tiles to navigate around obstacle`);
+                } else {
+                    // Try diagonal backup
+                    const angle = Math.atan2(dy, dx);
+                    const leftX = officer.x + Math.cos(angle + Math.PI + Math.PI/4) * 2;
+                    const leftY = officer.y + Math.sin(angle + Math.PI + Math.PI/4) * 2;
+                    const rightX = officer.x + Math.cos(angle + Math.PI - Math.PI/4) * 2;
+                    const rightY = officer.y + Math.sin(angle + Math.PI - Math.PI/4) * 2;
+
+                    if (this.isTileWalkable(leftX, leftY)) {
+                        officer.x = leftX;
+                        officer.y = leftY;
+                    } else if (this.isTileWalkable(rightX, rightY)) {
+                        officer.x = rightX;
+                        officer.y = rightY;
+                    }
+                }
+                officer.stuckFrames = 0;
+            }
+        } else {
+            officer.stuckFrames = 0;
+        }
+
         return false;
     }
 

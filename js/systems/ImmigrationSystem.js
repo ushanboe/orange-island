@@ -1560,19 +1560,65 @@ export class Crowd {
             }
         }
 
-        // Stuck detection - use lower threshold for slow boats
+        // Stuck detection with backup-and-navigate logic
         if (this.frame % 30 === 0) {
             const movedDist = Math.sqrt(Math.pow(this.x - this.lastPosX, 2) + Math.pow(this.y - this.lastPosY, 2));
-            if (movedDist < 0.1) {  // Lowered from 0.3 to 0.1 for slow boats
+            if (movedDist < 0.1) {
                 this.stuckFrames = (this.stuckFrames || 0) + 30;
             } else {
                 this.stuckFrames = 0;
+                this.backupAttempts = 0;  // Reset backup counter when moving
             }
             this.lastPosX = this.x;
             this.lastPosY = this.y;
 
-            if (this.stuckFrames >= 120) {
-                this.pickWanderTarget();
+            // When stuck, try backing up and navigating around
+            if (this.stuckFrames >= 90) {
+                this.backupAttempts = (this.backupAttempts || 0) + 1;
+
+                if (this.backupAttempts <= 3) {
+                    // Back up 2 tiles away from target (opposite direction)
+                    const dx = this.targetX - this.x;
+                    const dy = this.targetY - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 0) {
+                        // Calculate backup position (2 tiles away from target)
+                        const backupX = this.x - (dx / dist) * 2;
+                        const backupY = this.y - (dy / dist) * 2;
+
+                        // Only backup if the position is walkable
+                        if (this.isTileWalkable(backupX, backupY)) {
+                            this.x = backupX;
+                            this.y = backupY;
+                            console.log(`[CROWD] Backed up 2 tiles to (${backupX.toFixed(1)}, ${backupY.toFixed(1)})`);
+                        } else {
+                            // Try backing up at an angle (45 degrees left or right)
+                            const angle = Math.atan2(dy, dx);
+                            const leftAngle = angle + Math.PI + Math.PI/4;
+                            const rightAngle = angle + Math.PI - Math.PI/4;
+
+                            const leftX = this.x + Math.cos(leftAngle) * 2;
+                            const leftY = this.y + Math.sin(leftAngle) * 2;
+                            const rightX = this.x + Math.cos(rightAngle) * 2;
+                            const rightY = this.y + Math.sin(rightAngle) * 2;
+
+                            if (this.isTileWalkable(leftX, leftY)) {
+                                this.x = leftX;
+                                this.y = leftY;
+                                console.log(`[CROWD] Backed up diagonally left to (${leftX.toFixed(1)}, ${leftY.toFixed(1)})`);
+                            } else if (this.isTileWalkable(rightX, rightY)) {
+                                this.x = rightX;
+                                this.y = rightY;
+                                console.log(`[CROWD] Backed up diagonally right to (${rightX.toFixed(1)}, ${rightY.toFixed(1)})`);
+                            }
+                        }
+                    }
+                } else {
+                    // After 3 backup attempts, pick a new wander target
+                    console.log(`[CROWD] Giving up on target after 3 backup attempts, picking new target`);
+                    this.pickWanderTarget();
+                    this.backupAttempts = 0;
+                }
                 this.stuckFrames = 0;
             }
         }
