@@ -506,7 +506,7 @@ export class ImmigrationSystem {
             }
         }
 
-                // console.log(`[IMMIGRATION] Spawning crowd at (${landX}, ${landY}) with ${boat.peopleCount} people`);
+        console.log(`[IMMIGRATION] Spawning crowd at (${landX}, ${landY}) with ${boat.peopleCount} people. Boat at (${boat.x.toFixed(1)}, ${boat.y.toFixed(1)}), foundLand=${foundLand}, terrain=${map ? map.getTerrainAt(Math.floor(landX), Math.floor(landY)) : 'no map'}`);
         const crowd = new Crowd(
             this.game,
             landX,
@@ -518,7 +518,7 @@ export class ImmigrationSystem {
 
         // Add to visitors count when people offload from boat
         this.game.visitors = (this.game.visitors || 0) + boat.peopleCount;
-                // console.log(`[IMMIGRATION] Crowd of ${boat.peopleCount} landed on beach at (${Math.floor(landX)}, ${Math.floor(landY)}). Total visitors: ${this.game.visitors}`);
+        console.log(`[IMMIGRATION] Crowd of ${boat.peopleCount} landed on beach at (${Math.floor(landX)}, ${Math.floor(landY)}). Total visitors: ${this.game.visitors}`);
     }
 
     updateCrowds() {
