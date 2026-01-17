@@ -722,7 +722,6 @@ export class GameCanvas {
         // - Patrol officers (plain objects rendered as 👮 emoji)
         this.game.policeSystem.render(ctx, this.offsetX, this.offsetY, this.tileSize);
     }
-    }
 
     // ==================== RENDER BOATS ====================
 
