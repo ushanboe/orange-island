@@ -233,15 +233,15 @@ class SoundSystem {
         const leftData = buffer.getChannelData(0);
         const rightData = buffer.getChannelData(1);
 
-        // Musical notes (C major scale)
+        // Musical notes (C major scale) - lower octave for softer sound
         const notes = {
-            'C': [261.63, 329.63, 392.00],  // C major chord
-            'G': [392.00, 493.88, 587.33],  // G major chord
-            'Am': [220.00, 261.63, 329.63], // A minor chord
-            'F': [349.23, 440.00, 523.25]   // F major chord
+            'C': [130.81, 164.81, 196.00],  // C major chord (C3)
+            'G': [196.00, 246.94, 293.66],  // G major chord
+            'Am': [110.00, 130.81, 164.81], // A minor chord
+            'F': [174.61, 220.00, 261.63]   // F major chord
         };
 
-        const progression = def.mood === 'peaceful' 
+        const progression = def.mood === 'peaceful'
             ? ['C', 'Am', 'F', 'G']
             : ['C', 'G', 'Am', 'F'];
 
@@ -257,25 +257,32 @@ class SoundSystem {
 
             let sample = 0;
 
-            // Play chord notes with slight detuning for warmth
+            // Play chord notes with smooth sine waves (no random detuning)
             for (let n = 0; n < chord.length; n++) {
-                const freq = chord[n] * (1 + (Math.random() - 0.5) * 0.002);
-                sample += Math.sin(2 * Math.PI * freq * t) * 0.4;
+                const freq = chord[n];
+                // Use softer triangle-ish wave instead of pure sine
+                sample += Math.sin(2 * Math.PI * freq * t) * 0.12;
             }
 
-            // Add subtle bass
+            // Add subtle bass (even lower)
             const bassFreq = chord[0] / 2;
-            sample += Math.sin(2 * Math.PI * bassFreq * t) * 0.5;
+            sample += Math.sin(2 * Math.PI * bassFreq * t) * 0.15;
 
-            // Gentle envelope per chord
+            // Gentle envelope per chord - slower attack/release
             const chordTime = t % chordDuration;
-            const chordEnvelope = Math.min(1, chordTime / 0.5) * Math.min(1, (chordDuration - chordTime) / 0.5);
+            const attack = Math.min(1, chordTime / 1.0);  // 1 second attack
+            const release = Math.min(1, (chordDuration - chordTime) / 1.0);  // 1 second release
+            const chordEnvelope = attack * release;
 
-            sample *= chordEnvelope * 0.9;
+            sample *= chordEnvelope;
 
-            // Slight stereo variation
-            leftData[i] = sample * (1 + Math.sin(t * 0.5) * 0.1);
-            rightData[i] = sample * (1 - Math.sin(t * 0.5) * 0.1);
+            // Soft limiter to prevent clipping
+            sample = Math.tanh(sample * 2) * 0.5;
+
+            // Gentle stereo width
+            const stereoPhase = Math.sin(t * 0.3) * 0.05;
+            leftData[i] = sample * (1 + stereoPhase);
+            rightData[i] = sample * (1 - stereoPhase);
         }
 
         return buffer;
