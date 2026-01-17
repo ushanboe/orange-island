@@ -530,6 +530,11 @@ export class PoliceSystem {
         officer.capturedVisitors += toCapture;
         patrol.capturedCount += toCapture;
 
+        // Play police catch sound
+        if (this.game.soundSystem) {
+            this.game.soundSystem.onPoliceCatch();
+        }
+
         // NOTE: Don't subtract from visitors here - detained visitors are still visitors
         // They will be subtracted when converted to residents in processHeldVisitors()
 

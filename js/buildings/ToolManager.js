@@ -292,6 +292,11 @@ export class ToolManager {
             cost: building.cost
         });
 
+        // Play build sound
+        if (this.game.soundSystem) {
+            this.game.soundSystem.onUIBuild();
+        }
+
         // King comments on special buildings
         this.kingCommentOnBuilding(building);
 

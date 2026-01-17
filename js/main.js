@@ -46,6 +46,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 game.toolbar.selectCategory(categories[catIndex]);
             }
         }
+        // M - Toggle music
+        if (e.key === 'm' || e.key === 'M') {
+            if (game.soundSystem) {
+                const muted = game.soundSystem.toggleMute('music');
+                game.kingTweet(muted ? "🔇 Music OFF!" : "🎵 Music ON!");
+            }
+        }
+        // N - Toggle all sound
+        if (e.key === 'n' || e.key === 'N') {
+            if (game.soundSystem) {
+                const muted = game.soundSystem.toggleMute('master');
+                game.kingTweet(muted ? "🔇 Sound OFF!" : "🔊 Sound ON!");
+            }
+        }
     });
 
     console.log('✅ Game ready!');

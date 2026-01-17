@@ -19,6 +19,7 @@ import { DebugPanel } from '../ui/DebugPanel.js';
 import { AdminSettings } from '../ui/AdminSettings.js';
 import { SaveSystem } from '../systems/SaveSystem.js';
 import { PoliceSystem } from '../systems/PoliceSystem.js';
+import { SoundSystem } from '../systems/SoundSystem.js';
 import { StartMenu } from '../ui/StartMenu.js';
 
 export class Game {
@@ -106,6 +107,9 @@ export class Game {
 
         // Initialize police enforcement system
         this.policeSystem = new PoliceSystem(this);
+
+        // Initialize sound system
+        this.soundSystem = new SoundSystem(this);
         // console.log("[INIT] ImmigrationSystem created:", !!this.immigrationSystem);
 
         // Initialize canvas (after managers so it can access them for rendering)
@@ -356,6 +360,17 @@ export class Game {
         this.running = true;
         this.lastUpdate = performance.now();
         this.lastTick = this.lastUpdate;
+
+        // Initialize and start sound system (requires user interaction first)
+        if (this.soundSystem) {
+            this.soundSystem.init().then(() => {
+                this.soundSystem.loadSettings();
+                this.soundSystem.playMusic('music-peaceful');
+                this.soundSystem.startAmbient();
+                console.log('[SOUND] Sound system started');
+            });
+        }
+
         this.gameLoop();
     }
 
@@ -632,6 +647,11 @@ export class Game {
         // Apply to treasury
         const netIncome = this.monthlyIncome - this.monthlyExpenses;
         this.treasury += netIncome;
+
+        // Play income sound if positive income
+        if (netIncome > 0 && this.soundSystem) {
+            this.soundSystem.onIncome();
+        }
 
         // Emit treasury change
         this.events.emit('treasuryChanged', this.treasury);

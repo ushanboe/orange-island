@@ -724,6 +724,12 @@ export class ImmigrationSystem {
         // Add to visitors count when people offload from boat
         this.game.visitors = (this.game.visitors || 0) + boat.peopleCount;
         console.log(`[IMMIGRATION] Crowd of ${boat.peopleCount} landed on beach at (${Math.floor(landX)}, ${Math.floor(landY)}). Total visitors: ${this.game.visitors}`);
+
+        // Play boat arrival sound
+        if (this.game.soundSystem) {
+            this.game.soundSystem.onBoatArrive();
+            this.game.soundSystem.onCrowdSpawn();
+        }
     }
 
     updateCrowds() {
