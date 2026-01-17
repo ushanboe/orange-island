@@ -61,6 +61,14 @@ export class AdminSettings {
                     style="width: 100%; padding: 5px; border-radius: 4px; border: 1px solid #666;">
             </div>
 
+            <div style="margin-bottom: 15px; border-top: 1px solid #444; padding-top: 15px;">
+                <label style="display: block; margin-bottom: 10px; color: #ffd700;">🔍 Debug Visualization:</label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="admin-show-boat-targets" style="margin-right: 8px; width: 18px; height: 18px;">
+                    <span>Show Boat Target Tiles (orange = water, yellow = sand)</span>
+                </label>
+            </div>
+
             <div style="margin-bottom: 15px;">
                 <label style="display: block; margin-bottom: 5px;">💰 Bank Balance ($):</label>
                 <input type="number" id="admin-bank-balance" value="0" min="0" step="1000"
@@ -82,6 +90,12 @@ export class AdminSettings {
         document.getElementById('admin-apply').addEventListener('click', () => this.applySettings());
         document.getElementById('admin-close').addEventListener('click', () => this.hide());
         document.getElementById('admin-set-balance').addEventListener('click', () => this.setBankBalance());
+
+        // Debug visualization checkbox
+        document.getElementById('admin-show-boat-targets').addEventListener('change', (e) => {
+            this.game.debugShowBoatTargets = e.target.checked;
+            console.log(`[AdminSettings] Show boat targets: ${e.target.checked}`);
+        });
     }
 
     setBankBalance() {

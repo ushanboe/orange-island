@@ -123,81 +123,21 @@ export class ImmigrationSystem {
                         }
                         
                         if (!isNearSourceIsland) {
-                            // Find adjacent WATER tile - this makes it an OUTERMOST sand tile
-                            const adjacentWater = this.findAdjacentWaterTile(x, y);
-
-                            if (adjacentWater) {
-                                // Valid outermost sand tile with adjacent water!
-                                this.mainIslandSandTiles.push({ 
-                                    sandX: x, 
-                                    sandY: y,
-                                    waterX: adjacentWater.x,
-                                    waterY: adjacentWater.y
-                                });
-                            }
+                            // Valid main island sand tile!
+                            this.mainIslandSandTiles.push({ x, y });
                         }
                     }
                 }
             }
         }
         
-        console.log(`[IMMIGRATION] Found ${this.mainIslandSandTiles.length} valid OUTERMOST sand tiles with adjacent water`);
-    }
-
-    /**
-     * Find a water tile adjacent to the given sand tile
-     * Prefers water tiles that are FURTHER from island center (outermost)
-     */
-    findAdjacentWaterTile(sandX, sandY) {
-        const map = this.game.tileMap;
-        if (!map) return null;
-
-        const centerX = map.width / 2;
-        const centerY = map.height / 2;
-
-        const directions = [
-            { dx: 0, dy: -1 },  // North
-            { dx: 1, dy: 0 },   // East
-            { dx: 0, dy: 1 },   // South
-            { dx: -1, dy: 0 },  // West
-            { dx: 1, dy: -1 },  // NE
-            { dx: 1, dy: 1 },   // SE
-            { dx: -1, dy: 1 },  // SW
-            { dx: -1, dy: -1 }  // NW
-        ];
-
-        let bestWater = null;
-        let bestDistFromCenter = -1;
-
-        for (const dir of directions) {
-            const wx = sandX + dir.dx;
-            const wy = sandY + dir.dy;
-
-            // Check bounds
-            if (wx < 0 || wy < 0 || wx >= map.width || wy >= map.height) continue;
-
-            const terrain = map.getTerrainAt(wx, wy);
-
-            // Water tiles are terrain 0 (deep) or 1 (shallow)
-            if (terrain === 0 || terrain === 1) {
-                // Calculate distance from center - prefer tiles FURTHER from center (outermost)
-                const distFromCenter = Math.sqrt(
-                    Math.pow(wx - centerX, 2) + Math.pow(wy - centerY, 2)
-                );
-
-                if (distFromCenter > bestDistFromCenter) {
-                    bestDistFromCenter = distFromCenter;
-                    bestWater = { x: wx, y: wy };
-                }
-            }
-        }
-
-        return bestWater;
+        console.log(`[IMMIGRATION] Found ${this.mainIslandSandTiles.length} valid sand tiles on main island`);
         
         // Initialize the available targets queue with shuffled tiles
         this.resetTargetQueue();
         
         this.registryBuilt = true;
+    }
     
     /**
      * Shuffle and reset the available targets queue
@@ -238,8 +178,8 @@ export class ImmigrationSystem {
         // Pop next target from queue
         if (this.availableTargets.length > 0) {
             const target = this.availableTargets.pop();
-            this.usedTargets.add(`${target.sandX},${target.sandY}`);
-            console.log(`[IMMIGRATION] Assigned target: sand(${target.sandX}, ${target.sandY}), water(${target.waterX}, ${target.waterY}), ${this.availableTargets.length} remaining`);
+            this.usedTargets.add(`${target.x},${target.y}`);
+            console.log(`[IMMIGRATION] Assigned target (${target.x}, ${target.y}), ${this.availableTargets.length} remaining`);
             return target;
         }
         
@@ -341,17 +281,9 @@ export class ImmigrationSystem {
             return false;
         }
         
-        // NEW: Boat navigates to WATER tile (which it can reach), lands there, spawns crowd on SAND tile
-        // targetTile has: sandX, sandY (beach for crowd), waterX, waterY (for boat navigation)
-        const landingSpot = { 
-            sandX: targetTile.sandX,
-            sandY: targetTile.sandY,
-            waterX: targetTile.waterX,
-            waterY: targetTile.waterY,
-            // For backwards compatibility, x/y point to WATER tile (where boat navigates)
-            x: targetTile.waterX + 0.5, 
-            y: targetTile.waterY + 0.5 
-        };
+        // The boat will navigate to this sand tile directly
+        // Landing happens when boat reaches target or adjacent tile
+        const landingSpot = { x: targetTile.x + 0.5, y: targetTile.y + 0.5 };
 
         // Create people boat
         const peopleCount = Math.floor(Math.random() * 91) + 10;  // 10-100 people
@@ -644,13 +576,8 @@ export class ImmigrationSystem {
         const map = this.game.tileMap;
         let landX, landY;
         
-        if (boat.targetLanding && boat.targetLanding.sandX !== undefined) {
-            // Use the SAND tile coordinates for crowd spawning (not water tile!)
-            landX = boat.targetLanding.sandX + 0.5;
-            landY = boat.targetLanding.sandY + 0.5;
-            console.log(`[IMMIGRATION] Using sand tile (${boat.targetLanding.sandX}, ${boat.targetLanding.sandY}) for crowd spawn`);
-        } else if (boat.targetLanding) {
-            // Fallback to old format (x, y)
+        if (boat.targetLanding) {
+            // Use the target tile (which is a sand tile from our registry)
             landX = boat.targetLanding.x;
             landY = boat.targetLanding.y;
         } else {
@@ -711,11 +638,6 @@ export class ImmigrationSystem {
     }
 
     render(ctx, offsetX, offsetY, tileSize) {
-        // === DEBUG: Render boat target tiles if enabled ===
-        if (this.game.debugShowBoatTargets) {
-            this.renderDebugTargets(ctx, offsetX, offsetY, tileSize);
-        }
-
         // Render all people boats
         for (const boat of this.peopleBoats) {
             boat.render(ctx, offsetX, offsetY, tileSize);
@@ -725,72 +647,6 @@ export class ImmigrationSystem {
         for (const crowd of this.crowds) {
             crowd.render(ctx, offsetX, offsetY, tileSize);
         }
-    }
-
-    /**
-     * Debug: Render target tiles for active boats
-     */
-    renderDebugTargets(ctx, offsetX, offsetY, tileSize) {
-        ctx.save();
-
-        for (const boat of this.peopleBoats) {
-            if (!boat.targetLanding) continue;
-
-            const target = boat.targetLanding;
-
-            // Draw WATER tile (where boat navigates to) - ORANGE
-            if (target.waterX !== undefined && target.waterY !== undefined) {
-                const waterScreenX = offsetX + target.waterX * tileSize;
-                const waterScreenY = offsetY + target.waterY * tileSize;
-
-                ctx.fillStyle = 'rgba(255, 165, 0, 0.5)';  // Orange, semi-transparent
-                ctx.fillRect(waterScreenX, waterScreenY, tileSize, tileSize);
-
-                ctx.strokeStyle = 'rgba(255, 100, 0, 1)';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(waterScreenX, waterScreenY, tileSize, tileSize);
-
-                // Label
-                ctx.fillStyle = 'white';
-                ctx.font = '10px Arial';
-                ctx.fillText('W', waterScreenX + 2, waterScreenY + 12);
-            }
-
-            // Draw SAND tile (where crowd spawns) - YELLOW
-            if (target.sandX !== undefined && target.sandY !== undefined) {
-                const sandScreenX = offsetX + target.sandX * tileSize;
-                const sandScreenY = offsetY + target.sandY * tileSize;
-
-                ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';  // Yellow, semi-transparent
-                ctx.fillRect(sandScreenX, sandScreenY, tileSize, tileSize);
-
-                ctx.strokeStyle = 'rgba(200, 200, 0, 1)';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(sandScreenX, sandScreenY, tileSize, tileSize);
-
-                // Label
-                ctx.fillStyle = 'black';
-                ctx.font = '10px Arial';
-                ctx.fillText('S', sandScreenX + 2, sandScreenY + 12);
-            }
-
-            // Draw line from boat to target
-            const boatScreenX = offsetX + boat.x * tileSize + tileSize / 2;
-            const boatScreenY = offsetY + boat.y * tileSize + tileSize / 2;
-            const targetScreenX = offsetX + (target.waterX || target.x) * tileSize + tileSize / 2;
-            const targetScreenY = offsetY + (target.waterY || target.y) * tileSize + tileSize / 2;
-
-            ctx.strokeStyle = 'rgba(255, 0, 255, 0.7)';  // Magenta line
-            ctx.lineWidth = 1;
-            ctx.setLineDash([5, 5]);
-            ctx.beginPath();
-            ctx.moveTo(boatScreenX, boatScreenY);
-            ctx.lineTo(targetScreenX, targetScreenY);
-            ctx.stroke();
-            ctx.setLineDash([]);
-        }
-
-        ctx.restore();
     }
 
     /**
@@ -975,16 +831,8 @@ export class PeopleBoat {
                         if (immigrationSystem) {
                             const newTarget = immigrationSystem.getNextTargetTile();
                             if (newTarget) {
-                                // Use new format with sand and water coordinates
-                                this.targetLanding = { 
-                                    sandX: newTarget.sandX,
-                                    sandY: newTarget.sandY,
-                                    waterX: newTarget.waterX,
-                                    waterY: newTarget.waterY,
-                                    x: newTarget.waterX + 0.5, 
-                                    y: newTarget.waterY + 0.5 
-                                };
-                                console.log(`[BOATS] Got new target: sand(${newTarget.sandX}, ${newTarget.sandY}), water(${newTarget.waterX}, ${newTarget.waterY})`);
+                                this.targetLanding = { x: newTarget.x + 0.5, y: newTarget.y + 0.5 };
+                                console.log(`[BOATS] Got new target: (${newTarget.x}, ${newTarget.y})`);
                             }
                         }
                         
