@@ -570,6 +570,9 @@ export class PoliceSystem {
     animate() {
         const map = this.game.map;
 
+        // Update patrols (visitor capture)
+        this.updatePatrols();
+
         // Update all active officers
         for (let i = this.officers.length - 1; i >= 0; i--) {
             const officer = this.officers[i];

@@ -253,8 +253,8 @@ export class TileMap {
             for (let x = minX; x < maxX; x++) {
                 const tile = this.tiles[y][x];
 
-                // Must be grass or forest (buildable land)
-                if (tile.terrain !== TERRAIN.GRASS && tile.terrain !== TERRAIN.FOREST) {
+                // Must be SAND (beach/coastline)
+                if (tile.terrain !== TERRAIN.SAND) {
                     continue;
                 }
 
@@ -263,13 +263,12 @@ export class TileMap {
                     continue;
                 }
 
-                // Check if adjacent to water OR walls (perimeter condition)
-                // This allows building multiple layers of walls
+                // Check if adjacent to water (outermost perimeter)
+                // This creates a complete wall following the natural coastline
                 const neighbors = this.getNeighbors(x, y);
-                const hasWaterOrWall = neighbors.some(n =>
+                const hasWater = neighbors.some(n =>
                     n.terrain === TERRAIN.WATER || 
-                    n.terrain === TERRAIN.DEEP_WATER ||
-                    n.terrain === TERRAIN.WALL
+                    n.terrain === TERRAIN.DEEP_WATER
                 );
 
                 if (hasWaterOrWall) {
