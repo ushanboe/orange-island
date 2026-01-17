@@ -657,40 +657,47 @@ export class PoliceSystem {
         for (let i = this.officers.length - 1; i >= 0; i--) {
             const officer = this.officers[i];
 
-            // Safety check: ensure officer has update method
-            if (!officer || typeof officer.update !== 'function') {
-                console.warn('[POLICE] Invalid officer found, removing:', officer);
+            if (!officer) {
                 this.officers.splice(i, 1);
                 continue;
             }
 
-            const stillActive = officer.update();
+            // Check if this is a wall-building officer (PoliceOfficer class instance)
+            if (typeof officer.update === 'function') {
+                // Wall-building officer - use update() method
+                const stillActive = officer.update();
 
-            // If officer just finished building, place the wall
-            if (officer.state === 'building' && officer.buildProgress >= 0.99 && !officer.wallPlaced) {
-                map.setTerrain(officer.wallX, officer.wallY, 10);  // TERRAIN.WALL = 10
-                officer.wallPlaced = true;
-                console.log(`[POLICE] Officer completed wall at (${officer.wallX}, ${officer.wallY})`);
+                // If officer just finished building, place the wall
+                if (officer.state === 'building' && officer.buildProgress >= 0.99 && !officer.wallPlaced) {
+                    map.setTerrain(officer.wallX, officer.wallY, 10);  // TERRAIN.WALL = 10
+                    officer.wallPlaced = true;
+                    console.log(`[POLICE] Officer completed wall at (${officer.wallX}, ${officer.wallY})`);
 
-                // Tweet about the beautiful wall (25% chance)
-                if (Math.random() < 0.25 && this.game.showKingTweet) {
-                    const wallTweets = [
-                        "Building a BEAUTIFUL BIG WALL! Nobody builds walls like me! 🧱",
-                        "Our walls are TREMENDOUS! The best walls in the world! 🏗️",
-                        "WALL going up! Making our island SAFE and SECURE! 🛡️",
-                        "Another section of our MAGNIFICENT WALL complete! 🧱✨",
-                        "The wall just got 10 feet higher! BELIEVE ME! 📈🧱",
-                        "Our police are building the GREATEST WALL ever seen! 👮🧱",
-                        "BRICK BY BRICK, we're making our island IMPENETRABLE! 🧱💪",
-                        "Nobody appreciates a good wall like I do! BEAUTIFUL! 🧱😍"
-                    ];
-                    this.game.showKingTweet(wallTweets[Math.floor(Math.random() * wallTweets.length)]);
+                    // Tweet about the beautiful wall (25% chance)
+                    if (Math.random() < 0.25 && this.game.showKingTweet) {
+                        const wallTweets = [
+                            "Building a BEAUTIFUL BIG WALL! Nobody builds walls like me! 🧱",
+                            "Our walls are TREMENDOUS! The best walls in the world! 🏗️",
+                            "WALL going up! Making our island SAFE and SECURE! 🛡️",
+                            "Another section of our MAGNIFICENT WALL complete! 🧱✨",
+                            "The wall just got 10 feet higher! BELIEVE ME! 📈🧱",
+                            "Our police are building the GREATEST WALL ever seen! 👮🧱",
+                            "BRICK BY BRICK, we're making our island IMPENETRABLE! 🧱💪",
+                            "Nobody appreciates a good wall like I do! BEAUTIFUL! 🧱😍"
+                        ];
+                        this.game.showKingTweet(wallTweets[Math.floor(Math.random() * wallTweets.length)]);
+                    }
                 }
-            }
 
-            // Remove completed officers
-            if (!stillActive) {
-                this.officers.splice(i, 1);
+                // Remove completed wall-building officers
+                if (!stillActive) {
+                    this.officers.splice(i, 1);
+                }
+            } else {
+                // Patrol officer (plain object) - handle manually
+                // These officers are already updated in updatePatrols()
+                // Just keep them in the array for rendering
+                // They will be removed when they return to station in moveOfficerToStation()
             }
         }
     }
