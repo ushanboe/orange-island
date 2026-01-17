@@ -142,6 +142,11 @@ export class ImmigrationSystem {
         }
         
         console.log(`[IMMIGRATION] Found ${this.mainIslandSandTiles.length} valid OUTERMOST sand tiles with adjacent water`);
+
+        // Initialize the available targets queue with shuffled tiles
+        this.resetTargetQueue();
+
+        this.registryBuilt = true;
     }
 
     /**
@@ -193,12 +198,8 @@ export class ImmigrationSystem {
         }
 
         return bestWater;
-        
-        // Initialize the available targets queue with shuffled tiles
-        this.resetTargetQueue();
-        
-        this.registryBuilt = true;
-    
+    }
+
     /**
      * Shuffle and reset the available targets queue
      * Called when all targets have been used
