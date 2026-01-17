@@ -623,9 +623,6 @@ export class PeopleBoat {
         // Navigation - for avoiding islands
         this.avoidanceAngle = 0;
         this.avoidanceFrames = 0;
-        
-        // Stuck recovery - for boats that can't reach landing
-        this.retryAttempts = 0;
     }
 
     update() {
@@ -767,7 +764,8 @@ export class PeopleBoat {
             }
         }
 
-        // LANDING CHECK 4: Stuck detection with retry and retreat logic
+        // LANDING CHECK 4: Stuck detection - if boat hasn't moved much in 300 frames, force land
+        // Only if minimum travel achieved AND near main island
         if (!this.lastPos) {
             this.lastPos = { x: this.x, y: this.y };
             this.stuckFrames = 0;
@@ -775,64 +773,7 @@ export class PeopleBoat {
             const movedDist = Math.sqrt(Math.pow(this.x - this.lastPos.x, 2) + Math.pow(this.y - this.lastPos.y, 2));
             if (movedDist < 0.5) {
                 this.stuckFrames = (this.stuckFrames || 0) + 1;
-                
-                // After ~5 seconds stuck (150 frames), try recovery
-                if (this.stuckFrames > 150) {
-                    this.retryAttempts = (this.retryAttempts || 0) + 1;
-                    this.stuckFrames = 0;
-                    
-                    // After 5 retry attempts, retreat and find new coastline
-                    if (this.retryAttempts >= 5) {
-                        console.log('[BOATS] People boat giving up on current target after 5 failed attempts');
-                        
-                        // Find a DIFFERENT coastline target (at least 15 tiles away from current target)
-                        const immigrationSystem = this.game.systems?.find(s => s.constructor.name === 'ImmigrationSystem');
-                        if (immigrationSystem) {
-                            const currentTargetX = this.targetLanding?.x || 0;
-                            const currentTargetY = this.targetLanding?.y || 0;
-                            
-                            // Try up to 10 times to find a different spot
-                            let foundDifferent = false;
-                            for (let attempt = 0; attempt < 10; attempt++) {
-                                const newTarget = immigrationSystem.findRemoteLandingSpot(this.sourceIslandName);
-                                if (newTarget) {
-                                    const distFromOld = Math.sqrt(
-                                        Math.pow(newTarget.x - currentTargetX, 2) + 
-                                        Math.pow(newTarget.y - currentTargetY, 2)
-                                    );
-                                    // Must be at least 15 tiles away from old target
-                                    if (distFromOld > 15) {
-                                        this.targetLanding = newTarget;
-                                        foundDifferent = true;
-                                        console.log('[BOATS] People boat found new landing target', distFromOld.toFixed(1), 'tiles away');
-                                        break;
-                                    }
-                                }
-                            }
-                            
-                            // If couldn't find different spot, just give up and leave
-                            if (!foundDifferent) {
-                                console.log('[BOATS] People boat could not find different coastline - leaving');
-                                this.state = 'leaving';
-                                return;
-                            }
-                        } else {
-                            // No immigration system found - leave
-                            this.state = 'leaving';
-                            return;
-                        }
-                        
-                        this.retryAttempts = 0;  // Reset for new attempt
-                        return;
-                    }
-                    
-                    // Small random nudge to try to unstick
-                    this.x += (Math.random() - 0.5) * 2;
-                    this.y += (Math.random() - 0.5) * 2;
-                    return;
-                }
-                
-                // Legacy: force landing if stuck very long AND conditions met
+                // Only force landing if stuck AND has traveled enough AND near main island
                 if (this.stuckFrames > 300 && hasMinTravel && isNearMainIsland) {
                     this.state = 'landed';
                     return;

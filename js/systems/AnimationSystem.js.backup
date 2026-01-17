@@ -131,12 +131,7 @@ export class AnimationSystem {
             lifetime: 0,
             maxLifetime: 800 + Math.random() * 400,
             dockTime: 0,
-            maxDockTime: 200 + Math.random() * 100,
-            // Stuck detection properties
-            lastX: waterTile.x + 0.5,
-            lastY: waterTile.y + 0.5,
-            stuckFrames: 0,
-            retryAttempts: 0
+            maxDockTime: 200 + Math.random() * 100
         };
 
         this.boats.push(boat);
@@ -217,75 +212,11 @@ export class AnimationSystem {
         const dy = targetY - boat.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        // Successfully docked!
         if (dist < 2) {
             boat.state = 'docked';
-            boat.stuckFrames = 0;
-            boat.retryAttempts = 0;
             return;
         }
         
-        // Check if boat is stuck (hasn't moved much)
-        const moveThreshold = 0.05;
-        const movedX = Math.abs(boat.x - boat.lastX);
-        const movedY = Math.abs(boat.y - boat.lastY);
-        
-        if (movedX < moveThreshold && movedY < moveThreshold && dist < 15) {
-            // Boat is stuck near the port
-            boat.stuckFrames = (boat.stuckFrames || 0) + 1;
-            
-            // After ~5 seconds of being stuck (150 frames at 30fps)
-            if (boat.stuckFrames > 150) {
-                boat.retryAttempts = (boat.retryAttempts || 0) + 1;
-                boat.stuckFrames = 0;
-                
-                // After 5 retry attempts, give up on this port
-                if (boat.retryAttempts >= 5) {
-                    console.log('[BOATS] Cargo boat stuck after 5 attempts - backing out');
-                    
-                    // Back the boat out - move away from current port
-                    const portX = boat.targetPort.x + 1;
-                    const portY = boat.targetPort.y + 1;
-                    const awayDirX = boat.x - portX;
-                    const awayDirY = boat.y - portY;
-                    const awayDist = Math.sqrt(awayDirX * awayDirX + awayDirY * awayDirY);
-                    
-                    if (awayDist > 0.1) {
-                        // Move 5 tiles away from port
-                        boat.x += (awayDirX / awayDist) * 5;
-                        boat.y += (awayDirY / awayDist) * 5;
-                    }
-                    
-                    // Try to find another port
-                    const alternatePort = this.findAlternatePort(boat.targetPort);
-                    if (alternatePort) {
-                        boat.targetPort = alternatePort;
-                        boat.retryAttempts = 0;
-                        boat.stuckFrames = 0;
-                        console.log('[BOATS] Cargo boat switching to alternate port');
-                    } else {
-                        // No alternate port - give up and depart
-                        boat.state = 'departing';
-                        console.log('[BOATS] Cargo boat giving up - no alternate port, departing');
-                    }
-                    return;
-                }
-                
-                // Small random nudge to try to unstick
-                boat.x += (Math.random() - 0.5) * 2;
-                boat.y += (Math.random() - 0.5) * 2;
-                return;
-            }
-        } else {
-            // Boat is moving - reset stuck counter
-            boat.stuckFrames = 0;
-        }
-        
-        // Save current position for next frame comparison
-        boat.lastX = boat.x;
-        boat.lastY = boat.y;
-        
-        // Normal movement towards port
         boat.x += (dx / dist) * boat.speed;
         boat.y += (dy / dist) * boat.speed;
     }
@@ -306,27 +237,6 @@ export class AnimationSystem {
             boat.x += (dx / dist) * boat.speed;
             boat.y += (dy / dist) * boat.speed;
         }
-    }
-
-
-    /**
-     * Find an alternate port for a stuck cargo boat
-     * Returns null if no other port is available
-     */
-    findAlternatePort(currentPort) {
-        const operationalPorts = this.findOperationalPorts();
-        
-        // Filter out the current port
-        const otherPorts = operationalPorts.filter(port => 
-            port.x !== currentPort.x || port.y !== currentPort.y
-        );
-        
-        if (otherPorts.length === 0) {
-            return null;  // No alternate port available
-        }
-        
-        // Pick a random alternate port
-        return otherPorts[Math.floor(Math.random() * otherPorts.length)];
     }
 
     getBoats() {
