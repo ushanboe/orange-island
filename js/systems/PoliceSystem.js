@@ -703,9 +703,6 @@ export class PoliceSystem {
     }
 
     /**
-     * Get all active police officers for rendering
-     */
-    /**
      * Render all police officers and station info
      */
     render(ctx, offsetX, offsetY, tileSize) {
