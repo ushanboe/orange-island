@@ -1009,12 +1009,14 @@ export class PeopleBoat {
         }
 
         // === STUCK DETECTION ===
+        // Note: At slow speeds (~0.004 tiles/frame), boat moves ~0.24 tiles in 60 frames
+        // So we use a lower threshold (0.1) to avoid false stuck detection
         if (!this.lastPos) {
             this.lastPos = { x: this.x, y: this.y };
             this.stuckFrames = 0;
         } else {
             const movedDist = Math.sqrt(Math.pow(this.x - this.lastPos.x, 2) + Math.pow(this.y - this.lastPos.y, 2));
-            if (movedDist < 0.3) {
+            if (movedDist < 0.1) {  // Lowered from 0.3 to 0.1 for slow boats
                 this.stuckFrames = (this.stuckFrames || 0) + 1;
                 
                 // After ~5 seconds stuck (150 frames), try recovery
@@ -1558,10 +1560,10 @@ export class Crowd {
             }
         }
 
-        // Stuck detection
+        // Stuck detection - use lower threshold for slow boats
         if (this.frame % 30 === 0) {
             const movedDist = Math.sqrt(Math.pow(this.x - this.lastPosX, 2) + Math.pow(this.y - this.lastPosY, 2));
-            if (movedDist < 0.3) {
+            if (movedDist < 0.1) {  // Lowered from 0.3 to 0.1 for slow boats
                 this.stuckFrames = (this.stuckFrames || 0) + 30;
             } else {
                 this.stuckFrames = 0;
