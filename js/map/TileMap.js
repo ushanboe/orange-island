@@ -271,7 +271,7 @@ export class TileMap {
                     n.terrain === TERRAIN.DEEP_WATER
                 );
 
-                if (hasWaterOrWall) {
+                if (hasWater) {
                     perimeter.push({ x, y, tile });
                 }
             }
