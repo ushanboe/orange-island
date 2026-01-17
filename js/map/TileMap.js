@@ -263,13 +263,16 @@ export class TileMap {
                     continue;
                 }
 
-                // Check if adjacent to water (perimeter condition)
+                // Check if adjacent to water OR walls (perimeter condition)
+                // This allows building multiple layers of walls
                 const neighbors = this.getNeighbors(x, y);
-                const hasWater = neighbors.some(n =>
-                    n.terrain === TERRAIN.WATER || n.terrain === TERRAIN.DEEP_WATER
+                const hasWaterOrWall = neighbors.some(n =>
+                    n.terrain === TERRAIN.WATER || 
+                    n.terrain === TERRAIN.DEEP_WATER ||
+                    n.terrain === TERRAIN.WALL
                 );
 
-                if (hasWater) {
+                if (hasWaterOrWall) {
                     perimeter.push({ x, y, tile });
                 }
             }
