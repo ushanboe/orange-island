@@ -623,9 +623,6 @@ export class PeopleBoat {
         // Navigation - for avoiding islands
         this.avoidanceAngle = 0;
         this.avoidanceFrames = 0;
-        
-        // Stuck recovery - for boats that can't reach landing
-        this.retryAttempts = 0;
     }
 
     update() {
@@ -767,7 +764,8 @@ export class PeopleBoat {
             }
         }
 
-        // LANDING CHECK 4: Stuck detection with retry and retreat logic
+        // LANDING CHECK 4: Stuck detection - if boat hasn't moved much in 300 frames, force land
+        // Only if minimum travel achieved AND near main island
         if (!this.lastPos) {
             this.lastPos = { x: this.x, y: this.y };
             this.stuckFrames = 0;
@@ -775,50 +773,7 @@ export class PeopleBoat {
             const movedDist = Math.sqrt(Math.pow(this.x - this.lastPos.x, 2) + Math.pow(this.y - this.lastPos.y, 2));
             if (movedDist < 0.5) {
                 this.stuckFrames = (this.stuckFrames || 0) + 1;
-                
-                // After ~5 seconds stuck (150 frames), try recovery
-                if (this.stuckFrames > 150) {
-                    this.retryAttempts = (this.retryAttempts || 0) + 1;
-                    this.stuckFrames = 0;
-                    
-                    // After 5 retry attempts, retreat and find new coastline
-                    if (this.retryAttempts >= 5) {
-                        console.log('[BOATS] People boat retreating after 5 failed attempts');
-                        
-                        // Calculate retreat direction (away from island center)
-                        const islandCenterX = this.game.tileMap?.width / 2 || 50;
-                        const islandCenterY = this.game.tileMap?.height / 2 || 50;
-                        const retreatDirX = this.x - islandCenterX;
-                        const retreatDirY = this.y - islandCenterY;
-                        const retreatDist = Math.sqrt(retreatDirX * retreatDirX + retreatDirY * retreatDirY);
-                        
-                        if (retreatDist > 0.1) {
-                            // Move 10 tiles away from island
-                            this.x += (retreatDirX / retreatDist) * 10;
-                            this.y += (retreatDirY / retreatDist) * 10;
-                        }
-                        
-                        // Find a new random coastline target
-                        const immigrationSystem = this.game.systems?.find(s => s.constructor.name === 'ImmigrationSystem');
-                        if (immigrationSystem) {
-                            const newTarget = immigrationSystem.findRemoteLandingSpot(this.sourceIslandName);
-                            if (newTarget) {
-                                this.targetLanding = newTarget;
-                                console.log('[BOATS] People boat found new landing target');
-                            }
-                        }
-                        
-                        this.retryAttempts = 0;  // Reset for new attempt
-                        return;
-                    }
-                    
-                    // Small random nudge to try to unstick
-                    this.x += (Math.random() - 0.5) * 2;
-                    this.y += (Math.random() - 0.5) * 2;
-                    return;
-                }
-                
-                // Legacy: force landing if stuck very long AND conditions met
+                // Only force landing if stuck AND has traveled enough AND near main island
                 if (this.stuckFrames > 300 && hasMinTravel && isNearMainIsland) {
                     this.state = 'landed';
                     return;
