@@ -745,8 +745,22 @@ export class PoliceSystem {
                 ctx.fillStyle = station.heldVisitors >= this.maxHeldPerStation ? "#FF0000" : "#FF6600";
                 const badgeWidth = tileSize * 0.8;
                 const badgeHeight = tileSize * 0.4;
+                const radius = 5;
+                const x = screenX - badgeWidth/2;
+                const y = screenY - badgeHeight/2;
+                
+                // Draw rounded rectangle manually
                 ctx.beginPath();
-                ctx.roundRect(screenX - badgeWidth/2, screenY - badgeHeight/2, badgeWidth, badgeHeight, 5);
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + badgeWidth - radius, y);
+                ctx.arcTo(x + badgeWidth, y, x + badgeWidth, y + radius, radius);
+                ctx.lineTo(x + badgeWidth, y + badgeHeight - radius);
+                ctx.arcTo(x + badgeWidth, y + badgeHeight, x + badgeWidth - radius, y + badgeHeight, radius);
+                ctx.lineTo(x + radius, y + badgeHeight);
+                ctx.arcTo(x, y + badgeHeight, x, y + badgeHeight - radius, radius);
+                ctx.lineTo(x, y + radius);
+                ctx.arcTo(x, y, x + radius, y, radius);
+                ctx.closePath();
                 ctx.fill();
 
                 // Text
