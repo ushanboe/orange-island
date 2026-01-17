@@ -414,6 +414,14 @@ export class ImmigrationSystem {
 
                 // console.log(`[IMMIGRATION] Boat from ${sourceIsland.name}: ${distance.toFixed(1)} tiles, ${travelMonths} months, speed=${halvedSpeed.toFixed(4)}`);
 
+        // DEBUG: Log full target details
+        console.log(`[DEBUG SPAWN] Creating boat with target:`);
+        console.log(`[DEBUG SPAWN]   sandX=${landingSpot.sandX}, sandY=${landingSpot.sandY}`);
+        console.log(`[DEBUG SPAWN]   waterX=${landingSpot.waterX}, waterY=${landingSpot.waterY}`);
+        console.log(`[DEBUG SPAWN]   x=${landingSpot.x}, y=${landingSpot.y}`);
+        console.log(`[DEBUG SPAWN]   Terrain at water target: ${this.game.tileMap?.getTerrainAt(landingSpot.waterX, landingSpot.waterY)}`);
+        console.log(`[DEBUG SPAWN]   Terrain at sand target: ${this.game.tileMap?.getTerrainAt(landingSpot.sandX, landingSpot.sandY)}`);
+
         const boat = new PeopleBoat(
             this.game,
             spawnPoint.x,
@@ -964,8 +972,15 @@ export class PeopleBoat {
 
     moveTowardsTarget() {
         if (!this.targetLanding) {
+            console.log(`[BOAT DEBUG] No targetLanding, leaving`);
             this.state = 'leaving';
             return;
+        }
+
+        // Debug: Log target info periodically
+        if (!this.debugLogged) {
+            console.log(`[BOAT DEBUG] Boat target: x=${this.targetLanding.x}, y=${this.targetLanding.y}, sandX=${this.targetLanding.sandX}, sandY=${this.targetLanding.sandY}, waterX=${this.targetLanding.waterX}, waterY=${this.targetLanding.waterY}`);
+            this.debugLogged = true;
         }
 
         const map = this.game.tileMap;
