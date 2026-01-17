@@ -760,17 +760,25 @@ export class PeopleBoat {
             }
         } else {
             // Check if path ahead is blocked
-            if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
-                const clearDir = this.findClearDirection(targetDirX, targetDirY);
-                moveDirX = clearDir.dirX;
-                moveDirY = clearDir.dirY;
+            // BUT: Skip avoidance when close to target AND ready to land - let boat hit the shore!
+            const closeToTarget = dist < 8;  // Within 8 tiles of target
+            const readyToLand = hasMinTravel && isNearMainIsland;
+            
+            if (!readyToLand || !closeToTarget) {
+                // Only do avoidance if NOT ready to land near target
+                if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
+                    const clearDir = this.findClearDirection(targetDirX, targetDirY);
+                    moveDirX = clearDir.dirX;
+                    moveDirY = clearDir.dirY;
 
-                // Set avoidance mode for smoother navigation
-                if (clearDir.angle !== 0) {
-                    this.avoidanceAngle = Math.atan2(moveDirY, moveDirX);
-                    this.avoidanceFrames = 30;
+                    // Set avoidance mode for smoother navigation
+                    if (clearDir.angle !== 0) {
+                        this.avoidanceAngle = Math.atan2(moveDirY, moveDirX);
+                        this.avoidanceFrames = 30;
+                    }
                 }
             }
+            // When readyToLand && closeToTarget, boat goes straight toward beach and will hit shore
         }
 
         // Move in the chosen direction
@@ -847,17 +855,25 @@ export class PeopleBoat {
             }
         } else {
             // Check if path ahead is blocked
-            if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
-                const clearDir = this.findClearDirection(targetDirX, targetDirY);
-                moveDirX = clearDir.dirX;
-                moveDirY = clearDir.dirY;
+            // BUT: Skip avoidance when close to target AND ready to land - let boat hit the shore!
+            const closeToTarget = dist < 8;  // Within 8 tiles of target
+            const readyToLand = hasMinTravel && isNearMainIsland;
+            
+            if (!readyToLand || !closeToTarget) {
+                // Only do avoidance if NOT ready to land near target
+                if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
+                    const clearDir = this.findClearDirection(targetDirX, targetDirY);
+                    moveDirX = clearDir.dirX;
+                    moveDirY = clearDir.dirY;
 
-                // Set avoidance mode for smoother navigation
-                if (clearDir.angle !== 0) {
-                    this.avoidanceAngle = Math.atan2(moveDirY, moveDirX);
-                    this.avoidanceFrames = 30;
+                    // Set avoidance mode for smoother navigation
+                    if (clearDir.angle !== 0) {
+                        this.avoidanceAngle = Math.atan2(moveDirY, moveDirX);
+                        this.avoidanceFrames = 30;
+                    }
                 }
             }
+            // When readyToLand && closeToTarget, boat goes straight toward beach and will hit shore
         }
 
         // Move in the chosen direction
