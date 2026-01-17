@@ -722,7 +722,11 @@ export class GameCanvas {
 
         // Render each active police officer
         for (const officer of officers) {
-            officer.render(ctx, this.tileSize, this.offsetX, this.offsetY);
+            // Only render wall-building officers (PoliceOfficer class instances)
+            // Patrol officers are plain objects without render() method
+            if (officer.render && typeof officer.render === "function") {
+                officer.render(ctx, this.tileSize, this.offsetX, this.offsetY);
+            }
         }
     }
 
