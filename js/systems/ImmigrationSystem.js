@@ -691,6 +691,16 @@ export class PeopleBoat {
             }
         }
 
+        // LANDING CHECK 2.5: Boat is in SHALLOW WATER (terrain 1) near main island
+        // This fixes boats getting stuck when there are multiple shallow water tiles before beach
+        if (hasMinTravel && isNearMainIsland && map) {
+            const currentTerrain = map.getTerrainAt(Math.floor(this.x), Math.floor(this.y));
+            if (currentTerrain === 1) {  // SHALLOW_WATER = 1
+                this.state = 'landed';
+                return;
+            }
+        }
+
         // LANDING CHECK 3: Adjacent to beach (only if near main island AND min travel)
         if (hasMinTravel && isNearMainIsland && map) {
             const checkOffsets = [[1,0], [-1,0], [0,1], [0,-1], [1,1], [-1,1], [1,-1], [-1,-1]];
