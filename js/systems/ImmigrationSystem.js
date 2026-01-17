@@ -808,13 +808,8 @@ export class PeopleBoat {
             }
         } else {
             // Check if path ahead is blocked
-            // BUT: Skip avoidance when close to target AND ready to land - let boat hit the shore!
-            const closeToTarget = dist < 8;  // Within 8 tiles of target
-            const readyToLand = hasMinTravel && isNearMainIsland;
-            
-            if (!readyToLand || !closeToTarget) {
-                // Only do avoidance if NOT ready to land near target
-                if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
+            // For boats returning to source, always use avoidance when needed
+            if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
                     const clearDir = this.findClearDirection(targetDirX, targetDirY);
                     moveDirX = clearDir.dirX;
                     moveDirY = clearDir.dirY;
@@ -825,7 +820,6 @@ export class PeopleBoat {
                         this.avoidanceFrames = 30;
                     }
                 }
-            }
             // When readyToLand && closeToTarget, boat goes straight toward beach and will hit shore
         }
 
@@ -903,13 +897,8 @@ export class PeopleBoat {
             }
         } else {
             // Check if path ahead is blocked
-            // BUT: Skip avoidance when close to target AND ready to land - let boat hit the shore!
-            const closeToTarget = dist < 8;  // Within 8 tiles of target
-            const readyToLand = hasMinTravel && isNearMainIsland;
-            
-            if (!readyToLand || !closeToTarget) {
-                // Only do avoidance if NOT ready to land near target
-                if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
+            // For boats returning to source, always use avoidance when needed
+            if (!this.isPathClear(this.x, this.y, targetDirX, targetDirY, 3)) {
                     const clearDir = this.findClearDirection(targetDirX, targetDirY);
                     moveDirX = clearDir.dirX;
                     moveDirY = clearDir.dirY;
@@ -920,7 +909,6 @@ export class PeopleBoat {
                         this.avoidanceFrames = 30;
                     }
                 }
-            }
             // When readyToLand && closeToTarget, boat goes straight toward beach and will hit shore
         }
 
