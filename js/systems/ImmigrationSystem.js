@@ -225,25 +225,67 @@ export class ImmigrationSystem {
      * Get next available target tile for a boat
      * Returns null if no targets available (shouldn't happen)
      */
-    getNextTargetTile() {
+    getNextTargetTile(sourceX = null, sourceY = null) {
         // Build registry if not done yet
         if (!this.registryBuilt) {
             this.buildSandTileRegistry();
         }
-        
+
         // If queue is empty, reset it
         if (this.availableTargets.length === 0) {
             this.resetTargetQueue();
         }
-        
-        // Pop next target from queue
+
+        const map = this.game.tileMap;
+        const centerX = map ? map.width / 2 : 64;
+        const centerY = map ? map.height / 2 : 64;
+
+        // If source position provided, filter targets to same side of island
+        if (sourceX !== null && sourceY !== null && this.availableTargets.length > 0) {
+            // Calculate angle from island center to source
+            const sourceAngle = Math.atan2(sourceY - centerY, sourceX - centerX);
+
+            // Find targets on the same side (within 90 degrees of source angle)
+            const sameSideTargets = [];
+
+            for (const target of this.availableTargets) {
+                const targetAngle = Math.atan2(target.waterY - centerY, target.waterX - centerX);
+                let angleDiff = Math.abs(targetAngle - sourceAngle);
+                // Normalize to 0-PI range
+                if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+
+                // Within 90 degrees (PI/2) = same side
+                if (angleDiff <= Math.PI / 2) {
+                    sameSideTargets.push(target);
+                }
+            }
+
+            // Prefer same-side targets
+            if (sameSideTargets.length > 0) {
+                // Pick random from same-side targets
+                const idx = Math.floor(Math.random() * sameSideTargets.length);
+                const target = sameSideTargets[idx];
+
+                // Remove from availableTargets
+                const mainIdx = this.availableTargets.indexOf(target);
+                if (mainIdx > -1) this.availableTargets.splice(mainIdx, 1);
+
+                this.usedTargets.add(`${target.sandX},${target.sandY}`);
+                console.log(`[IMMIGRATION] Assigned SAME-SIDE target: sand(${target.sandX}, ${target.sandY}), water(${target.waterX}, ${target.waterY}), ${this.availableTargets.length} remaining`);
+                return target;
+            }
+
+            console.log(`[IMMIGRATION] No same-side targets, using any available`);
+        }
+
+        // Fallback: Pop next target from queue (original behavior)
         if (this.availableTargets.length > 0) {
             const target = this.availableTargets.pop();
             this.usedTargets.add(`${target.sandX},${target.sandY}`);
             console.log(`[IMMIGRATION] Assigned target: sand(${target.sandX}, ${target.sandY}), water(${target.waterX}, ${target.waterY}), ${this.availableTargets.length} remaining`);
             return target;
         }
-        
+
         console.warn('[IMMIGRATION] No target tiles available!');
         return null;
     }
@@ -336,7 +378,7 @@ export class ImmigrationSystem {
         }
 
         // Get next target sand tile from the registry (new system)
-        const targetTile = this.getNextTargetTile();
+        const targetTile = this.getNextTargetTile(spawnPoint.x, spawnPoint.y);
         if (!targetTile) {
             console.log(`[IMMIGRATION] Could not get target tile for ${sourceIsland.name}`);
             return false;
@@ -974,7 +1016,7 @@ export class PeopleBoat {
                         // Get a NEW target from the queue
                         const immigrationSystem = this.game.systems?.find(s => s.constructor.name === 'ImmigrationSystem');
                         if (immigrationSystem) {
-                            const newTarget = immigrationSystem.getNextTargetTile();
+                            const newTarget = immigrationSystem.getNextTargetTile(this.x, this.y);
                             if (newTarget) {
                                 // Use new format with sand and water coordinates
                                 this.targetLanding = { 
