@@ -1248,6 +1248,28 @@ export class Crowd {
                terrain === 5 || terrain === 6 || terrain === 7 || terrain === 9;
     }
 
+    // Helper to check if a tile is walkable (terrain + no wall)
+    isTileWalkable(x, y) {
+        const map = this.game.tileMap;
+        if (!map) return false;
+        
+        const tileX = Math.floor(x);
+        const tileY = Math.floor(y);
+        
+        // Check terrain first
+        const terrain = map.getTerrainAt(tileX, tileY);
+        if (!this.isWalkable(terrain)) return false;
+        
+        // Check for wall building
+        const tile = map.getTile(tileX, tileY);
+        if (tile && tile.building && tile.building.type === 'wall') {
+            return false;  // Wall blocks movement
+        }
+        
+        return true;
+    }
+
+
     moveTowardTarget() {
         if (this.targetX === null || this.targetY === null) return;
 
@@ -1265,12 +1287,11 @@ export class Crowd {
 
         const nextX = this.x + (dx / dist) * this.speed;
         const nextY = this.y + (dy / dist) * this.speed;
-        const terrain = map.getTerrainAt(Math.floor(nextX), Math.floor(nextY));
 
         let moved = false;
 
-        // Try direct path first
-        if (this.isWalkable(terrain)) {
+        // Try direct path first (checks terrain AND walls)
+        if (this.isTileWalkable(nextX, nextY)) {
             this.x = nextX;
             this.y = nextY;
             moved = true;
@@ -1280,18 +1301,20 @@ export class Crowd {
             const alt1Dy = -dx;
             const alt1NextX = this.x + (alt1Dx / dist) * this.speed;
             const alt1NextY = this.y + (alt1Dy / dist) * this.speed;
-            const alt1Terrain = map.getTerrainAt(Math.floor(alt1NextX), Math.floor(alt1NextY));
 
             const alt2Dx = -dy;
             const alt2Dy = dx;
             const alt2NextX = this.x + (alt2Dx / dist) * this.speed;
             const alt2NextY = this.y + (alt2Dy / dist) * this.speed;
-            const alt2Terrain = map.getTerrainAt(Math.floor(alt2NextX), Math.floor(alt2NextY));
 
             const dist1 = Math.sqrt(Math.pow(alt1NextX - this.targetX, 2) + Math.pow(alt1NextY - this.targetY, 2));
             const dist2 = Math.sqrt(Math.pow(alt2NextX - this.targetX, 2) + Math.pow(alt2NextY - this.targetY, 2));
 
-            if (this.isWalkable(alt1Terrain) && this.isWalkable(alt2Terrain)) {
+            // Check both alternatives using isTileWalkable (terrain + walls)
+            const alt1Walkable = this.isTileWalkable(alt1NextX, alt1NextY);
+            const alt2Walkable = this.isTileWalkable(alt2NextX, alt2NextY);
+
+            if (alt1Walkable && alt2Walkable) {
                 if (dist1 <= dist2) {
                     this.x = alt1NextX;
                     this.y = alt1NextY;
@@ -1300,11 +1323,11 @@ export class Crowd {
                     this.y = alt2NextY;
                 }
                 moved = true;
-            } else if (this.isWalkable(alt1Terrain)) {
+            } else if (alt1Walkable) {
                 this.x = alt1NextX;
                 this.y = alt1NextY;
                 moved = true;
-            } else if (this.isWalkable(alt2Terrain)) {
+            } else if (alt2Walkable) {
                 this.x = alt2NextX;
                 this.y = alt2NextY;
                 moved = true;

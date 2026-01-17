@@ -367,6 +367,79 @@ export class PoliceSystem {
     /**
      * Move officer towards target crowd
      */
+    /**
+     * Check if a tile is walkable for officers (no wall)
+     */
+    isTileWalkable(x, y) {
+        const map = this.game.tileMap;
+        if (!map) return true;  // Allow movement if no map
+        
+        const tileX = Math.floor(x);
+        const tileY = Math.floor(y);
+        
+        // Check for wall building
+        const tile = map.getTile(tileX, tileY);
+        if (tile && tile.building && tile.building.type === 'wall') {
+            return false;  // Wall blocks movement
+        }
+        
+        return true;
+    }
+
+    /**
+     * Move officer with wall avoidance
+     */
+    moveOfficerWithAvoidance(officer, targetX, targetY) {
+        const dx = targetX - officer.x;
+        const dy = targetY - officer.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 0.1) return true;  // Already at target
+        
+        const dirX = dx / dist;
+        const dirY = dy / dist;
+        
+        // Try direct path first
+        const nextX = officer.x + dirX * this.officerSpeed;
+        const nextY = officer.y + dirY * this.officerSpeed;
+        
+        if (this.isTileWalkable(nextX, nextY)) {
+            officer.x = nextX;
+            officer.y = nextY;
+            return false;
+        }
+        
+        // Try perpendicular directions to navigate around wall
+        const alt1X = officer.x + dirY * this.officerSpeed;
+        const alt1Y = officer.y + (-dirX) * this.officerSpeed;
+        
+        const alt2X = officer.x + (-dirY) * this.officerSpeed;
+        const alt2Y = officer.y + dirX * this.officerSpeed;
+        
+        // Pick the alternative that gets closer to target
+        const dist1 = Math.sqrt(Math.pow(alt1X - targetX, 2) + Math.pow(alt1Y - targetY, 2));
+        const dist2 = Math.sqrt(Math.pow(alt2X - targetX, 2) + Math.pow(alt2Y - targetY, 2));
+        
+        if (this.isTileWalkable(alt1X, alt1Y) && this.isTileWalkable(alt2X, alt2Y)) {
+            if (dist1 <= dist2) {
+                officer.x = alt1X;
+                officer.y = alt1Y;
+            } else {
+                officer.x = alt2X;
+                officer.y = alt2Y;
+            }
+        } else if (this.isTileWalkable(alt1X, alt1Y)) {
+            officer.x = alt1X;
+            officer.y = alt1Y;
+        } else if (this.isTileWalkable(alt2X, alt2Y)) {
+            officer.x = alt2X;
+            officer.y = alt2Y;
+        }
+        // If all blocked, officer stays in place
+        
+        return false;
+    }
+
     moveOfficerToTarget(officer) {
         // Null checks to prevent crash
         if (!officer || !officer.patrol) {
@@ -388,9 +461,8 @@ export class PoliceSystem {
             // Capture visitors from crowd
             this.captureVisitors(officer, patrol);
         } else {
-            // Move towards target
-            officer.x += (dx / dist) * this.officerSpeed;
-            officer.y += (dy / dist) * this.officerSpeed;
+            // Move towards target with wall avoidance
+            this.moveOfficerWithAvoidance(officer, patrol.targetCrowd.x, patrol.targetCrowd.y);
         }
     }
 
@@ -468,9 +540,8 @@ export class PoliceSystem {
             // Return officer to available pool
             station.availableOfficers++;
         } else {
-            // Move towards station
-            officer.x += (dx / dist) * this.officerSpeed;
-            officer.y += (dy / dist) * this.officerSpeed;
+            // Move towards station with wall avoidance
+            this.moveOfficerWithAvoidance(officer, station.x + 1, station.y + 1);
         }
     }
 
