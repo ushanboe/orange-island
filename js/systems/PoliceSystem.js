@@ -477,15 +477,95 @@ export class PoliceSystem {
      * Update patrol states
      */
     updatePatrols() {
-        for (const patrol of this.patrols) {
-            // Check if target crowd still exists
-            if (patrol.targetCrowd && patrol.targetCrowd.count <= 0) {
-                // Target depleted, all officers should return
-                for (const officer of patrol.officers) {
-                    if (officer.state === 'pursuing') {
-                        officer.state = 'returning';
-                    }
+        // Create new patrols for visitor crowds
+        this.createPatrolsForCrowds();
+
+        // Update existing patrol officers
+        for (let i = this.officers.length - 1; i >= 0; i--) {
+            const officer = this.officers[i];
+
+            // Skip wall-building officers
+            if (officer.state === 'building' || officer.state === 'walking_to_wall') {
+                continue;
+            }
+
+            // Update patrol officers
+            if (officer.state === 'pursuing') {
+                this.moveOfficerToTarget(officer);
+            } else if (officer.state === 'returning') {
+                this.moveOfficerToStation(officer);
+            }
+        }
+    }
+
+    /**
+     * Create patrols to target visitor crowds
+     */
+    createPatrolsForCrowds() {
+        // Get all visitor crowds from immigration system
+        if (!this.game.immigrationSystem || !this.game.immigrationSystem.crowds) {
+            return;
+        }
+
+        const crowds = this.game.immigrationSystem.crowds;
+        if (crowds.length === 0) {
+            return;
+        }
+
+        // For each active station, check if it can create a patrol
+        for (const [key, station] of this.stations) {
+            if (!station.isActive) continue;
+            if (station.heldVisitors >= this.maxHeldPerStation) continue;
+
+            // Count officers already on patrol from this station
+            const stationOfficers = this.officers.filter(o => 
+                o.stationX === station.x && o.stationY === station.y &&
+                (o.state === 'pursuing' || o.state === 'returning')
+            );
+
+            // Check if we have available officers (max 15 per station)
+            if (stationOfficers.length >= this.officersPerStation) {
+                continue;
+            }
+
+            // Find nearest crowd within patrol radius
+            let nearestCrowd = null;
+            let nearestDist = this.patrolRadius;
+
+            for (const crowd of crowds) {
+                if (crowd.count <= 0) continue;
+
+                // Check if crowd is already being targeted
+                const alreadyTargeted = this.officers.some(o => 
+                    o.targetCrowd === crowd && o.state === 'pursuing'
+                );
+                if (alreadyTargeted) continue;
+
+                const dx = crowd.x - (station.x + 1.5);
+                const dy = crowd.y - (station.y + 1.5);
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < nearestDist) {
+                    nearestDist = dist;
+                    nearestCrowd = crowd;
                 }
+            }
+
+            // Spawn officer to pursue crowd
+            if (nearestCrowd) {
+                const officer = {
+                    x: station.x + 1.5,
+                    y: station.y + 1.5,
+                    stationX: station.x,
+                    stationY: station.y,
+                    targetCrowd: nearestCrowd,
+                    state: 'pursuing',
+                    capturedVisitors: 0,
+                    patrol: { targetCrowd: nearestCrowd, capturedCount: 0 }
+                };
+
+                this.officers.push(officer);
+                console.log(`[POLICE] Station ${station.x},${station.y} dispatched officer to capture visitors at (${Math.floor(nearestCrowd.x)}, ${Math.floor(nearestCrowd.y)})`);
             }
         }
     }
