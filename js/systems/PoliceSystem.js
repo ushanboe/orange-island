@@ -705,6 +705,64 @@ export class PoliceSystem {
     /**
      * Get all active police officers for rendering
      */
+    /**
+     * Render all police officers and station info
+     */
+    render(ctx, offsetX, offsetY, tileSize) {
+        ctx.save();
+        ctx.font = `${Math.max(10, tileSize * 0.4)}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        // Render all officers
+        for (const officer of this.officers) {
+            // Wall-building officers (PoliceOfficer class) render themselves
+            if (typeof officer.render === "function") {
+                officer.render(ctx, tileSize, offsetX, offsetY);
+                continue;
+            }
+
+            // Patrol officers (plain objects) - render as emoji
+            const screenX = officer.x * tileSize + offsetX;
+            const screenY = officer.y * tileSize + offsetY;
+
+            // Officer icon
+            ctx.fillText("👮", screenX, screenY);
+
+            // Show captured count if any
+            if (officer.capturedVisitors > 0) {
+                ctx.font = `${Math.max(8, tileSize * 0.25)}px Arial`;
+                ctx.fillStyle = "#FF0000";
+                ctx.fillText(`+${officer.capturedVisitors}`, screenX + tileSize * 0.3, screenY - tileSize * 0.2);
+                ctx.font = `${Math.max(10, tileSize * 0.4)}px Arial`;
+            }
+        }
+
+        // Render held count on stations
+        for (const [key, station] of this.stations) {
+            if (station.heldVisitors > 0) {
+                const screenX = (station.x + 1.5) * tileSize + offsetX;
+                const screenY = station.y * tileSize + offsetY - 5;
+
+                // Background badge
+                ctx.fillStyle = station.heldVisitors >= this.maxHeldPerStation ? "#FF0000" : "#FF6600";
+                const badgeWidth = tileSize * 0.8;
+                const badgeHeight = tileSize * 0.4;
+                ctx.beginPath();
+                ctx.roundRect(screenX - badgeWidth/2, screenY - badgeHeight/2, badgeWidth, badgeHeight, 5);
+                ctx.fill();
+
+                // Text
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = `bold ${Math.max(10, tileSize * 0.3)}px Arial`;
+                ctx.fillText(`🔒${station.heldVisitors}`, screenX, screenY);
+            }
+        }
+
+        ctx.restore();
+    }
+
+
     getOfficers() {
         return this.officers;
     }

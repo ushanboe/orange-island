@@ -717,17 +717,11 @@ export class GameCanvas {
     renderPoliceOfficers(ctx) {
         if (!this.game.policeSystem) return;
 
-        const officers = this.game.policeSystem.getOfficers();
-        if (!officers || officers.length === 0) return;
-
-        // Render each active police officer
-        for (const officer of officers) {
-            // Only render wall-building officers (PoliceOfficer class instances)
-            // Patrol officers are plain objects without render() method
-            if (officer.render && typeof officer.render === "function") {
-                officer.render(ctx, this.tileSize, this.offsetX, this.offsetY);
-            }
-        }
+        // Delegate rendering to PoliceSystem which handles both:
+        // - Wall-building officers (PoliceOfficer class with render())
+        // - Patrol officers (plain objects rendered as 👮 emoji)
+        this.game.policeSystem.render(ctx, this.offsetX, this.offsetY, this.tileSize);
+    }
     }
 
     // ==================== RENDER BOATS ====================
