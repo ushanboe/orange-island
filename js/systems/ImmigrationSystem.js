@@ -1464,10 +1464,15 @@ export class Crowd {
         const terrain = map.getTerrainAt(tileX, tileY);
         if (!this.isWalkable(terrain)) return false;
         
-        // Check for wall building
+        // Check for TERRAIN wall (manually placed walls use terrain type 10)
+        if (terrain === 10) {  // TERRAIN.WALL = 10
+            return false;  // Terrain wall blocks movement
+        }
+
+        // Check for BUILDING wall (police-built walls)
         const tile = map.getTile(tileX, tileY);
         if (tile && tile.building && tile.building.type === 'wall') {
-            return false;  // Wall blocks movement
+            return false;  // Building wall blocks movement
         }
         
         return true;

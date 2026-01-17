@@ -373,16 +373,22 @@ export class PoliceSystem {
     isTileWalkable(x, y) {
         const map = this.game.tileMap;
         if (!map) return true;  // Allow movement if no map
-        
+
         const tileX = Math.floor(x);
         const tileY = Math.floor(y);
-        
-        // Check for wall building
+
+        // Check for TERRAIN wall (manually placed walls use terrain type 10)
+        const terrain = map.getTerrainAt(tileX, tileY);
+        if (terrain === 10) {  // TERRAIN.WALL = 10
+            return false;  // Terrain wall blocks movement
+        }
+
+        // Check for BUILDING wall (police-built walls)
         const tile = map.getTile(tileX, tileY);
         if (tile && tile.building && tile.building.type === 'wall') {
-            return false;  // Wall blocks movement
+            return false;  // Building wall blocks movement
         }
-        
+
         return true;
     }
 
