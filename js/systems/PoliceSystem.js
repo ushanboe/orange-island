@@ -368,6 +368,12 @@ export class PoliceSystem {
      * Move officer towards target crowd
      */
     moveOfficerToTarget(officer) {
+        // Null checks to prevent crash
+        if (!officer || !officer.patrol) {
+            const idx = this.officers.indexOf(officer);
+            if (idx >= 0) this.officers.splice(idx, 1);
+            return;
+        }
         const patrol = officer.patrol;
         if (!patrol.targetCrowd) {
             officer.state = 'returning';
@@ -427,6 +433,13 @@ export class PoliceSystem {
      * Move officer back to station
      */
     moveOfficerToStation(officer) {
+        // Null checks to prevent crash
+        if (!officer || !officer.patrol || !officer.patrol.station) {
+            // Remove invalid officer from list
+            const idx = this.officers.indexOf(officer);
+            if (idx >= 0) this.officers.splice(idx, 1);
+            return;
+        }
         const station = officer.patrol.station;
         const dx = station.x + 1 - officer.x;
         const dy = station.y + 1 - officer.y;
