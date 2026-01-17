@@ -118,20 +118,27 @@ export class PoliceSystem {
             return;
         }
 
-        // Find closest perimeter tile to this station
-        let closestTile = null;
-        let closestDist = Infinity;
-
-        for (const tile of perimeter) {
-            const dx = tile.x - station.x;
-            const dy = tile.y - station.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist < closestDist) {
-                closestDist = dist;
-                closestTile = tile;
+        // Filter out tiles already being built by other officers
+        const occupiedTiles = new Set();
+        for (const officer of this.officers) {
+            if (officer.wallX !== undefined && officer.wallY !== undefined) {
+                occupiedTiles.add(`${officer.wallX},${officer.wallY}`);
             }
         }
+
+        const availableTiles = perimeter.filter(tile => 
+            !occupiedTiles.has(`${tile.x},${tile.y}`)
+        );
+
+        if (availableTiles.length === 0) {
+            console.log(`[POLICE] Station ${stationKey} - all perimeter tiles occupied`);
+            return;
+        }
+
+        // Pick a random tile from available tiles (not always closest)
+        // This ensures different stations pick different tiles
+        const randomIndex = Math.floor(Math.random() * Math.min(availableTiles.length, 10));
+        const closestTile = availableTiles[randomIndex];
 
         if (!closestTile) return;
 
@@ -581,6 +588,21 @@ export class PoliceSystem {
                 map.setTerrain(officer.wallX, officer.wallY, 10);  // TERRAIN.WALL = 10
                 officer.wallPlaced = true;
                 console.log(`[POLICE] Officer completed wall at (${officer.wallX}, ${officer.wallY})`);
+
+                // Tweet about the beautiful wall (25% chance)
+                if (Math.random() < 0.25 && this.game.showKingTweet) {
+                    const wallTweets = [
+                        "Building a BEAUTIFUL BIG WALL! Nobody builds walls like me! 🧱",
+                        "Our walls are TREMENDOUS! The best walls in the world! 🏗️",
+                        "WALL going up! Making our island SAFE and SECURE! 🛡️",
+                        "Another section of our MAGNIFICENT WALL complete! 🧱✨",
+                        "The wall just got 10 feet higher! BELIEVE ME! 📈🧱",
+                        "Our police are building the GREATEST WALL ever seen! 👮🧱",
+                        "BRICK BY BRICK, we're making our island IMPENETRABLE! 🧱💪",
+                        "Nobody appreciates a good wall like I do! BEAUTIFUL! 🧱😍"
+                    ];
+                    this.game.showKingTweet(wallTweets[Math.floor(Math.random() * wallTweets.length)]);
+                }
             }
 
             // Remove completed officers

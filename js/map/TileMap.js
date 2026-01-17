@@ -238,11 +238,19 @@ export class TileMap {
     }
 
     // Find perimeter tiles for wall building (grass/forest adjacent to water)
+    // Only returns tiles on the MAIN ISLAND (center), not source islands (edges)
     findPerimeterTiles() {
         const perimeter = [];
 
-        for (let y = 0; y < this.height; y++) {
-            for (let x = 0; x < this.width; x++) {
+        // Define main island area (exclude edges where source islands are)
+        const edgeMargin = 25;  // Source islands are within 25 tiles of edges
+        const minX = edgeMargin;
+        const maxX = this.width - edgeMargin;
+        const minY = edgeMargin;
+        const maxY = this.height - edgeMargin;
+
+        for (let y = minY; y < maxY; y++) {
+            for (let x = minX; x < maxX; x++) {
                 const tile = this.tiles[y][x];
 
                 // Must be grass or forest (buildable land)
@@ -267,6 +275,7 @@ export class TileMap {
             }
         }
 
+        console.log(`[TILEMAP] Found ${perimeter.length} perimeter tiles on main island`);
         return perimeter;
     }
     // Get neighboring tiles
