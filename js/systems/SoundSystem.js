@@ -13,7 +13,7 @@ class SoundSystem {
         // Volume settings (0-1)
         this.volumes = {
             master: 0.7,
-            music: 0.5,
+            music: 0.7,
             sfx: 0.8,
             ambient: 0.4
         };
@@ -260,18 +260,18 @@ class SoundSystem {
             // Play chord notes with slight detuning for warmth
             for (let n = 0; n < chord.length; n++) {
                 const freq = chord[n] * (1 + (Math.random() - 0.5) * 0.002);
-                sample += Math.sin(2 * Math.PI * freq * t) * 0.15;
+                sample += Math.sin(2 * Math.PI * freq * t) * 0.4;
             }
 
             // Add subtle bass
             const bassFreq = chord[0] / 2;
-            sample += Math.sin(2 * Math.PI * bassFreq * t) * 0.2;
+            sample += Math.sin(2 * Math.PI * bassFreq * t) * 0.5;
 
             // Gentle envelope per chord
             const chordTime = t % chordDuration;
             const chordEnvelope = Math.min(1, chordTime / 0.5) * Math.min(1, (chordDuration - chordTime) / 0.5);
 
-            sample *= chordEnvelope * 0.4;
+            sample *= chordEnvelope * 0.9;
 
             // Slight stereo variation
             leftData[i] = sample * (1 + Math.sin(t * 0.5) * 0.1);
