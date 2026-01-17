@@ -246,6 +246,51 @@ export class ImmigrationSystem {
         return { x: fallbackX, y: fallbackY };
     }
 
+
+    /**
+     * Find a water tile adjacent to a beach tile for boat landing
+     * Boats need to navigate to WATER, not land!
+     */
+    findWaterAdjacentToBeach(beachTile) {
+        const map = this.game.tileMap;
+        if (!map) return beachTile;  // Fallback to beach if no map
+        
+        const offsets = [
+            [0, 1],   // Below
+            [0, -1],  // Above  
+            [1, 0],   // Right
+            [-1, 0],  // Left
+            [1, 1],   // Below-right
+            [-1, 1],  // Below-left
+            [1, -1],  // Above-right
+            [-1, -1]  // Above-left
+        ];
+        
+        for (const [ox, oy] of offsets) {
+            const waterX = beachTile.x + ox;
+            const waterY = beachTile.y + oy;
+            
+            if (waterX < 0 || waterY < 0 || waterX >= map.width || waterY >= map.height) {
+                continue;
+            }
+            
+            const terrain = map.getTerrainAt(waterX, waterY);
+            // DEEP_WATER=0, SHALLOW_WATER=1 - both are navigable
+            if (terrain === 0 || terrain === 1) {
+                // Return water tile coordinates (centered)
+                return { 
+                    x: waterX + 0.5, 
+                    y: waterY + 0.5,
+                    beachX: beachTile.x,  // Remember original beach for crowd spawning
+                    beachY: beachTile.y
+                };
+            }
+        }
+        
+        // No adjacent water found - return beach as fallback
+        return beachTile;
+    }
+
     findRemoteLandingSpot(sourceIslandName) {
         const map = this.game.tileMap;
         if (!map) return null;
@@ -318,19 +363,22 @@ export class ImmigrationSystem {
         // If we have beaches on preferred coast, pick randomly from ALL of them
         if (preferredBeaches.length > 0) {
             const randomIndex = Math.floor(Math.random() * preferredBeaches.length);
-            return preferredBeaches[randomIndex];
+            // Return WATER tile adjacent to beach, not the beach itself!
+            return this.findWaterAdjacentToBeach(preferredBeaches[randomIndex]);
         }
 
         // Fallback: pick randomly from any beach in middle Y range
         const middleBeaches = beachTiles.filter(b => b.isInMiddleY);
         if (middleBeaches.length > 0) {
             const randomIndex = Math.floor(Math.random() * middleBeaches.length);
-            return middleBeaches[randomIndex];
+            // Return WATER tile adjacent to beach, not the beach itself!
+            return this.findWaterAdjacentToBeach(middleBeaches[randomIndex]);
         }
 
         // Last resort: pick randomly from all beaches
         const randomIndex = Math.floor(Math.random() * beachTiles.length);
-        return beachTiles[randomIndex];
+        // Return WATER tile adjacent to beach, not the beach itself!
+        return this.findWaterAdjacentToBeach(beachTiles[randomIndex]);
     }
 
     getDistanceFromCivilization(x, y) {
