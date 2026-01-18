@@ -286,7 +286,7 @@ export class AirportSystem {
 
         // Timing
         this.frameCount = 0;
-        this.spawnInterval = 70;  // Frames between plane spawns (roughly 1 per second at 60fps)
+        this.spawnInterval = 10; // Quick spawn for testing  // Frames between plane spawns (roughly 1 per second at 60fps)
         this.lastSpawn = 0;
 
         // Tourist tracking
@@ -328,7 +328,7 @@ export class AirportSystem {
         if (shouldSpawn) {
             this.trySpawnPlane();
             // Randomize next spawn interval (60-90 frames)
-            this.spawnInterval = 60 + Math.floor(Math.random() * 30);
+            this.spawnInterval = 10 + Math.floor(Math.random() * 10); // Quick respawn for testing
             this.lastSpawn = this.frameCount;
         }
 
