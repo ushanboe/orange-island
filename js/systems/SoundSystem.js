@@ -63,7 +63,7 @@ class SoundSystem {
             'ambient-birds': { type: 'generated', frequency: 2000, duration: 0.5, wave: 'sine', chirp: true },
 
             // Music (generated ambient music)
-            'music-peaceful': { type: 'generated-music', tempo: 60, key: 'C', mood: 'peaceful' },
+            'music-peaceful': { type: 'file', src: 'assets/sounds/music/RetroFuture_Clean.mp3' },
             'music-busy': { type: 'generated-music', tempo: 90, key: 'G', mood: 'busy' }
         };
 
@@ -144,7 +144,19 @@ class SoundSystem {
         }
 
         let buffer;
-        if (def.type === 'generated') {
+        if (def.type === 'file') {
+            // Load audio file from URL
+            try {
+                console.log('[SOUND] Loading audio file:', def.src);
+                const response = await fetch(def.src);
+                const arrayBuffer = await response.arrayBuffer();
+                buffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                console.log('[SOUND] Audio file loaded successfully:', soundId);
+            } catch (error) {
+                console.error('[SOUND] Failed to load audio file:', def.src, error);
+                return null;
+            }
+        } else if (def.type === 'generated') {
             buffer = this.generateSound(def);
         } else if (def.type === 'generated-music') {
             buffer = this.generateMusic(def);

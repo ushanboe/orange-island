@@ -1,5 +1,5 @@
 // Service Worker for Island Kingdom PWA
-const CACHE_NAME = 'island-kingdom-v202';
+const CACHE_NAME = 'island-kingdom-v203';
 
 const ASSETS_TO_CACHE = [
     './',
@@ -30,7 +30,8 @@ const ASSETS_TO_CACHE = [
     './js/utils/Random.js',
     './assets/icon-192.png',
     './assets/icon-512.png',
-    './manifest.json'
+    './manifest.json',
+    './assets/sounds/music/RetroFuture_Clean.mp3'
 ];
 
 // Install event - cache assets
