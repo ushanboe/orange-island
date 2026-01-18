@@ -20,7 +20,7 @@ import { AdminSettings } from '../ui/AdminSettings.js';
 import { SaveSystem } from '../systems/SaveSystem.js';
 import { PoliceSystem } from '../systems/PoliceSystem.js';
 import { SoundSystem } from '../systems/SoundSystem.js';
-import { AirportSystem } from '../systems/AirportSystem.js?v=217';
+import { AirportSystem } from '../systems/AirportSystem.js?v=218';
 import { StartMenu } from '../ui/StartMenu.js';
 
 export class Game {
@@ -758,7 +758,15 @@ export class Game {
         }
 
         document.getElementById('population').textContent = this.population + (this.visitors ? ` (+${this.visitors} visitors)` : '');
-        document.getElementById('tourists').textContent = this.tourists || 0;
+        // Update arrivals and departures from airport system
+        if (this.airportSystem) {
+            const stats = this.airportSystem.getStats();
+            document.getElementById('arrivals').textContent = 'Arrivals: ' + (stats.totalArrived || 0);
+            document.getElementById('departures').textContent = 'Departures: ' + (stats.totalDeparted || 0);
+        } else {
+            document.getElementById('arrivals').textContent = 'Arrivals: 0';
+            document.getElementById('departures').textContent = 'Departures: 0';
+        }
         document.getElementById('date').textContent = `Year ${this.year}, Month ${this.month}`;
 
         // Update king mood emoji

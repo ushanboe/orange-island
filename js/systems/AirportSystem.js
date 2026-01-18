@@ -29,7 +29,7 @@ export class Plane {
     }
 
     update(deltaTime, system) {
-        const speed = 0.00125;  // Progress per frame (very slow)
+        const speed = 0.000625;  // Progress per frame (50% slower)
 
         switch (this.state) {
             case 'approaching':
@@ -67,11 +67,11 @@ export class Plane {
                 break;
 
             case 'grounded':
-                // Wait for tourists to disembark (brief pause)
-                this.progress += speed;
+                // Brief pause then takeoff immediately (don't wait for tourists to return)
+                this.progress += speed * 2;  // Faster transition
                 if (this.progress >= 1) {
-                    this.state = 'waiting';
-                    this.waitingForCrowd = true;
+                    this.state = 'takeoff';
+                    this.progress = 0;
                 }
                 break;
 
@@ -241,7 +241,9 @@ export class TouristCrowd {
                 if (Math.sqrt(adx * adx + ady * ady) < 2) {
                     // Arrived back at airport!
                     console.log('[TOURIST] Crowd returned to airport, departing');
-                    this.plane.crowdReturned();
+                    // Track departures
+                    system.totalTouristsDeparted += this.count;
+                    console.log('[AIRPORT] ' + this.count + ' tourists departed!');
                     return true;  // Remove crowd
                 }
                 break;
@@ -291,6 +293,7 @@ export class AirportSystem {
 
         // Tourist tracking
         this.totalTouristsArrived = 0;
+        this.totalTouristsDeparted = 0;
         this.totalTouristIncome = 0;
 
         console.log('[AIRPORT] System initialized');
@@ -602,6 +605,7 @@ export class AirportSystem {
             touristCrowds: this.touristCrowds.length,
             currentTourists: this.getTouristCount(),
             totalArrived: this.totalTouristsArrived,
+            totalDeparted: this.totalTouristsDeparted,
             totalIncome: this.totalTouristIncome
         };
     }
