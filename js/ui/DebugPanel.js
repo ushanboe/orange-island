@@ -210,6 +210,24 @@ export class DebugPanel {
         }
         html += `</div>`;
 
+        // Airport/Tourism System
+        html += `<div style="margin-bottom:10px;border-bottom:1px solid #006600;padding-bottom:8px;">`;
+        html += `<b style="color:#ffff00;">✈️ AIRPORT/TOURISM</b><br>`;
+        if (g.airportSystem) {
+            const as = g.airportSystem;
+            const status = as.getStatus ? as.getStatus() : {};
+            html += `Initialized: ✅ YES<br>`;
+            html += `Airports: ${status.airports || 0} (Active: ${status.activeAirports || 0})<br>`;
+            html += `Planes: ${status.planes || 0}<br>`;
+            html += `Tourist Crowds: ${status.touristCrowds || 0}<br>`;
+            html += `<span style="color:#FFD700;">Current Tourists: ${status.currentTourists || 0}</span><br>`;
+            html += `Total Arrived: ${status.totalArrived || 0}<br>`;
+            html += `Total Income: $${status.totalIncome || 0}<br>`;
+        } else {
+            html += `Initialized: ❌ NO<br>`;
+        }
+        html += `</div>`;
+
         // Canvas/Rendering
         html += `<div style="margin-bottom:10px;border-bottom:1px solid #006600;padding-bottom:8px;">`;
         html += `<b style="color:#ffff00;">🎨 RENDERING</b><br>`;

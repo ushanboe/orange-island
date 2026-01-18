@@ -20,6 +20,7 @@ import { AdminSettings } from '../ui/AdminSettings.js';
 import { SaveSystem } from '../systems/SaveSystem.js';
 import { PoliceSystem } from '../systems/PoliceSystem.js';
 import { SoundSystem } from '../systems/SoundSystem.js';
+import { AirportSystem } from '../systems/AirportSystem.js';
 import { StartMenu } from '../ui/StartMenu.js';
 
 export class Game {
@@ -32,6 +33,7 @@ export class Game {
         this.population = 0;
         this.maxPopulation = 0;
         this.visitors = 0;  // Immigrants who landed but haven't integrated
+        this.tourists = 0;  // Current tourists on the island
         this.processedImmigrants = 0;  // Immigrants processed by police into residents
 
         console.log('[GAME] Initial state - Treasury:', this.treasury, 'Visitors:', this.visitors);
@@ -107,6 +109,9 @@ export class Game {
 
         // Initialize police enforcement system
         this.policeSystem = new PoliceSystem(this);
+
+        // Initialize airport system
+        this.airportSystem = new AirportSystem(this);
 
         // Initialize sound system
         this.soundSystem = new SoundSystem(this);
@@ -547,6 +552,11 @@ export class Game {
         // Update police enforcement
         if (this.policeSystem) {
             this.policeSystem.update();
+
+            // Update airport system
+            if (this.airportSystem) {
+                this.airportSystem.update();
+            }
         }
 
         // Simulate
@@ -737,6 +747,7 @@ export class Game {
         }
 
         document.getElementById('population').textContent = this.population + (this.visitors ? ` (+${this.visitors} visitors)` : '');
+        document.getElementById('tourists').textContent = this.tourists || 0;
         document.getElementById('date').textContent = `Year ${this.year}, Month ${this.month}`;
 
         // Update king mood emoji

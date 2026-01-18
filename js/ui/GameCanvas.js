@@ -721,6 +721,11 @@ export class GameCanvas {
         // - Wall-building officers (PoliceOfficer class with render())
         // - Patrol officers (plain objects rendered as 👮 emoji)
         this.game.policeSystem.render(ctx, this.offsetX, this.offsetY, this.tileSize);
+
+        // Render airport system (planes and tourist crowds)
+        if (this.game.airportSystem) {
+            this.game.airportSystem.render(ctx, this.offsetX, this.offsetY, this.tileSize);
+        }
     }
 
     // ==================== RENDER BOATS ====================
@@ -820,6 +825,15 @@ export class GameCanvas {
             return;
         }
 
+
+        // Special handling for airport (4x4) with status indicator
+        if (building.type === 'airport') {
+            // Only render from main tile
+            if (building.mainTile !== false) {
+                this.drawAirport(ctx, screenX, screenY, this.tileSize, tileX, tileY);
+            }
+            return;
+        }
 
 
         const buildingDef = BUILDINGS[building.type];
@@ -1564,6 +1578,158 @@ export class GameCanvas {
         ctx.strokeStyle = 'rgba(0,0,0,0.5)';
         ctx.lineWidth = 2;
         ctx.strokeRect(x + 1, y + 1, fullSize - 2, fullSize - 2);
+    }
+
+    drawAirport(ctx, screenX, screenY, tileSize, tileX, tileY) {
+        const totalSize = tileSize * 4;  // 4x4 building
+
+        // Check if airport is active
+        let isActive = false;
+        if (this.game && this.game.airportSystem) {
+            const airport = this.game.airportSystem.airports.find(
+                a => a.x === tileX && a.y === tileY
+            );
+            isActive = airport?.active || false;
+        }
+
+        // Draw ground/tarmac
+        ctx.fillStyle = '#37474F';  // Dark gray tarmac
+        ctx.fillRect(screenX, screenY, totalSize, totalSize);
+
+        // Draw runway (horizontal stripe)
+        ctx.fillStyle = '#263238';  // Darker runway
+        ctx.fillRect(screenX + tileSize * 0.5, screenY + tileSize * 1.5, totalSize - tileSize, tileSize);
+
+        // Runway markings (white dashed line)
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([tileSize * 0.3, tileSize * 0.2]);
+        ctx.beginPath();
+        ctx.moveTo(screenX + tileSize * 0.7, screenY + tileSize * 2);
+        ctx.lineTo(screenX + totalSize - tileSize * 0.7, screenY + tileSize * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Runway threshold markings
+        ctx.fillStyle = '#FFFFFF';
+        for (let i = 0; i < 4; i++) {
+            ctx.fillRect(screenX + tileSize * 0.6, screenY + tileSize * 1.6 + i * tileSize * 0.2, tileSize * 0.15, tileSize * 0.15);
+            ctx.fillRect(screenX + totalSize - tileSize * 0.75, screenY + tileSize * 1.6 + i * tileSize * 0.2, tileSize * 0.15, tileSize * 0.15);
+        }
+
+        // Draw terminal building (top portion)
+        const terminalX = screenX + tileSize * 0.5;
+        const terminalY = screenY + tileSize * 0.3;
+        const terminalW = totalSize - tileSize;
+        const terminalH = tileSize * 1.0;
+
+        // Terminal shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.fillRect(terminalX + 4, terminalY + 4, terminalW, terminalH);
+
+        // Terminal building
+        ctx.fillStyle = '#ECEFF1';  // Light gray building
+        ctx.fillRect(terminalX, terminalY, terminalW, terminalH);
+
+        // Terminal roof
+        ctx.fillStyle = '#607D8B';
+        ctx.fillRect(terminalX, terminalY, terminalW, tileSize * 0.15);
+
+        // Terminal windows
+        ctx.fillStyle = '#81D4FA';  // Light blue windows
+        const windowCount = 6;
+        const windowW = (terminalW - tileSize * 0.4) / windowCount - tileSize * 0.1;
+        for (let i = 0; i < windowCount; i++) {
+            ctx.fillRect(
+                terminalX + tileSize * 0.2 + i * (windowW + tileSize * 0.1),
+                terminalY + tileSize * 0.25,
+                windowW,
+                tileSize * 0.5
+            );
+        }
+
+        // Control tower
+        const towerX = screenX + totalSize - tileSize * 1.2;
+        const towerY = screenY + tileSize * 0.1;
+        const towerW = tileSize * 0.8;
+        const towerH = tileSize * 1.2;
+
+        // Tower shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.fillRect(towerX + 3, towerY + 3, towerW, towerH);
+
+        // Tower body
+        ctx.fillStyle = '#B0BEC5';
+        ctx.fillRect(towerX, towerY + tileSize * 0.4, towerW, towerH - tileSize * 0.4);
+
+        // Tower top (control room)
+        ctx.fillStyle = '#455A64';
+        ctx.fillRect(towerX - tileSize * 0.1, towerY, towerW + tileSize * 0.2, tileSize * 0.5);
+
+        // Tower windows
+        ctx.fillStyle = '#4FC3F7';
+        ctx.fillRect(towerX, towerY + tileSize * 0.1, towerW, tileSize * 0.3);
+
+        // Draw taxiway lines
+        ctx.strokeStyle = '#FFC107';  // Yellow taxiway lines
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(screenX + tileSize * 2, screenY + tileSize * 2.5);
+        ctx.lineTo(screenX + tileSize * 2, screenY + totalSize - tileSize * 0.3);
+        ctx.stroke();
+
+        // Draw plane parking spots
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 2; i++) {
+            const spotX = screenX + tileSize * 0.8 + i * tileSize * 2;
+            const spotY = screenY + tileSize * 2.8;
+            ctx.strokeRect(spotX, spotY, tileSize * 1.2, tileSize * 0.8);
+        }
+
+        // Draw status indicator
+        const ledX = screenX + totalSize - tileSize * 0.3;
+        const ledY = screenY + tileSize * 0.3;
+        const ledSize = Math.max(6, tileSize * 0.2);
+
+        // LED glow
+        const gradient = ctx.createRadialGradient(ledX, ledY, 0, ledX, ledY, ledSize * 2);
+        if (isActive) {
+            gradient.addColorStop(0, 'rgba(0, 255, 0, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(0, 255, 0, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 255, 0, 0)');
+        } else {
+            gradient.addColorStop(0, 'rgba(255, 0, 0, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(255, 0, 0, 0.3)');
+            gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+        }
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(ledX, ledY, ledSize * 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // LED body
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(ledX, ledY, ledSize * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // LED light
+        ctx.fillStyle = isActive ? '#00FF00' : '#FF0000';
+        ctx.beginPath();
+        ctx.arc(ledX, ledY, ledSize, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw airport icon
+        ctx.font = `${tileSize * 0.8}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('✈️', screenX + tileSize * 1, screenY + tileSize * 3.3);
+
+        // Draw border
+        ctx.strokeStyle = isActive ? '#4CAF50' : '#F44336';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(screenX + 1, screenY + 1, totalSize - 2, totalSize - 2);
     }
 
 // ==================== PLACEMENT PREVIEW ====================

@@ -111,6 +111,28 @@ export const BUILDINGS = {
         mustBeNearWater: true
     },
 
+    airport: {
+        id: 'airport',
+        name: 'International Airport',
+        description: 'Brings tourists from around the world! Requires power, road, and fire station.',
+        category: BUILDING_CATEGORIES.INFRASTRUCTURE,
+        cost: 5000,
+        size: 4,    // 4x4 building
+        color: '#607D8B',  // Blue-gray
+        icon: '✈️',
+        secondaryIcon: '🛫',
+        effects: {
+            tourism: 100,
+            jobs: 50,
+            maintenance: -100
+        },
+        canBuildOn: ['grass', 'dirt'],
+        requiresRoadAccess: true,
+        requiresPower: true,
+        requiresFireStation: true,  // Must have fire station within range
+        fireStationRange: 15        // Tiles range for fire station
+    },
+
     // === POWER ===
     coalPlant: {
         id: 'coalPlant',
