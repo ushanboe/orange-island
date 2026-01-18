@@ -582,11 +582,6 @@ export class Game {
             this.airportSystem.update();
         }
 
-        // Update weather system
-        if (this.weatherSystem) {
-            this.weatherSystem.update();
-        }
-
         // Simulate
         this.simulatePopulation();
         this.simulateEconomy();

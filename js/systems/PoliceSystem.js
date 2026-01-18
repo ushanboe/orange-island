@@ -24,10 +24,10 @@ export class PoliceSystem {
         this.captureRadius = 1.5;  // How close officer needs to be to capture
 
         // Wall building configuration
-        this.wallBuildCooldown = 2;  // 2 months (ticks) between wall builds
-        this.wallBuildCost = 500;  // $500 per wall tile
-        this.wallBuildMinBudget = 50000;  // $50K to start building
-        this.wallBuildStopBudget = 10000;  // $10K to stop building
+        this.wallBuildCooldown = 6;  // 6 months (ticks) between wall builds
+        this.wallBuildCost = 1000;  // $1000 per wall tile
+        this.wallBuildMinBudget = 1000000;  // $1M to start building
+        this.wallBuildStopBudget = 300000;  // $300K to stop building
     }
 
     /**
