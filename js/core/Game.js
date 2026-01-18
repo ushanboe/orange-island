@@ -20,7 +20,7 @@ import { AdminSettings } from '../ui/AdminSettings.js';
 import { SaveSystem } from '../systems/SaveSystem.js';
 import { PoliceSystem } from '../systems/PoliceSystem.js';
 import { SoundSystem } from '../systems/SoundSystem.js';
-import { AirportSystem } from '../systems/AirportSystem.js?v=213';
+import { AirportSystem } from '../systems/AirportSystem.js?v=214';
 import { StartMenu } from '../ui/StartMenu.js';
 
 export class Game {
@@ -406,6 +406,11 @@ export class Game {
             this.policeSystem.animate();
         }
 
+        // Update airport system (planes and tourists) at 60fps
+        if (this.airportSystem) {
+            this.airportSystem.update();
+        }
+
         // Render
         this.canvas.render();
 
@@ -425,6 +430,12 @@ export class Game {
         if (this.policeSystem && this.canvas) {
             const ctx = this.canvas.ctx;
             this.policeSystem.render(ctx, this.canvas.offsetX, this.canvas.offsetY, this.canvas.tileSize);
+        }
+
+        // Render airport system (planes and tourist crowds)
+        if (this.airportSystem && this.canvas) {
+            const ctx = this.canvas.ctx;
+            this.airportSystem.render(ctx, this.canvas.offsetX, this.canvas.offsetY, this.canvas.tileSize);
         }
 
         // Render development animations
