@@ -297,6 +297,12 @@ export class AirportSystem {
     }
 
     update() {
+        // Log every call to verify update is running
+        if (!this._updateLogged) {
+            console.log('[AIRPORT] First update() call - system is running!');
+            this._updateLogged = true;
+        }
+
         this.frameCount++;
 
         // Debug: log every 60 frames
@@ -308,7 +314,11 @@ export class AirportSystem {
         this.updateAirports();
 
         // Spawn planes at active airports
-        if (this.frameCount - this.lastSpawn >= this.spawnInterval) {
+        const shouldSpawn = this.frameCount - this.lastSpawn >= this.spawnInterval;
+        if (this.frameCount % 120 === 0) {
+            console.log(`[AIRPORT] Spawn check: frame=${this.frameCount}, lastSpawn=${this.lastSpawn}, interval=${this.spawnInterval}, shouldSpawn=${shouldSpawn}`);
+        }
+        if (shouldSpawn) {
             this.trySpawnPlane();
             // Randomize next spawn interval (60-90 frames)
             this.spawnInterval = 60 + Math.floor(Math.random() * 30);
