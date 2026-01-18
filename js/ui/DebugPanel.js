@@ -228,6 +228,30 @@ export class DebugPanel {
         }
         html += `</div>`;
 
+        // Weather System
+        html += `<div style="margin-bottom:10px;border-bottom:1px solid #006600;padding-bottom:8px;">`;
+        html += `<b style="color:#ffff00;">🌦️ WEATHER</b><br>`;
+        if (g.weatherSystem) {
+            const ws = g.weatherSystem.getStatus ? g.weatherSystem.getStatus() : {};
+            const weatherEmoji = {
+                'sunny': '☀️',
+                'cloudy': '⛅',
+                'rainy': '🌧️',
+                'stormy': '⛈️'
+            };
+            html += `Weather: ${weatherEmoji[ws.weather] || '❓'} ${ws.weather || 'unknown'}<br>`;
+            html += `Storm Active: ${ws.stormy ? '⚡ YES' : 'No'}<br>`;
+            html += `Clouds: ${ws.clouds || 0}<br>`;
+            html += `Raindrops: ${ws.raindrops || 0}<br>`;
+            html += `Flooded Tiles: ${ws.floodedTiles || 0}<br>`;
+            html += `Cloud Cover: ${ws.cloudCover || 0}<br>`;
+            html += `Wind Speed: ${ws.windSpeed || 0}<br>`;
+            html += `Days Since Storm: ${ws.daysSinceStorm || 0}<br>`;
+        } else {
+            html += `Initialized: ❌ NO<br>`;
+        }
+        html += `</div>`;
+
         // Canvas/Rendering
         html += `<div style="margin-bottom:10px;border-bottom:1px solid #006600;padding-bottom:8px;">`;
         html += `<b style="color:#ffff00;">🎨 RENDERING</b><br>`;

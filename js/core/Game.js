@@ -21,6 +21,7 @@ import { SaveSystem } from '../systems/SaveSystem.js';
 import { PoliceSystem } from '../systems/PoliceSystem.js';
 import { SoundSystem } from '../systems/SoundSystem.js';
 import { AirportSystem } from '../systems/AirportSystem.js?v=223';
+import { WeatherSystem } from '../systems/WeatherSystem.js';
 import { StartMenu } from '../ui/StartMenu.js';
 
 export class Game {
@@ -112,6 +113,7 @@ export class Game {
 
         // Initialize airport system
         this.airportSystem = new AirportSystem(this);
+        this.weatherSystem = new WeatherSystem(this);
 
         // Initialize sound system
         this.soundSystem = new SoundSystem(this);
@@ -411,6 +413,11 @@ export class Game {
             this.airportSystem.update();
         }
 
+        // Update weather system
+        if (this.weatherSystem) {
+            this.weatherSystem.update();
+        }
+
         // Render
         this.canvas.render();
 
@@ -436,6 +443,11 @@ export class Game {
         if (this.airportSystem && this.canvas) {
             const ctx = this.canvas.ctx;
             this.airportSystem.render(ctx, this.canvas.offsetX, this.canvas.offsetY, this.canvas.tileSize);
+        }
+
+        // Render weather effects (clouds, rain, lightning)
+        if (this.weatherSystem && this.canvas) {
+            this.weatherSystem.render(this.canvas.ctx);
         }
 
         // Render development animations
@@ -568,6 +580,11 @@ export class Game {
         // Update airport system (independent of police system)
         if (this.airportSystem) {
             this.airportSystem.update();
+        }
+
+        // Update weather system
+        if (this.weatherSystem) {
+            this.weatherSystem.update();
         }
 
         // Simulate
@@ -767,6 +784,26 @@ export class Game {
             document.getElementById('arrivals').textContent = 'Arrivals: 0';
             document.getElementById('departures').textContent = 'Departures: 0';
         }
+
+        // Update weather display
+        if (this.weatherSystem) {
+            const weatherEmojis = {
+                'sunny': '☀️',
+                'cloudy': '⛅',
+                'rainy': '🌧️',
+                'stormy': '⛈️'
+            };
+            const weatherNames = {
+                'sunny': 'Sunny',
+                'cloudy': 'Cloudy',
+                'rainy': 'Rainy',
+                'stormy': 'Storm!'
+            };
+            const weather = this.weatherSystem.getWeather();
+            document.getElementById('weather-icon').textContent = weatherEmojis[weather] || '🌤️';
+            document.getElementById('weather').textContent = weatherNames[weather] || weather;
+        }
+
         document.getElementById('date').textContent = `Year ${this.year}, Month ${this.month}`;
 
         // Update king mood emoji
