@@ -351,7 +351,7 @@ export class AirportSystem {
         // Check fire station within range
         const hasFireStation = this.hasFireStationInRange(x, y, 15);
 
-        // console.log(`[AIRPORT] (${x},${y}) power=${hasPower} road=${hasRoad} fire=${hasFireStation}`);
+        console.log(`[AIRPORT] (${x},${y}) power=${hasPower} road=${hasRoad} fire=${hasFireStation}`);
 
         return hasPower && hasRoad && hasFireStation;
     }
@@ -385,7 +385,10 @@ export class AirportSystem {
     trySpawnPlane() {
         // Get active airports
         const activeAirports = this.airports.filter(a => a.active);
-        if (activeAirports.length === 0) return;
+        if (activeAirports.length === 0) {
+            console.log('[AIRPORT] No active airports found, cannot spawn plane');
+            return;
+        }
 
         // Pick random active airport
         const airport = activeAirports[Math.floor(Math.random() * activeAirports.length)];

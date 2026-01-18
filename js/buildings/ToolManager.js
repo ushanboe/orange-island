@@ -278,8 +278,9 @@ export class ToolManager {
         // Apply effects
         this.applyBuildingEffects(building);
 
-        // Force infrastructure recalculation when placing power-related buildings
-        if (building.id === 'powerLine' || building.category === 'power') {
+        // Force infrastructure recalculation when placing power-related or service buildings
+        const needsInfraRecalc = ['powerLine', 'road', 'airport', 'policeStation', 'fireStation', 'hospital', 'school', 'port'];
+        if (needsInfraRecalc.includes(building.id) || building.category === 'power') {
             if (this.game.infrastructureManager) {
                 this.game.infrastructureManager.recalculateNetworks();
             }
