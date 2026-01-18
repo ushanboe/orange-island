@@ -299,6 +299,11 @@ export class AirportSystem {
     update() {
         this.frameCount++;
 
+        // Debug: log every 60 frames
+        if (this.frameCount % 60 === 0) {
+            console.log(`[AIRPORT] Update frame ${this.frameCount}, lastSpawn=${this.lastSpawn}, interval=${this.spawnInterval}, diff=${this.frameCount - this.lastSpawn}`);
+        }
+
         // Update airport list and status
         this.updateAirports();
 

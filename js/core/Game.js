@@ -238,8 +238,8 @@ export class Game {
             #king-tweet {
                 position: fixed;
                 top: 60px;
-                left: 50%;
-                transform: translateX(-50%);
+                left: 10px;
+                transform: none;
                 background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
                 border: 2px solid #FFD700;
                 border-radius: 12px;
@@ -255,12 +255,12 @@ export class Game {
 
             #king-tweet.visible {
                 opacity: 1;
-                transform: translateX(-50%) translateY(0);
+                transform: translateY(0);
             }
 
             #king-tweet.hidden {
                 opacity: 0;
-                transform: translateX(-50%) translateY(-20px);
+                transform: translateY(-20px);
             }
 
             .tweet-header {
@@ -552,11 +552,11 @@ export class Game {
         // Update police enforcement
         if (this.policeSystem) {
             this.policeSystem.update();
+        }
 
-            // Update airport system
-            if (this.airportSystem) {
-                this.airportSystem.update();
-            }
+        // Update airport system (independent of police system)
+        if (this.airportSystem) {
+            this.airportSystem.update();
         }
 
         // Simulate

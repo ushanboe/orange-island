@@ -12,10 +12,10 @@ class SoundSystem {
 
         // Volume settings (0-1)
         this.volumes = {
-            master: 0.7,
-            music: 0.7,
-            sfx: 0.8,
-            ambient: 0.4
+            master: 1.0,
+            music: 1.0,
+            sfx: 0.9,
+            ambient: 0.5
         };
 
         // Mute states
