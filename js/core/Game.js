@@ -294,8 +294,8 @@ export class Game {
 
             .notification {
                 position: fixed;
-                top: 120px;
-                right: 20px;
+                top: 200px;
+                left: 10px;
                 transform: none;
                 padding: 10px 20px;
                 border-radius: 8px;
@@ -315,7 +315,7 @@ export class Game {
             }
 
             @keyframes notifyFade {
-                0% { opacity: 0; transform: translateX(20px); }
+                0% { opacity: 0; transform: translateX(-20px); }
                 10% { opacity: 1; transform: translateX(0); }
                 80% { opacity: 1; }
                 100% { opacity: 0; }

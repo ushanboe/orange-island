@@ -243,7 +243,7 @@ export class TileMap {
         const perimeter = [];
 
         // Define main island area (exclude edges where source islands are)
-        const edgeMargin = 25;  // Source islands are within 25 tiles of edges
+        const edgeMargin = 35;  // Source islands extend to ~26 tiles from edges
         const minX = edgeMargin;
         const maxX = this.width - edgeMargin;
         const minY = edgeMargin;
