@@ -293,7 +293,7 @@ export const BUILDINGS = {
     triumphalArch: {
         id: 'triumphalArch',
         name: 'Triumphal Arch',
-        description: 'A magnificent arch celebrating the King's victories!',
+        description: 'A magnificent arch celebrating the King\'s victories!',
         category: BUILDING_CATEGORIES.SPECIAL,
         cost: 2500,
         size: 3,
