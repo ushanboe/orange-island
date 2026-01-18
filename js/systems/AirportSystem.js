@@ -29,7 +29,7 @@ export class Plane {
     }
 
     update(deltaTime, system) {
-        const speed = 0.02;  // Progress per frame
+        const speed = 0.005;  // Progress per frame (slowed to 25%)
 
         switch (this.state) {
             case 'approaching':
@@ -453,7 +453,7 @@ export class AirportSystem {
 
         // Play sound if available
         if (this.game.soundSystem) {
-            this.game.soundSystem?.playSound('planeArrival');
+            this.game.soundSystem?.play('planeArrival');
         }
     }
 
