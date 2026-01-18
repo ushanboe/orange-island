@@ -760,7 +760,7 @@ export class Game {
         document.getElementById('population').textContent = this.population + (this.visitors ? ` (+${this.visitors} visitors)` : '');
         // Update arrivals and departures from airport system
         if (this.airportSystem) {
-            const stats = this.airportSystem.getStats();
+            const stats = this.airportSystem.getStatus();
             document.getElementById('arrivals').textContent = 'Arrivals: ' + (stats.totalArrived || 0);
             document.getElementById('departures').textContent = 'Departures: ' + (stats.totalDeparted || 0);
         } else {
