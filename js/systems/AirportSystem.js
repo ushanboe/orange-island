@@ -103,12 +103,12 @@ export class Plane {
                 break;
 
             case 'departing':
-                this.progress += 0.01;  // Fixed speed (~150 frames = 2.5 sec to fly away)
+                this.progress += 0.005;  // 50% slower (~300 frames = 5 sec to fly away)
                 // Fly away
                 const depDx = Math.cos(this.departureAngle);
                 const depDy = Math.sin(this.departureAngle);
-                this.x += depDx * 0.8;
-                this.y += depDy * 0.8;
+                this.x += depDx * 0.4;  // 50% slower movement
+                this.y += depDy * 0.4;
                 this.scale = Math.max(0.1, 1 - this.progress);
                 this.rotation = this.departureAngle;
 
