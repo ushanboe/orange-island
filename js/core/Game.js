@@ -375,7 +375,21 @@ export class Game {
                 this.soundSystem.playMusic('music-peaceful');
                 this.soundSystem.startAmbient();
                 console.log('[SOUND] Sound system started');
+                this.updateSoundUI();
             });
+        }
+
+        // Sound toggle click handler
+        const soundToggle = document.getElementById('sound-toggle');
+        if (soundToggle) {
+            soundToggle.addEventListener('click', () => {
+                if (this.soundSystem) {
+                    const isMuted = this.soundSystem.toggleMute('master');
+                    this.updateSoundUI();
+                    console.log('[SOUND] Master mute toggled:', isMuted ? 'MUTED' : 'UNMUTED');
+                }
+            });
+            console.log('[SOUND] Sound toggle button initialized');
         }
 
         this.gameLoop();

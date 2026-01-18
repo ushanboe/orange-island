@@ -26,8 +26,10 @@ export class WeatherSystem {
 
         // Storm scheduling (every ~2 game months)
         this.daysSinceLastStorm = 0;
-        this.stormInterval = 60;  // Days between storms (2 months)
-        this.stormChance = 0.3;  // 30% chance per day after interval
+        this.stormInterval = 15;  // Days between storms (~2 weeks)
+        this.stormChance = 0.5;  // 50% chance per day after interval
+        this.framesSinceLastDayCheck = 0;
+        this.framesPerDay = 25 * 60;  // 25 seconds at 60fps = 1 game day
 
         // Flooding
         this.floodedTiles = new Map();  // tile key -> flood level
@@ -259,10 +261,13 @@ export class WeatherSystem {
     }
 
     checkStormSchedule() {
-        // Check once per game day
-        if (this.game.tickCount % (25 * 60) !== 0) return;  // 25 sec = 1 day
+        // Check once per game day (1500 frames = 25 seconds)
+        this.framesSinceLastDayCheck++;
+        if (this.framesSinceLastDayCheck < this.framesPerDay) return;
+        this.framesSinceLastDayCheck = 0;
 
         this.daysSinceLastStorm++;
+        console.log('🌤️ Day', this.daysSinceLastStorm, '- Storm check (need', this.stormInterval, 'days)');
 
         if (this.daysSinceLastStorm >= this.stormInterval) {
             if (Math.random() < this.stormChance) {
