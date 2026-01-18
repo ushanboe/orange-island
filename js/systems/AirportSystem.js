@@ -286,7 +286,7 @@ export class AirportSystem {
 
         // Timing
         this.frameCount = 0;
-        this.spawnInterval = 10; // Quick spawn for testing  // Frames between plane spawns (roughly 1 per second at 60fps)
+        this.spawnInterval = 300; // ~5 seconds between spawns  // Frames between plane spawns (roughly 1 per second at 60fps)
         this.lastSpawn = 0;
 
         // Tourist tracking
@@ -298,7 +298,7 @@ export class AirportSystem {
 
     update() {
         // CRITICAL DEBUG - log EVERY frame
-        console.log('[AIRPORT-DEBUG] frame=' + this.frameCount + ', lastSpawn=' + this.lastSpawn + ', interval=' + this.spawnInterval + ', needFrames=' + (this.spawnInterval - (this.frameCount - this.lastSpawn)));
+        // Debug logging disabled for performance
 
         // Log every call to verify update is running
         if (!this._updateLogged) {
@@ -319,16 +319,14 @@ export class AirportSystem {
         // Spawn planes at active airports
         const diff = this.frameCount - this.lastSpawn;
         const shouldSpawn = diff >= this.spawnInterval;
-        if (diff >= this.spawnInterval - 5) {
-            console.log('[AIRPORT-DEBUG] SPAWN IMMINENT! diff=' + diff + ', interval=' + this.spawnInterval + ', shouldSpawn=' + shouldSpawn);
-        }
+        // Spawn imminent logging disabled
         if (this.frameCount % 120 === 0) {
             console.log(`[AIRPORT] Spawn check: frame=${this.frameCount}, lastSpawn=${this.lastSpawn}, interval=${this.spawnInterval}, shouldSpawn=${shouldSpawn}`);
         }
         if (shouldSpawn) {
             this.trySpawnPlane();
             // Randomize next spawn interval (60-90 frames)
-            this.spawnInterval = 10 + Math.floor(Math.random() * 10); // Quick respawn for testing
+            this.spawnInterval = 300 + Math.floor(Math.random() * 300); // 5-10 seconds between spawns
             this.lastSpawn = this.frameCount;
         }
 
@@ -455,7 +453,7 @@ export class AirportSystem {
 
         // Play sound if available
         if (this.game.soundSystem) {
-            this.game.soundSystem.playSound('planeArrival');
+            this.game.soundSystem?.playSound('planeArrival');
         }
     }
 
