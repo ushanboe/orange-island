@@ -20,7 +20,7 @@ import { AdminSettings } from '../ui/AdminSettings.js';
 import { SaveSystem } from '../systems/SaveSystem.js';
 import { PoliceSystem } from '../systems/PoliceSystem.js';
 import { SoundSystem } from '../systems/SoundSystem.js';
-import { AirportSystem } from '../systems/AirportSystem.js?v=210';
+import { AirportSystem } from '../systems/AirportSystem.js?v=211';
 import { StartMenu } from '../ui/StartMenu.js';
 
 export class Game {

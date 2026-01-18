@@ -297,6 +297,9 @@ export class AirportSystem {
     }
 
     update() {
+        // CRITICAL DEBUG - log EVERY frame
+        console.log('[AIRPORT-DEBUG] update() called, frame=' + this.frameCount);
+
         // Log every call to verify update is running
         if (!this._updateLogged) {
             console.log('[AIRPORT] First update() call - system is running!');
@@ -398,6 +401,7 @@ export class AirportSystem {
     }
 
     trySpawnPlane() {
+        console.log('[AIRPORT-DEBUG] >>> trySpawnPlane() CALLED <<<');
         console.log(`[AIRPORT] trySpawnPlane called, airports count: ${this.airports.length}`);
 
         // Get active airports
