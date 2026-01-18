@@ -214,6 +214,9 @@ export class TouristCrowd {
                         this.monumentsVisited++;
                         this.visitedMonuments.add(`${this.targetMonument.x},${this.targetMonument.y}`);
                         console.log(`[TOURIST] Visited monument ${this.monumentsVisited}/5`);
+
+                        // Tweet about tourist visit!
+                        system.tweetTouristVisit(this.targetMonument.type, this.count);
                         this.targetMonument = null;
                         this.path = [];
 
@@ -597,6 +600,59 @@ export class AirportSystem {
     }
 
     // Get status for debug panel
+
+    tweetTouristVisit(monumentType, touristCount) {
+        if (!this.game || !this.game.kingTweet) return;
+
+        // Only tweet sometimes (30% chance)
+        if (Math.random() > 0.3) return;
+
+        const statueQuotes = [
+            `${touristCount} tourists just visited MY golden statue! They LOVE me, those beautiful people! 🗽✨`,
+            `Look at all these people admiring MY statue! ${touristCount} visitors can't be wrong! TREMENDOUS! 🏆`,
+            `The tourists are CRYING tears of joy at my beautiful statue! ${touristCount} of them! So touching! 😭💕`,
+            `My statue is the BEST tourist attraction! ${touristCount} people agree! Nobody builds statues like me! 🥇`,
+            `${touristCount} tourists taking photos of MY statue! It's the most photographed statue, believe me! 📸`,
+            `They came from all over to see ME in gold! ${touristCount} beautiful tourists! They love their King! 👑`,
+        ];
+
+        const towerQuotes = [
+            `${touristCount} tourists at TRUMP TOWER! The most luxurious tower in the kingdom! 🏰✨`,
+            `Look at my beautiful tower! ${touristCount} visitors today! It's YUGE! Everybody says so! 🌟`,
+            `TRUMP TOWER is the #1 attraction! ${touristCount} tourists can't stop taking pictures! 📱`,
+            `The most beautiful building ever built! ${touristCount} tourists agree! TRUMP TOWER! 🏆`,
+            `${touristCount} people touring MY tower! The elevators are gold-plated, folks! CLASSY! 💎`,
+            `Tourists LOVE Trump Tower! ${touristCount} of them! Best tower in the world, maybe ever! 🌍`,
+        ];
+
+        const golfQuotes = [
+            `${touristCount} tourists at MY golf course! The greens are PERFECT! Just like me! ⛳`,
+            `Best golf course in the kingdom! ${touristCount} visitors today! I shoot under par EVERY time! 🏌️`,
+            `My Royal Golf Course is TREMENDOUS! ${touristCount} tourists enjoying the views! 🌳`,
+            `${touristCount} people at the golf course! Many are saying it's better than Augusta! ⛳✨`,
+            `The tourists LOVE my golf course! ${touristCount} of them! Great exercise, great views! 🌅`,
+            `${touristCount} visitors admiring MY golf course! The sand traps are made of GOLD sand! 💰`,
+        ];
+
+        let quotes;
+        switch(monumentType) {
+            case 'statue':
+                quotes = statueQuotes;
+                break;
+            case 'tower':
+                quotes = towerQuotes;
+                break;
+            case 'golfCourse':
+                quotes = golfQuotes;
+                break;
+            default:
+                quotes = statueQuotes;
+        }
+
+        const tweet = quotes[Math.floor(Math.random() * quotes.length)];
+        this.game.kingTweet(tweet);
+    }
+
     getStatus() {
         return {
             airports: this.airports.length,

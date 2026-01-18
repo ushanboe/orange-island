@@ -876,6 +876,28 @@ export class GameCanvas {
             return;
         }
 
+        // === MONUMENTS (Special Buildings) ===
+        if (building.type === 'statue') {
+            if (building.mainTile !== false) {
+                this.drawGoldenStatue(ctx, screenX, screenY, this.tileSize);
+            }
+            return;
+        }
+
+        if (building.type === 'tower') {
+            if (building.mainTile !== false) {
+                this.drawTrumpTower(ctx, screenX, screenY, this.tileSize);
+            }
+            return;
+        }
+
+        if (building.type === 'golfCourse') {
+            if (building.mainTile !== false) {
+                this.drawGolfCourse(ctx, screenX, screenY, this.tileSize);
+            }
+            return;
+        }
+
         const size = this.tileSize;
 
         // Check for zone development
@@ -1810,4 +1832,338 @@ export class GameCanvas {
             ctx.globalAlpha = 1;
         }
     }
+
+
+    // === MONUMENT DRAWING METHODS ===
+
+    drawGoldenStatue(ctx, screenX, screenY, tileSize) {
+        const totalSize = tileSize * 2;  // 2x2 building
+
+        // Base platform - marble
+        ctx.fillStyle = '#E8E8E8';
+        ctx.fillRect(screenX + 4, screenY + totalSize - tileSize * 0.4, totalSize - 8, tileSize * 0.35);
+
+        // Platform shadow
+        ctx.fillStyle = '#CCCCCC';
+        ctx.fillRect(screenX + 4, screenY + totalSize - tileSize * 0.15, totalSize - 8, tileSize * 0.1);
+
+        // Platform steps
+        ctx.fillStyle = '#D0D0D0';
+        ctx.fillRect(screenX + 8, screenY + totalSize - tileSize * 0.5, totalSize - 16, tileSize * 0.12);
+
+        // Pedestal - granite
+        const pedX = screenX + totalSize * 0.3;
+        const pedW = totalSize * 0.4;
+        const pedH = tileSize * 0.5;
+        const pedY = screenY + totalSize - tileSize * 0.4 - pedH;
+
+        ctx.fillStyle = '#808080';
+        ctx.fillRect(pedX, pedY, pedW, pedH);
+
+        // Pedestal highlight
+        ctx.fillStyle = '#909090';
+        ctx.fillRect(pedX + 2, pedY + 2, pedW - 4, pedH * 0.3);
+
+        // Plaque on pedestal
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(pedX + pedW * 0.2, pedY + pedH * 0.5, pedW * 0.6, pedH * 0.3);
+
+        // === THE GOLDEN STATUE ===
+        const statueH = tileSize * 1.3;
+        const statueW = tileSize * 0.6;
+        const statueX = screenX + totalSize / 2;
+        const statueY = pedY;
+
+        // Shadow behind statue
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(statueX + 3, pedY + 3, statueW * 0.4, tileSize * 0.15, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Body - golden
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.moveTo(statueX - statueW * 0.3, statueY);  // Left foot
+        ctx.lineTo(statueX - statueW * 0.35, statueY - statueH * 0.4);  // Left leg
+        ctx.lineTo(statueX - statueW * 0.4, statueY - statueH * 0.6);  // Left torso
+        ctx.lineTo(statueX - statueW * 0.25, statueY - statueH * 0.85);  // Left shoulder
+        ctx.lineTo(statueX, statueY - statueH);  // Head top
+        ctx.lineTo(statueX + statueW * 0.25, statueY - statueH * 0.85);  // Right shoulder
+        ctx.lineTo(statueX + statueW * 0.4, statueY - statueH * 0.6);  // Right torso
+        ctx.lineTo(statueX + statueW * 0.35, statueY - statueH * 0.4);  // Right leg
+        ctx.lineTo(statueX + statueW * 0.3, statueY);  // Right foot
+        ctx.closePath();
+        ctx.fill();
+
+        // Suit jacket darker gold
+        ctx.fillStyle = '#DAA520';
+        ctx.beginPath();
+        ctx.moveTo(statueX - statueW * 0.35, statueY - statueH * 0.4);
+        ctx.lineTo(statueX - statueW * 0.38, statueY - statueH * 0.65);
+        ctx.lineTo(statueX, statueY - statueH * 0.5);
+        ctx.lineTo(statueX + statueW * 0.38, statueY - statueH * 0.65);
+        ctx.lineTo(statueX + statueW * 0.35, statueY - statueH * 0.4);
+        ctx.closePath();
+        ctx.fill();
+
+        // Head
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(statueX, statueY - statueH * 0.88, statueW * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Hair - signature style
+        ctx.fillStyle = '#FFC107';
+        ctx.beginPath();
+        ctx.arc(statueX, statueY - statueH * 0.92, statueW * 0.2, Math.PI, Math.PI * 2);
+        ctx.fill();
+
+        // Raised arm (pointing up) - MAGA pose
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.moveTo(statueX + statueW * 0.25, statueY - statueH * 0.75);
+        ctx.lineTo(statueX + statueW * 0.5, statueY - statueH * 1.1);
+        ctx.lineTo(statueX + statueW * 0.55, statueY - statueH * 1.05);
+        ctx.lineTo(statueX + statueW * 0.32, statueY - statueH * 0.72);
+        ctx.closePath();
+        ctx.fill();
+
+        // Pointing finger
+        ctx.beginPath();
+        ctx.arc(statueX + statueW * 0.52, statueY - statueH * 1.12, statueW * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tie - red
+        ctx.fillStyle = '#FF0000';
+        ctx.beginPath();
+        ctx.moveTo(statueX - statueW * 0.05, statueY - statueH * 0.75);
+        ctx.lineTo(statueX + statueW * 0.05, statueY - statueH * 0.75);
+        ctx.lineTo(statueX + statueW * 0.08, statueY - statueH * 0.45);
+        ctx.lineTo(statueX, statueY - statueH * 0.42);
+        ctx.lineTo(statueX - statueW * 0.08, statueY - statueH * 0.45);
+        ctx.closePath();
+        ctx.fill();
+
+        // Sparkle effects
+        ctx.fillStyle = '#FFFFFF';
+        const sparkles = [
+            {x: statueX - statueW * 0.3, y: statueY - statueH * 0.6},
+            {x: statueX + statueW * 0.35, y: statueY - statueH * 0.8},
+            {x: statueX + statueW * 0.5, y: statueY - statueH * 1.1},
+        ];
+        const time = Date.now() / 200;
+        sparkles.forEach((s, i) => {
+            const alpha = (Math.sin(time + i * 2) + 1) / 2;
+            ctx.globalAlpha = alpha * 0.8;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, 2, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    drawTrumpTower(ctx, screenX, screenY, tileSize) {
+        const totalSize = tileSize * 3;  // 3x3 building
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(screenX + 8, screenY + 8, totalSize - 10, totalSize - 10);
+
+        // Main tower body - gradient effect with layers
+        const towerX = screenX + totalSize * 0.15;
+        const towerW = totalSize * 0.7;
+        const towerH = totalSize * 0.95;
+        const towerY = screenY + totalSize - towerH;
+
+        // Base section - darker
+        ctx.fillStyle = '#8B7355';
+        ctx.fillRect(towerX - 5, screenY + totalSize - tileSize * 0.8, towerW + 10, tileSize * 0.75);
+
+        // Main building - bronze/gold
+        ctx.fillStyle = '#CD853F';
+        ctx.fillRect(towerX, towerY, towerW, towerH - tileSize * 0.5);
+
+        // Glass panels - reflective
+        ctx.fillStyle = '#87CEEB';
+        const panelW = towerW * 0.18;
+        const panelH = towerH * 0.08;
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 4; col++) {
+                const px = towerX + towerW * 0.08 + col * (panelW + towerW * 0.05);
+                const py = towerY + towerH * 0.08 + row * (panelH + towerH * 0.03);
+
+                // Window with reflection
+                ctx.fillStyle = '#87CEEB';
+                ctx.fillRect(px, py, panelW, panelH);
+
+                // Reflection highlight
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.fillRect(px, py, panelW * 0.3, panelH);
+            }
+        }
+
+        // Tower crown - gold
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(towerX + towerW * 0.1, towerY - tileSize * 0.3, towerW * 0.8, tileSize * 0.35);
+
+        // Spire
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.moveTo(screenX + totalSize / 2, towerY - tileSize * 0.7);
+        ctx.lineTo(screenX + totalSize / 2 - tileSize * 0.15, towerY - tileSize * 0.3);
+        ctx.lineTo(screenX + totalSize / 2 + tileSize * 0.15, towerY - tileSize * 0.3);
+        ctx.closePath();
+        ctx.fill();
+
+        // TRUMP letters - gold on building
+        ctx.fillStyle = '#FFD700';
+        ctx.font = `bold ${tileSize * 0.35}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.fillText('TRUMP', screenX + totalSize / 2, screenY + totalSize - tileSize * 0.3);
+
+        // Entrance canopy
+        ctx.fillStyle = '#8B0000';
+        ctx.fillRect(towerX + towerW * 0.2, screenY + totalSize - tileSize * 0.25, towerW * 0.6, tileSize * 0.15);
+
+        // Gold trim on canopy
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(towerX + towerW * 0.2, screenY + totalSize - tileSize * 0.27, towerW * 0.6, tileSize * 0.04);
+
+        // Entrance door
+        ctx.fillStyle = '#4A4A4A';
+        ctx.fillRect(towerX + towerW * 0.35, screenY + totalSize - tileSize * 0.5, towerW * 0.3, tileSize * 0.45);
+
+        // Door gold frame
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(towerX + towerW * 0.35, screenY + totalSize - tileSize * 0.5, towerW * 0.3, tileSize * 0.45);
+
+        // Animated light on spire
+        const time = Date.now() / 500;
+        ctx.fillStyle = `rgba(255, 0, 0, ${(Math.sin(time) + 1) / 2 * 0.8 + 0.2})`;
+        ctx.beginPath();
+        ctx.arc(screenX + totalSize / 2, towerY - tileSize * 0.65, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    drawGolfCourse(ctx, screenX, screenY, tileSize) {
+        const totalSize = tileSize * 2;  // 2x2 building
+
+        // Grass base - lush green
+        ctx.fillStyle = '#228B22';
+        ctx.fillRect(screenX, screenY, totalSize, totalSize);
+
+        // Fairway - lighter green stripe
+        ctx.fillStyle = '#32CD32';
+        ctx.beginPath();
+        ctx.moveTo(screenX, screenY + totalSize * 0.3);
+        ctx.quadraticCurveTo(screenX + totalSize * 0.5, screenY + totalSize * 0.1, screenX + totalSize, screenY + totalSize * 0.4);
+        ctx.lineTo(screenX + totalSize, screenY + totalSize * 0.6);
+        ctx.quadraticCurveTo(screenX + totalSize * 0.5, screenY + totalSize * 0.3, screenX, screenY + totalSize * 0.5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Sand bunker
+        ctx.fillStyle = '#F4D03F';
+        ctx.beginPath();
+        ctx.ellipse(screenX + totalSize * 0.7, screenY + totalSize * 0.65, tileSize * 0.25, tileSize * 0.15, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Another bunker
+        ctx.beginPath();
+        ctx.ellipse(screenX + totalSize * 0.25, screenY + totalSize * 0.75, tileSize * 0.18, tileSize * 0.12, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Water hazard
+        ctx.fillStyle = '#4169E1';
+        ctx.beginPath();
+        ctx.ellipse(screenX + totalSize * 0.2, screenY + totalSize * 0.35, tileSize * 0.2, tileSize * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Water reflection
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(screenX + totalSize * 0.18, screenY + totalSize * 0.33, tileSize * 0.08, tileSize * 0.04, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Putting green
+        ctx.fillStyle = '#00FF00';
+        ctx.beginPath();
+        ctx.ellipse(screenX + totalSize * 0.75, screenY + totalSize * 0.25, tileSize * 0.3, tileSize * 0.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Hole with flag
+        const holeX = screenX + totalSize * 0.75;
+        const holeY = screenY + totalSize * 0.25;
+
+        // Hole
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(holeX, holeY, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Flag pole
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(holeX, holeY);
+        ctx.lineTo(holeX, holeY - tileSize * 0.5);
+        ctx.stroke();
+
+        // Flag - red with animation
+        const time = Date.now() / 300;
+        const wave = Math.sin(time) * 2;
+        ctx.fillStyle = '#FF0000';
+        ctx.beginPath();
+        ctx.moveTo(holeX, holeY - tileSize * 0.5);
+        ctx.lineTo(holeX + tileSize * 0.25 + wave, holeY - tileSize * 0.4);
+        ctx.lineTo(holeX, holeY - tileSize * 0.3);
+        ctx.closePath();
+        ctx.fill();
+
+        // Golf cart path
+        ctx.strokeStyle = '#D2B48C';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(screenX, screenY + totalSize * 0.85);
+        ctx.quadraticCurveTo(screenX + totalSize * 0.5, screenY + totalSize * 0.9, screenX + totalSize, screenY + totalSize * 0.7);
+        ctx.stroke();
+
+        // Golf cart
+        const cartX = screenX + totalSize * 0.5 + Math.sin(Date.now() / 1000) * tileSize * 0.1;
+        const cartY = screenY + totalSize * 0.85;
+
+        // Cart body
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(cartX - 8, cartY - 10, 16, 10);
+
+        // Cart roof
+        ctx.fillStyle = '#1E90FF';
+        ctx.fillRect(cartX - 8, cartY - 15, 16, 6);
+
+        // Wheels
+        ctx.fillStyle = '#333333';
+        ctx.beginPath();
+        ctx.arc(cartX - 5, cartY, 3, 0, Math.PI * 2);
+        ctx.arc(cartX + 5, cartY, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Trees around edge
+        const trees = [
+            {x: screenX + 8, y: screenY + 12},
+            {x: screenX + totalSize - 10, y: screenY + 10},
+            {x: screenX + 5, y: screenY + totalSize - 15},
+        ];
+        trees.forEach(t => {
+            // Tree trunk
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(t.x - 2, t.y, 4, 8);
+            // Tree foliage
+            ctx.fillStyle = '#006400';
+            ctx.beginPath();
+            ctx.arc(t.x, t.y - 2, 7, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+
 }
