@@ -294,9 +294,9 @@ export class Game {
 
             .notification {
                 position: fixed;
-                bottom: 180px;
-                left: 50%;
-                transform: translateX(-50%);
+                top: 120px;
+                right: 20px;
+                transform: none;
                 padding: 10px 20px;
                 border-radius: 8px;
                 font-size: 14px;
@@ -315,8 +315,8 @@ export class Game {
             }
 
             @keyframes notifyFade {
-                0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
-                10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+                0% { opacity: 0; transform: translateX(20px); }
+                10% { opacity: 1; transform: translateX(0); }
                 80% { opacity: 1; }
                 100% { opacity: 0; }
             }
@@ -507,6 +507,15 @@ export class Game {
 
             ctx.restore();
         }
+    }
+
+    updateSoundUI() {
+        if (!this.soundSystem) return;
+        const isMuted = this.soundSystem.isMuted('master');
+        const soundIcon = document.getElementById('sound-icon');
+        const soundStatus = document.getElementById('sound-status');
+        if (soundIcon) soundIcon.textContent = isMuted ? '🔇' : '🔊';
+        if (soundStatus) soundStatus.textContent = isMuted ? 'OFF' : 'ON';
     }
 
     tick() {

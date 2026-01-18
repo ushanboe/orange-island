@@ -16,7 +16,7 @@ export class WeatherSystem {
 
         // Rain particles
         this.raindrops = [];
-        this.maxRaindrops = 500;
+        this.maxRaindrops = 2000;
 
         // Storm effects
         this.stormActive = false;
@@ -168,7 +168,7 @@ export class WeatherSystem {
             return;
         }
 
-        const intensity = this.stormActive ? 1.0 : 0.5;
+        const intensity = this.stormActive ? 1.0 : 0.8;
         const targetDrops = Math.floor(this.maxRaindrops * intensity);
 
         // Spawn raindrops
@@ -196,10 +196,10 @@ export class WeatherSystem {
         this.raindrops.push({
             x: Math.random() * (mapWidth + 100) - 50,
             y: -10,
-            length: 10 + Math.random() * 15,
+            length: 15 + Math.random() * 20,
             fallSpeed: 8 + Math.random() * 4,
             windSpeed: this.stormActive ? 2 + Math.random() * 2 : 0.5,
-            opacity: 0.3 + Math.random() * 0.3
+            opacity: 0.5 + Math.random() * 0.4
         });
     }
 
