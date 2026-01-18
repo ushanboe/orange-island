@@ -16,7 +16,7 @@ export class WeatherSystem {
 
         // Rain particles
         this.raindrops = [];
-        this.maxRaindrops = 200;
+        this.maxRaindrops = 500;
 
         // Storm effects
         this.stormActive = false;
@@ -32,6 +32,14 @@ export class WeatherSystem {
         // Flooding
         this.floodedTiles = new Map();  // tile key -> flood level
         this.floodBuildupRate = 0.001;  // How fast flooding builds
+
+        // Temperature system
+        this.baseTemperature = 22;  // Base temp in Celsius
+        this.currentTemperature = 22;
+        this.minTemperature = 15;  // Minimum possible
+        this.maxTemperature = 35;  // Maximum possible
+        this.temperatureVariation = 0;  // Current variation from base
+        this.temperatureChangeRate = 0.02;  // How fast temp changes
 
         // Weather probabilities (when not storming)
         this.weatherWeights = {
@@ -97,6 +105,7 @@ export class WeatherSystem {
 
     updateWeatherState() {
         this.weatherDuration--;
+        this.updateTemperature();
 
         if (this.weatherDuration <= 0 && !this.stormActive) {
             this.changeWeather();
@@ -337,6 +346,31 @@ export class WeatherSystem {
         }
     }
 
+    updateTemperature() {
+        // Temperature varies based on weather and time
+        let targetTemp = this.baseTemperature;
+
+        // Weather affects temperature
+        if (this.currentWeather === 'sunny') {
+            targetTemp += 5 + Math.random() * 3;  // Hotter when sunny
+        } else if (this.currentWeather === 'cloudy') {
+            targetTemp += Math.random() * 2;  // Slightly warm
+        } else if (this.currentWeather === 'rainy') {
+            targetTemp -= 3 + Math.random() * 2;  // Cooler when rainy
+        } else if (this.stormActive) {
+            targetTemp -= 5 + Math.random() * 3;  // Cold during storms
+        }
+
+        // Add some random variation
+        targetTemp += (Math.random() - 0.5) * 2;
+
+        // Clamp to min/max
+        targetTemp = Math.max(this.minTemperature, Math.min(this.maxTemperature, targetTemp));
+
+        // Smoothly transition to target
+        this.currentTemperature += (targetTemp - this.currentTemperature) * this.temperatureChangeRate;
+    }
+
     isNearWater(x, y) {
         const neighbors = [
             [x-1, y], [x+1, y], [x, y-1], [x, y+1]
@@ -473,6 +507,11 @@ export class WeatherSystem {
         this.startStorm();
     }
 
+    // Get current temperature
+    getTemperature() {
+        return Math.round(this.currentTemperature);
+    }
+
     // Get status for debug panel
     getStatus() {
         return {
@@ -483,7 +522,10 @@ export class WeatherSystem {
             floodedTiles: this.floodedTiles.size,
             daysSinceStorm: this.daysSinceLastStorm,
             cloudCover: this.getCloudCover().toFixed(2),
-            windSpeed: this.getWindSpeed().toFixed(2)
+            windSpeed: this.getWindSpeed().toFixed(2),
+            temperature: Math.round(this.currentTemperature),
+            tempMin: this.minTemperature,
+            tempMax: this.maxTemperature
         };
     }
 }

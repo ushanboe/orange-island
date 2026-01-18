@@ -802,6 +802,10 @@ export class Game {
             const weather = this.weatherSystem.getWeather();
             document.getElementById('weather-icon').textContent = weatherEmojis[weather] || '🌤️';
             document.getElementById('weather').textContent = weatherNames[weather] || weather;
+
+            // Update temperature
+            const temp = this.weatherSystem.getTemperature();
+            document.getElementById('temperature').textContent = temp + '°C';
         }
 
         document.getElementById('date').textContent = `Year ${this.year}, Month ${this.month}`;

@@ -247,6 +247,7 @@ export class DebugPanel {
             html += `Cloud Cover: ${ws.cloudCover || 0}<br>`;
             html += `Wind Speed: ${ws.windSpeed || 0}<br>`;
             html += `Days Since Storm: ${ws.daysSinceStorm || 0}<br>`;
+            html += `<span style="color:#FF6B6B;">🌡️ Temperature: ${ws.temperature || 22}°C (${ws.tempMin || 15}°-${ws.tempMax || 35}°)</span><br>`;
         } else {
             html += `Initialized: ❌ NO<br>`;
         }
