@@ -383,8 +383,11 @@ export class AirportSystem {
     }
 
     trySpawnPlane() {
+        console.log(`[AIRPORT] trySpawnPlane called, airports count: ${this.airports.length}`);
+
         // Get active airports
         const activeAirports = this.airports.filter(a => a.active);
+        console.log(`[AIRPORT] Active airports: ${activeAirports.length}`);
         if (activeAirports.length === 0) {
             console.log('[AIRPORT] No active airports found, cannot spawn plane');
             return;
@@ -584,6 +587,11 @@ export class AirportSystem {
 
 
     render(ctx, offsetX, offsetY, tileSize) {
+        // Debug: log plane count occasionally
+        if (this.frameCount % 120 === 0 && (this.planes.length > 0 || this.touristCrowds.length > 0)) {
+            console.log(`[AIRPORT RENDER] Planes: ${this.planes.length}, Crowds: ${this.touristCrowds.length}`);
+        }
+
         // Render planes
         for (const plane of this.planes) {
             this.renderPlane(ctx, plane, offsetX, offsetY, tileSize);
