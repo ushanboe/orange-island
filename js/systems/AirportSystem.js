@@ -68,7 +68,7 @@ export class Plane {
 
             case 'grounded':
                 // Brief pause then takeoff immediately (don't wait for tourists to return)
-                this.progress += speed * 2;  // Faster transition
+                this.progress += 0.05;  // Fixed fast transition (~20 frames = 0.3 sec)
                 if (this.progress >= 1) {
                     this.state = 'takeoff';
                     this.progress = 0;
@@ -90,7 +90,7 @@ export class Plane {
                 break;
 
             case 'takeoff':
-                this.progress += speed * 0.5;
+                this.progress += 0.02;  // Fixed speed (~50 frames = 0.8 sec)
                 // Pick departure direction (opposite of arrival roughly)
                 if (this.progress < 0.1 && !this.departureAngle) {
                     this.departureAngle = Math.random() * Math.PI * 2;
@@ -103,7 +103,7 @@ export class Plane {
                 break;
 
             case 'departing':
-                this.progress += speed;
+                this.progress += 0.01;  // Fixed speed (~150 frames = 2.5 sec to fly away)
                 // Fly away
                 const depDx = Math.cos(this.departureAngle);
                 const depDy = Math.sin(this.departureAngle);
