@@ -477,7 +477,7 @@ export class AirportSystem {
         if (crowd.monumentsVisited >= 5) return null;
 
         const monuments = [];
-        const monumentTypes = ['statue', 'tower', 'golfCourse'];  // Monument building types
+        const monumentTypes = ['statue', 'tower', 'golfCourse', 'triumphalArch'];  // Monument building types
 
         // Find all monuments
         for (let y = 0; y < tileMap.height; y++) {
@@ -634,6 +634,14 @@ export class AirportSystem {
             `${touristCount} visitors admiring MY golf course! The sand traps are made of GOLD sand! 💰`,
         ];
 
+        const archQuotes = [
+            `${touristCount} tourists at MY Triumphal Arch! A monument to MY victories! 🏛️✨`,
+            `The Arch celebrates MY greatness! ${touristCount} visitors today! HISTORIC! 🎖️`,
+            `${touristCount} people walking through MY arch! Napoleon wishes he had one this good! 🇫🇷`,
+            `Tourists LOVE the Triumphal Arch! ${touristCount} of them! It's MAGNIFICENT! 👑`,
+            `The eternal flame burns for ME! ${touristCount} tourists witnessed it! POWERFUL! 🔥`,
+        ];
+
         let quotes;
         switch(monumentType) {
             case 'statue':
@@ -644,6 +652,9 @@ export class AirportSystem {
                 break;
             case 'golfCourse':
                 quotes = golfQuotes;
+                break;
+            case 'triumphalArch':
+                quotes = archQuotes;
                 break;
             default:
                 quotes = statueQuotes;

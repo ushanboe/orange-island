@@ -290,6 +290,22 @@ export const BUILDINGS = {
         },
         canBuildOn: ['grass']
     },
+    triumphalArch: {
+        id: 'triumphalArch',
+        name: 'Triumphal Arch',
+        description: 'A magnificent arch celebrating the King's victories!',
+        category: BUILDING_CATEGORIES.SPECIAL,
+        cost: 2500,
+        size: 3,
+        color: '#D4C4A8',  // Stone color
+        icon: '🏛️',
+        effects: {
+            kingEgo: 25,
+            happiness: 5,
+            tourism: 15
+        },
+        canBuildOn: ['grass', 'dirt', 'forest']
+    },
 
     // === DEMOLISH ===
 

@@ -633,7 +633,7 @@ export class GameCanvas {
 
 
                 // Skip terrain for non-main tiles of multi-tile buildings (service buildings and port) (they're drawn by main tile)
-                const serviceTypes = ['policeStation', 'fireStation', 'hospital', 'school', 'port', 'airport', 'statue', 'tower', 'golfCourse'];
+                const serviceTypes = ['policeStation', 'fireStation', 'hospital', 'school', 'port', 'airport', 'statue', 'tower', 'golfCourse', 'triumphalArch'];
                 if (tile.building && serviceTypes.includes(tile.building.type) && tile.building.mainTile === false) {
                     continue; // Skip this tile entirely, main tile renders the full 3x3
                 }
@@ -898,6 +898,13 @@ export class GameCanvas {
             return;
         }
 
+        if (building.type === 'triumphalArch') {
+            if (building.mainTile !== false) {
+                this.drawTriumphalArch(ctx, screenX, screenY, this.tileSize);
+            }
+            return;
+        }
+
         const size = this.tileSize;
 
         // Check for zone development
@@ -948,6 +955,113 @@ export class GameCanvas {
     }
 
     
+
+    // ==================== TRIUMPHAL ARCH ====================
+
+    drawTriumphalArch(ctx, screenX, screenY, tileSize) {
+        const size = tileSize * 3;  // 3x3 building
+        const x = screenX;
+        const y = screenY;
+
+        // Base platform - stone foundation
+        ctx.fillStyle = '#8B7355';  // Dark stone
+        ctx.fillRect(x + size * 0.05, y + size * 0.85, size * 0.9, size * 0.15);
+
+        // Main arch structure - cream/beige stone
+        ctx.fillStyle = '#D4C4A8';
+
+        // Left pillar
+        ctx.fillRect(x + size * 0.08, y + size * 0.2, size * 0.25, size * 0.65);
+
+        // Right pillar  
+        ctx.fillRect(x + size * 0.67, y + size * 0.2, size * 0.25, size * 0.65);
+
+        // Top section (attic)
+        ctx.fillRect(x + size * 0.05, y + size * 0.05, size * 0.9, size * 0.2);
+
+        // Central arch opening - dark interior
+        ctx.fillStyle = '#2C2416';
+        ctx.beginPath();
+        ctx.moveTo(x + size * 0.33, y + size * 0.85);
+        ctx.lineTo(x + size * 0.33, y + size * 0.45);
+        ctx.quadraticCurveTo(x + size * 0.5, y + size * 0.25, x + size * 0.67, y + size * 0.45);
+        ctx.lineTo(x + size * 0.67, y + size * 0.85);
+        ctx.closePath();
+        ctx.fill();
+
+        // Decorative elements - darker stone accents
+        ctx.fillStyle = '#A89880';
+
+        // Pillar details - vertical grooves
+        for (let i = 0; i < 3; i++) {
+            // Left pillar grooves
+            ctx.fillRect(x + size * (0.12 + i * 0.06), y + size * 0.25, size * 0.02, size * 0.55);
+            // Right pillar grooves
+            ctx.fillRect(x + size * (0.71 + i * 0.06), y + size * 0.25, size * 0.02, size * 0.55);
+        }
+
+        // Cornice lines
+        ctx.fillStyle = '#C4B498';
+        ctx.fillRect(x + size * 0.05, y + size * 0.2, size * 0.9, size * 0.02);
+        ctx.fillRect(x + size * 0.05, y + size * 0.08, size * 0.9, size * 0.02);
+
+        // Relief sculptures on top (simplified)
+        ctx.fillStyle = '#BFB090';
+        ctx.fillRect(x + size * 0.15, y + size * 0.1, size * 0.2, size * 0.08);
+        ctx.fillRect(x + size * 0.65, y + size * 0.1, size * 0.2, size * 0.08);
+
+        // Central sculpture/quadriga silhouette on top
+        ctx.fillStyle = '#8B7355';
+        // Chariot base
+        ctx.fillRect(x + size * 0.35, y + size * 0.02, size * 0.3, size * 0.04);
+        // Horses silhouette (simplified triangles)
+        ctx.beginPath();
+        ctx.moveTo(x + size * 0.38, y + size * 0.02);
+        ctx.lineTo(x + size * 0.45, y - size * 0.05);
+        ctx.lineTo(x + size * 0.52, y + size * 0.02);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(x + size * 0.48, y + size * 0.02);
+        ctx.lineTo(x + size * 0.55, y - size * 0.05);
+        ctx.lineTo(x + size * 0.62, y + size * 0.02);
+        ctx.fill();
+
+        // Flag on top (animated)
+        const time = Date.now() / 500;
+        const flagWave = Math.sin(time) * 2;
+        ctx.fillStyle = '#FFD700';  // Gold flag
+        ctx.beginPath();
+        ctx.moveTo(x + size * 0.5, y - size * 0.05);
+        ctx.lineTo(x + size * 0.5 + size * 0.12 + flagWave, y - size * 0.1);
+        ctx.lineTo(x + size * 0.5 + size * 0.1 + flagWave, y - size * 0.02);
+        ctx.closePath();
+        ctx.fill();
+
+        // Flag pole
+        ctx.strokeStyle = '#4A4A4A';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + size * 0.5, y + size * 0.02);
+        ctx.lineTo(x + size * 0.5, y - size * 0.12);
+        ctx.stroke();
+
+        // Eternal flame effect at base (animated)
+        const flameFlicker = Math.sin(Date.now() / 100) * 0.3 + 0.7;
+        ctx.fillStyle = `rgba(255, 100, 0, ${flameFlicker})`;
+        ctx.beginPath();
+        ctx.arc(x + size * 0.5, y + size * 0.78, size * 0.04, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(255, 200, 0, ${flameFlicker})`;
+        ctx.beginPath();
+        ctx.arc(x + size * 0.5, y + size * 0.78, size * 0.025, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Label
+        ctx.fillStyle = '#654321';
+        ctx.font = `bold ${tileSize * 0.18}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.fillText('TRIUMPH', x + size * 0.5, y + size * 0.97);
+    }
 
     // ==================== RESIDENTIAL ALLOTMENT ====================
 
