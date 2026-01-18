@@ -53,7 +53,7 @@ export class Plane {
                 break;
 
             case 'landing':
-                this.progress += speed * 0.5;  // Slower landing
+                this.progress += 0.05;  // Fixed speed (~20 frames = 0.3 sec)
                 this.scale = 1.0;
                 this.x = this.targetX;
                 this.y = this.targetY;
@@ -82,7 +82,7 @@ export class Plane {
 
             case 'boarding':
                 // Tourists boarding
-                this.progress += speed * 0.5;
+                this.progress += 0.05;  // Fixed speed (~0.3 sec)
                 if (this.progress >= 1) {
                     this.state = 'takeoff';
                     this.progress = 0;
