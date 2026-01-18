@@ -298,7 +298,7 @@ export class AirportSystem {
 
     update() {
         // CRITICAL DEBUG - log EVERY frame
-        console.log('[AIRPORT-DEBUG] update() called, frame=' + this.frameCount);
+        console.log('[AIRPORT-DEBUG] frame=' + this.frameCount + ', lastSpawn=' + this.lastSpawn + ', interval=' + this.spawnInterval + ', needFrames=' + (this.spawnInterval - (this.frameCount - this.lastSpawn)));
 
         // Log every call to verify update is running
         if (!this._updateLogged) {
@@ -317,7 +317,11 @@ export class AirportSystem {
         this.updateAirports();
 
         // Spawn planes at active airports
-        const shouldSpawn = this.frameCount - this.lastSpawn >= this.spawnInterval;
+        const diff = this.frameCount - this.lastSpawn;
+        const shouldSpawn = diff >= this.spawnInterval;
+        if (diff >= this.spawnInterval - 5) {
+            console.log('[AIRPORT-DEBUG] SPAWN IMMINENT! diff=' + diff + ', interval=' + this.spawnInterval + ', shouldSpawn=' + shouldSpawn);
+        }
         if (this.frameCount % 120 === 0) {
             console.log(`[AIRPORT] Spawn check: frame=${this.frameCount}, lastSpawn=${this.lastSpawn}, interval=${this.spawnInterval}, shouldSpawn=${shouldSpawn}`);
         }
