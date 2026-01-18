@@ -29,7 +29,7 @@ export class Plane {
     }
 
     update(deltaTime, system) {
-        const speed = 0.005;  // Progress per frame (slowed to 25%)
+        const speed = 0.00125;  // Progress per frame (very slow)
 
         switch (this.state) {
             case 'approaching':
@@ -149,7 +149,7 @@ export class TouristCrowd {
         this.path = [];
         this.pathIndex = 0;
         this.moveProgress = 0;
-        this.speed = 0.08;  // Tiles per frame
+        this.speed = 0.02;  // Tiles per frame (slowed to 25%)
 
         // Stuck detection
         this.stuckCounter = 0;
