@@ -22,6 +22,7 @@ import { PoliceSystem } from '../systems/PoliceSystem.js';
 import { SoundSystem } from '../systems/SoundSystem.js';
 import { AirportSystem } from '../systems/AirportSystem.js?v=223';
 import { WeatherSystem } from '../systems/WeatherSystem.js';
+import { AutoConnect } from '../systems/AutoConnect.js';
 import { StartMenu } from '../ui/StartMenu.js';
 import { MobileControls } from '../ui/MobileControls.js';
 
@@ -106,6 +107,7 @@ export class Game {
         this.commercialManager = new CommercialAllotmentManager(this);
         this.industrialManager = new IndustrialAllotmentManager(this);
         this.infrastructureManager = new InfrastructureManager(this);
+        this.autoConnect = new AutoConnect(this);
         this.animationSystem = new AnimationSystem(this);
         this.immigrationSystem = new ImmigrationSystem(this);
 

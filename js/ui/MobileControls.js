@@ -224,6 +224,10 @@ export class MobileControls {
                     <span class="mobile-btn-icon">📂</span>
                     <span>Load</span>
                 </button>
+                <button class="mobile-btn" data-action="autoconnect" id="autoconnect-btn">
+                    <span class="mobile-btn-icon">🔗</span>
+                    <span>Auto-Connect: ON</span>
+                </button>
             </div>
             
             <!-- FAB button -->
@@ -351,6 +355,15 @@ export class MobileControls {
                     this.showHint('Game Loaded!');
                 }
                 break;
+
+            case 'autoconnect':
+                // Toggle auto-connect mode
+                if (this.game.autoConnect) {
+                    const enabled = this.game.autoConnect.toggle();
+                    this.updateAutoConnectButton(enabled);
+                    this.showHint('Auto-Connect: ' + (enabled ? 'ON' : 'OFF'));
+                }
+                break;
         }
     }
     
@@ -397,6 +410,19 @@ export class MobileControls {
         this.updateCancelButton();
     }
     
+    updateAutoConnectButton(enabled) {
+        const btn = document.getElementById('autoconnect-btn');
+        if (btn) {
+            const label = btn.querySelector('span:last-child');
+            if (label) {
+                label.textContent = 'Auto-Connect: ' + (enabled ? 'ON' : 'OFF');
+            }
+            btn.style.background = enabled 
+                ? 'rgba(76, 175, 80, 0.9)' 
+                : 'rgba(30, 30, 30, 0.95)';
+        }
+    }
+
     show() {
         if (this.container) {
             this.container.style.display = 'block';

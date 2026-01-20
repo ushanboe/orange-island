@@ -59,6 +59,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const muted = game.soundSystem.toggleMute('master');
                 game.kingTweet(muted ? "🔇 Sound OFF!" : "🔊 Sound ON!");
             }
+        // A - Toggle auto-connect mode
+        if (e.key === "a" || e.key === "A") {
+            if (game.autoConnect) {
+                const enabled = game.autoConnect.toggle();
+                game.kingTweet(enabled ? "🔗 Auto-Connect ON! Click to auto-path!" : "🔗 Auto-Connect OFF! Manual mode.");
+                // Update mobile button if exists
+                if (game.mobileControls) {
+                    game.mobileControls.updateAutoConnectButton(enabled);
+                }
+            }
+        }
         }
     });
 
@@ -68,6 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('  - Drag: Pan map (or place roads/walls)');
     console.log('  - Scroll/Pinch: Zoom');
     console.log('  - P: Pause');
+    console.log('  - A: Toggle Auto-Connect mode');
     console.log('  - Ctrl+S: Save');
     console.log('  - Ctrl+L: Load');
     console.log('  - 1-4: Quick category select');

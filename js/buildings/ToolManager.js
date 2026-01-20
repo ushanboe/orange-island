@@ -374,14 +374,68 @@ export class ToolManager {
         }
 
         this.isPlacing = true;
+        this.pointerDownTime = Date.now();
+        this.pointerDownTile = { x: tileX, y: tileY };
 
         // Check if this is a drag tool
         if (this.dragTools.includes(this.selectedTool)) {
             this.dragBuilding = true;
+
+            // Check for auto-connect mode
+            if (this.game.autoConnect && 
+                this.game.autoConnect.supportsAutoConnect(this.selectedTool) &&
+                this.selectedTool !== 'bulldozer') {
+
+                // Try auto-connect
+                const result = this.game.autoConnect.autoConnect(tileX, tileY, this.selectedTool);
+
+                if (result.success && result.path && result.path.length > 0) {
+                    // Calculate total cost
+                    const building = getBuilding(this.selectedTool);
+                    const totalCost = result.path.length * building.cost;
+
+                    // Check if can afford entire path
+                    if (this.game.treasury >= totalCost) {
+                        console.log(`[AutoConnect] Placing ${result.path.length} tiles of ${this.selectedTool}`);
+
+                        // Place all tiles in path
+                        let placedCount = 0;
+                        for (const tile of result.path) {
+                            // Temporarily disable auto-connect to place single tiles
+                            const wasEnabled = this.game.autoConnect.enabled;
+                            this.game.autoConnect.enabled = false;
+
+                            if (this.placeAt(tile.x, tile.y)) {
+                                placedCount++;
+                            }
+
+                            this.game.autoConnect.enabled = wasEnabled;
+                        }
+
+                        if (placedCount > 1) {
+                            this.game.kingTweet(`Auto-connected ${placedCount} tiles! Tremendous efficiency! 🔌`);
+                        }
+
+                        // Don't continue with normal placement
+                        this.isPlacing = false;
+                        this.dragBuilding = false;
+                        return;
+                    } else {
+                        // Can't afford full path, show message
+                        this.game.events.emit('placementFailed', { 
+                            reason: `Need $${totalCost.toLocaleString()} for auto-connect path`, 
+                            tileX, tileY 
+                        });
+                    }
+                }
+            }
         }
 
+        // Normal single-tile placement
         this.placeAt(tileX, tileY);
     }
+
+    // Handle pointer move
 
     // Handle pointer move (drag placement)
     onPointerMove(tileX, tileY) {
