@@ -23,6 +23,7 @@ import { SoundSystem } from '../systems/SoundSystem.js';
 import { AirportSystem } from '../systems/AirportSystem.js?v=223';
 import { WeatherSystem } from '../systems/WeatherSystem.js';
 import { StartMenu } from '../ui/StartMenu.js';
+import { MobileControls } from '../ui/MobileControls.js';
 
 export class Game {
     constructor() {
@@ -134,6 +135,7 @@ export class Game {
         this.tariffUI = new TariffUI(this);
         this.debugPanel = new DebugPanel(this);
         this.adminSettings = new AdminSettings(this);
+        this.mobileControls = new MobileControls(this);
         this.saveSystem = new SaveSystem(this);
 
         // Setup autosave every 60 seconds
@@ -430,6 +432,7 @@ export class Game {
         // Update weather system
         if (this.weatherSystem) {
             this.weatherSystem.update();
+            if (this.mobileControls) this.mobileControls.update();
         }
 
         // Render
