@@ -440,6 +440,7 @@ export class ToolManager {
                 }
             }
 
+        }
         // Normal single-tile placement
         this.placeAt(tileX, tileY);
     }
