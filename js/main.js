@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const muted = game.soundSystem.toggleMute('master');
                 game.kingTweet(muted ? "🔇 Sound OFF!" : "🔊 Sound ON!");
             }
+        }
         // A - Toggle auto-connect mode
         if (e.key === "a" || e.key === "A") {
             if (game.autoConnect) {
@@ -69,7 +70,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     game.mobileControls.updateAutoConnectButton(enabled);
                 }
             }
-        }
         }
     });
 
