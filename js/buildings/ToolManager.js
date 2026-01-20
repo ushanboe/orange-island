@@ -439,15 +439,6 @@ export class ToolManager {
                     return;
                 }
             }
-                        // Can't afford full path, show message
-                        this.game.events.emit('placementFailed', { 
-                            reason: `Need $${totalCost.toLocaleString()} for auto-connect path`, 
-                            tileX, tileY 
-                        });
-                    }
-                }
-            }
-        }
 
         // Normal single-tile placement
         this.placeAt(tileX, tileY);
