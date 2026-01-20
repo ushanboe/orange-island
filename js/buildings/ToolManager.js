@@ -368,6 +368,8 @@ export class ToolManager {
     // Handle pointer down (start placement)
     onPointerDown(tileX, tileY) {
         // console.log('[ToolManager] onPointerDown called:', { tileX, tileY, selectedTool: this.selectedTool });
+        // DEBUG: Show auto-connect state
+        console.log("[ToolManager] Click - AutoConnect enabled:", this.game.autoConnect?.enabled, "Tool:", this.selectedTool);
         if (!this.selectedTool) {
             // console.log('[ToolManager] No tool selected, returning early');
             return;
