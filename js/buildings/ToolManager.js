@@ -381,46 +381,64 @@ export class ToolManager {
         if (this.dragTools.includes(this.selectedTool)) {
             this.dragBuilding = true;
 
-            // Check for auto-connect mode
-            if (this.game.autoConnect && 
+            // Check for auto-connect mode (two-click workflow)
+            if (this.game.autoConnect &&
                 this.game.autoConnect.supportsAutoConnect(this.selectedTool) &&
                 this.selectedTool !== 'bulldozer') {
 
-                // Try auto-connect
-                const result = this.game.autoConnect.autoConnect(tileX, tileY, this.selectedTool);
+                // Use two-click handleClick method
+                const result = this.game.autoConnect.handleClick(tileX, tileY, this.selectedTool);
 
-                if (result.success && result.path && result.path.length > 0) {
-                    // Calculate total cost
-                    const building = getBuilding(this.selectedTool);
-                    const totalCost = result.path.length * building.cost;
+                if (result.handled) {
+                    console.log('[ToolManager] AutoConnect handled click:', result.result?.action);
 
-                    // Check if can afford entire path
-                    if (this.game.treasury >= totalCost) {
-                        console.log(`[AutoConnect] Placing ${result.path.length} tiles of ${this.selectedTool}`);
+                    // Show feedback message to user
+                    if (result.result?.message) {
+                        console.log('[AutoConnect]', result.result.message);
+                    }
 
-                        // Place all tiles in path
-                        let placedCount = 0;
-                        for (const tile of result.path) {
-                            // Temporarily disable auto-connect to place single tiles
-                            const wasEnabled = this.game.autoConnect.enabled;
-                            this.game.autoConnect.enabled = false;
+                    // If path is ready, place all tiles
+                    if (result.result?.action === 'pathReady' && result.result.path) {
+                        const path = result.result.path;
+                        const building = getBuilding(this.selectedTool);
+                        const totalCost = path.length * building.cost;
 
-                            if (this.placeAt(tile.x, tile.y)) {
-                                placedCount++;
+                        // Check if can afford entire path
+                        if (this.game.treasury >= totalCost) {
+                            console.log(`[AutoConnect] Placing ${path.length} tiles of ${this.selectedTool}`);
+
+                            // Place all tiles in path
+                            let placedCount = 0;
+                            for (const tile of path) {
+                                // Temporarily disable auto-connect to place single tiles
+                                const wasEnabled = this.game.autoConnect.enabled;
+                                this.game.autoConnect.enabled = false;
+
+                                if (this.placeAt(tile.x, tile.y)) {
+                                    placedCount++;
+                                }
+
+                                this.game.autoConnect.enabled = wasEnabled;
                             }
 
-                            this.game.autoConnect.enabled = wasEnabled;
+                            if (placedCount > 0) {
+                                this.game.kingTweet(`Auto-connected ${placedCount} tiles! Tremendous efficiency! 🔌`);
+                            }
+                        } else {
+                            // Can't afford full path, show message
+                            this.game.events.emit('placementFailed', {
+                                reason: `Need $${totalCost.toLocaleString()} for auto-connect path`,
+                                tileX, tileY
+                            });
                         }
+                    }
 
-                        if (placedCount > 1) {
-                            this.game.kingTweet(`Auto-connected ${placedCount} tiles! Tremendous efficiency! 🔌`);
-                        }
-
-                        // Don't continue with normal placement
-                        this.isPlacing = false;
-                        this.dragBuilding = false;
-                        return;
-                    } else {
+                    // Don't continue with normal placement when auto-connect handles it
+                    this.isPlacing = false;
+                    this.dragBuilding = false;
+                    return;
+                }
+            }
                         // Can't afford full path, show message
                         this.game.events.emit('placementFailed', { 
                             reason: `Need $${totalCost.toLocaleString()} for auto-connect path`, 

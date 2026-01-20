@@ -1,48 +1,54 @@
-// AutoConnect.js - Automatic infrastructure pathfinding and placement
-// Click destination, auto-draws path from nearest existing infrastructure
+// AutoConnect.js - Two-click infrastructure pathfinding and placement
+// Click 1: Select start point (existing infrastructure)
+// Click 2: Select end point (destination) - auto-draws path between them
 
 export class AutoConnect {
     constructor(game) {
         this.game = game;
-        this.enabled = true; // Auto-connect mode enabled by default
+        this.enabled = false; // Auto-connect mode disabled by default
         this.supportedTools = ['road', 'powerLine', 'wall'];
+
+        // Two-click state
+        this.startPoint = null; // First click - start of path
+        this.waitingForEnd = false; // True after first click, waiting for second
     }
-    
+
     // Check if auto-connect should handle this tool
     supportsAutoConnect(toolId) {
         return this.enabled && this.supportedTools.includes(toolId);
     }
-    
-    // Find nearest existing infrastructure of given type
-    findNearestInfrastructure(targetX, targetY, infraType) {
-        const tileMap = this.game.tileMap;
-        if (!tileMap) return null;
-        
-        let nearest = null;
-        let nearestDist = Infinity;
-        
-        // Search all tiles for existing infrastructure
-        for (let y = 0; y < tileMap.height; y++) {
-            for (let x = 0; x < tileMap.width; x++) {
-                const tile = tileMap.getTile(x, y);
-                if (tile?.building?.type === infraType) {
-                    const dist = Math.abs(x - targetX) + Math.abs(y - targetY); // Manhattan distance
-                    if (dist > 0 && dist < nearestDist) { // dist > 0 to exclude target itself
-                        nearestDist = dist;
-                        nearest = { x, y };
-                    }
-                }
-            }
-        }
-        
-        return nearest;
+
+    // Reset the two-click state
+    resetState() {
+        this.startPoint = null;
+        this.waitingForEnd = false;
+        console.log('[AutoConnect] State reset');
     }
-    
+
+    // Get current state for UI feedback
+    getState() {
+        return {
+            enabled: this.enabled,
+            startPoint: this.startPoint,
+            waitingForEnd: this.waitingForEnd
+        };
+    }
+
+    // Check if tile has infrastructure of given type
+    hasInfrastructure(x, y, infraType) {
+        const tileMap = this.game.tileMap;
+        if (!tileMap) return false;
+        const tile = tileMap.getTile(x, y);
+        return tile?.building?.type === infraType;
+    }
+
     // Find path from start to end avoiding obstacles
     findPath(startX, startY, endX, endY, infraType) {
         const tileMap = this.game.tileMap;
         if (!tileMap) return [];
-        
+
+        console.log(`[AutoConnect] Finding path from (${startX},${startY}) to (${endX},${endY})`);
+
         // A* pathfinding
         const openSet = [{ x: startX, y: startY, g: 0, h: 0, f: 0, parent: null }];
         const closedSet = new Set();
@@ -52,20 +58,20 @@ export class AutoConnect {
             { dx: -1, dy: 0 }, // left
             { dx: 1, dy: 0 }   // right
         ];
-        
+
         const heuristic = (x, y) => Math.abs(x - endX) + Math.abs(y - endY);
-        
+
         let iterations = 0;
         const maxIterations = 10000;
-        
+
         while (openSet.length > 0 && iterations < maxIterations) {
             iterations++;
-            
+
             // Find node with lowest f score
             openSet.sort((a, b) => a.f - b.f);
             const current = openSet.shift();
             const currentKey = `${current.x},${current.y}`;
-            
+
             // Reached destination?
             if (current.x === endX && current.y === endY) {
                 // Reconstruct path
@@ -75,24 +81,25 @@ export class AutoConnect {
                     path.unshift({ x: node.x, y: node.y });
                     node = node.parent;
                 }
+                console.log(`[AutoConnect] Path found with ${path.length} tiles`);
                 return path;
             }
-            
+
             closedSet.add(currentKey);
-            
+
             // Explore neighbors
             for (const dir of directions) {
                 const nx = current.x + dir.dx;
                 const ny = current.y + dir.dy;
                 const nkey = `${nx},${ny}`;
-                
+
                 if (closedSet.has(nkey)) continue;
                 if (!this.canPlaceInfra(nx, ny, infraType)) continue;
-                
+
                 const g = current.g + 1;
                 const h = heuristic(nx, ny);
                 const f = g + h;
-                
+
                 // Check if already in open set with better score
                 const existing = openSet.find(n => n.x === nx && n.y === ny);
                 if (existing) {
@@ -106,109 +113,210 @@ export class AutoConnect {
                 }
             }
         }
-        
+
         // No path found
         console.log('[AutoConnect] No path found after', iterations, 'iterations');
         return [];
     }
-    
+
     // Check if infrastructure can be placed at this tile
     canPlaceInfra(x, y, infraType) {
         const tileMap = this.game.tileMap;
         if (!tileMap) return false;
-        
+
         const tile = tileMap.getTile(x, y);
         if (!tile) return false;
-        
+
         // Can't place on water
         const TERRAIN = window.TERRAIN || { WATER: 0, SHALLOW: 1 };
         if (tile.terrain === TERRAIN.WATER) return false;
-        
+
         // Can place on existing same-type infrastructure (it's already there)
         if (tile.building?.type === infraType) return true;
-        
+
         // Can't place on other buildings (except roads can go under power lines)
         if (tile.building) {
             if (infraType === 'powerLine' && tile.building.type === 'road') return true;
             if (infraType === 'road' && tile.building.type === 'powerLine') return true;
             return false;
         }
-        
+
         // Check terrain compatibility
         const validTerrains = [2, 3, 4, 5, 6]; // SAND, GRASS, FOREST, HILL, MOUNTAIN
         if (!validTerrains.includes(tile.terrain)) return false;
-        
+
         return true;
     }
-    
-    // Execute auto-connect: find nearest and draw path
-    autoConnect(targetX, targetY, infraType) {
-        console.log(`[AutoConnect] Auto-connecting ${infraType} to (${targetX}, ${targetY})`);
-        
-        const tileMap = this.game.tileMap;
-        if (!tileMap) return { success: false, reason: 'No tilemap' };
-        
-        // Check if target tile already has this infrastructure
-        const targetTile = tileMap.getTile(targetX, targetY);
-        if (targetTile?.building?.type === infraType) {
-            return { success: false, reason: 'Already has ' + infraType };
+
+    // Handle click - implements two-click workflow
+    // Returns: { handled: boolean, result: object }
+    handleClick(tileX, tileY, infraType) {
+        console.log(`[AutoConnect] handleClick at (${tileX},${tileY}) for ${infraType}`);
+        console.log(`[AutoConnect] State: waitingForEnd=${this.waitingForEnd}, startPoint=${JSON.stringify(this.startPoint)}`);
+
+        if (!this.enabled) {
+            console.log('[AutoConnect] Not enabled, skipping');
+            return { handled: false };
         }
-        
-        // Find nearest existing infrastructure
-        const nearest = this.findNearestInfrastructure(targetX, targetY, infraType);
-        
-        if (!nearest) {
-            // No existing infrastructure - just place at target if valid
-            console.log('[AutoConnect] No existing infrastructure, placing single tile');
-            if (this.canPlaceInfra(targetX, targetY, infraType)) {
-                return { 
-                    success: true, 
-                    path: [{ x: targetX, y: targetY }],
-                    isNewNetwork: true
+
+        if (!this.supportedTools.includes(infraType)) {
+            console.log('[AutoConnect] Tool not supported:', infraType);
+            return { handled: false };
+        }
+
+        // FIRST CLICK - Select start point
+        if (!this.waitingForEnd) {
+            // Check if clicked tile has existing infrastructure of this type
+            if (this.hasInfrastructure(tileX, tileY, infraType)) {
+                // Valid start point - existing infrastructure
+                this.startPoint = { x: tileX, y: tileY };
+                this.waitingForEnd = true;
+                console.log(`[AutoConnect] START selected at (${tileX},${tileY}) - click END point next`);
+
+                // Notify user
+                if (this.game.events) {
+                    this.game.events.emit('autoConnectStart', { x: tileX, y: tileY, infraType });
+                }
+
+                return {
+                    handled: true,
+                    result: {
+                        action: 'startSelected',
+                        startPoint: this.startPoint,
+                        message: `Start point selected at (${tileX},${tileY}). Click destination to auto-connect.`
+                    }
+                };
+            } else {
+                // Clicked on empty tile or different building - not valid start
+                console.log('[AutoConnect] First click must be on existing ' + infraType);
+                return {
+                    handled: true,
+                    result: {
+                        action: 'invalidStart',
+                        message: `Click on existing ${infraType} to start auto-connect`
+                    }
                 };
             }
-            return { success: false, reason: 'Cannot place here' };
         }
-        
-        console.log(`[AutoConnect] Nearest ${infraType} at (${nearest.x}, ${nearest.y})`);
-        
-        // Find path from nearest to target
-        const path = this.findPath(nearest.x, nearest.y, targetX, targetY, infraType);
-        
-        if (path.length === 0) {
-            return { success: false, reason: 'No valid path found' };
+
+        // SECOND CLICK - Select end point and draw path
+        if (this.waitingForEnd && this.startPoint) {
+            const startX = this.startPoint.x;
+            const startY = this.startPoint.y;
+
+            // Check if clicking same tile as start
+            if (tileX === startX && tileY === startY) {
+                console.log('[AutoConnect] Clicked same tile, cancelling');
+                this.resetState();
+                return {
+                    handled: true,
+                    result: {
+                        action: 'cancelled',
+                        message: 'Auto-connect cancelled'
+                    }
+                };
+            }
+
+            // Check if end point is valid for placement
+            if (!this.canPlaceInfra(tileX, tileY, infraType)) {
+                console.log('[AutoConnect] Invalid end point');
+                return {
+                    handled: true,
+                    result: {
+                        action: 'invalidEnd',
+                        message: 'Cannot place ' + infraType + ' at this location'
+                    }
+                };
+            }
+
+            // Find path from start to end
+            const path = this.findPath(startX, startY, tileX, tileY, infraType);
+
+            if (path.length === 0) {
+                console.log('[AutoConnect] No path found');
+                this.resetState();
+                return {
+                    handled: true,
+                    result: {
+                        action: 'noPath',
+                        message: 'No valid path found between points'
+                    }
+                };
+            }
+
+            // Remove start tile from path (it already has infrastructure)
+            const newTiles = path.filter(p => !(p.x === startX && p.y === startY));
+
+            if (newTiles.length === 0) {
+                console.log('[AutoConnect] Already connected');
+                this.resetState();
+                return {
+                    handled: true,
+                    result: {
+                        action: 'alreadyConnected',
+                        message: 'Points are already connected'
+                    }
+                };
+            }
+
+            console.log(`[AutoConnect] Path ready with ${newTiles.length} new tiles to place`);
+
+            // Reset state before returning
+            this.resetState();
+
+            return {
+                handled: true,
+                result: {
+                    action: 'pathReady',
+                    path: newTiles,
+                    startPoint: { x: startX, y: startY },
+                    endPoint: { x: tileX, y: tileY },
+                    message: `Ready to place ${newTiles.length} tiles`
+                }
+            };
         }
-        
-        // Remove the first tile (it's the existing infrastructure)
-        const newTiles = path.slice(1);
-        
-        if (newTiles.length === 0) {
-            return { success: false, reason: 'Already connected' };
-        }
-        
-        console.log(`[AutoConnect] Path found with ${newTiles.length} new tiles`);
-        
-        return {
-            success: true,
-            path: newTiles,
-            startPoint: nearest,
-            isNewNetwork: false
-        };
+
+        return { handled: false };
     }
-    
+
     // Calculate cost for the path
     calculateCost(path, infraType) {
         const { getBuilding } = window.BuildingsModule || {};
         if (!getBuilding) return path.length * 10; // Default cost
-        
+
         const building = getBuilding(infraType);
         return path.length * (building?.cost || 10);
     }
-    
+
     // Toggle auto-connect mode
     toggle() {
         this.enabled = !this.enabled;
+        if (!this.enabled) {
+            this.resetState(); // Clear any pending state when disabling
+        }
         console.log('[AutoConnect] Mode:', this.enabled ? 'ENABLED' : 'DISABLED');
         return this.enabled;
+    }
+
+    // Render visual feedback (called from game render loop)
+    render(ctx, camera) {
+        if (!this.enabled || !this.startPoint || !this.waitingForEnd) return;
+
+        const tileSize = 20; // Adjust based on your tile size
+        const screenX = (this.startPoint.x * tileSize - camera.x) * camera.zoom;
+        const screenY = (this.startPoint.y * tileSize - camera.y) * camera.zoom;
+        const size = tileSize * camera.zoom;
+
+        // Draw pulsing highlight on start point
+        const pulse = Math.sin(Date.now() / 200) * 0.3 + 0.7;
+        ctx.strokeStyle = `rgba(0, 255, 0, ${pulse})`;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(screenX, screenY, size, size);
+
+        // Draw "START" label
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.9)';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('START', screenX + size/2, screenY - 5);
     }
 }
